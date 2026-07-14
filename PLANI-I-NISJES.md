@@ -4,6 +4,10 @@
 **Modeli:** B2B SaaS, treg lokal zviceran, Solo-Founder
 **Data e planit:** Korrik 2026
 
+> **VENDIM (Korrik 2026): Zanati i zgjedhur është Sanitär / Heizung (SHK / Gebäudetechnik).**
+> Arsyeja: themeluesi ka rrjetin më të fortë personal të kontakteve në këtë sektor — kriteri vendimtar
+> i Fazës 0. Bonus: është edhe zanati me moat-in më të fortë afatgjatë (IGH-katalogët).
+
 ---
 
 ## Parimi nr. 1 kundër dështimit
@@ -46,30 +50,54 @@ hidraulikut" apo "softueri i ngjyrosësit" — të gjithë janë "softuer për z
 
 ## FAZA 0 — Validimi (Muaji 1–2, zero kod)
 
-### 0.1 Zgjidhni NJË zanat të vetëm
+### 0.1 Zanati i zgjedhur: Sanitär / Heizung — profili i tregut
 
-Mos filloni me "të gjithë zanatlinjtë". Kriteri vendimtar: **ku keni qasje personale te 10+ firma reale?**
-(familje, miq, komuniteti shqiptar në Zvicër — shumë zanatlinj shqiptarë punojnë në Maler/Gips/Sanitär,
-ky është avantazh i juaji real që Baunex s'e ka).
+**✅ VENDOSUR: Sanitär/Heizung**, sepse themeluesi ka aty rrjetin më të fortë të kontakteve personale.
 
-| Kriteri | Maler/Gipser | Sanitär/Heizung |
-|---|---|---|
-| Thjeshtësia e domenit për MVP | ✅ E lartë (sipërfaqe, orë, material i thjeshtë) | ⚠️ Mesatare (artikuj kompleksë, kataloge) |
-| Moat-i afatgjatë | ⚠️ Më i ulët | ✅ I lartë (IGH-katalogët) |
-| Urgjenca e dhimbjes (Regierapporte) | ✅ E lartë | ✅ E lartë |
-| Rekomandimi | **Filloni këtu nëse s'keni rrjet të fortë** | **Filloni këtu nëse keni kontakte në sektor** |
+Çfarë dimë për këtë treg (hulumtim korrik 2026):
 
-Strategjia e zgjuar: filloni me njërin, arkitektura e lejon shtimin e të dytit në vitin 2.
+- **Madhësia:** rreth **3'600 firma anëtare** të suissetec në Zvicër/Liechtenstein (Sanitär, Heizung,
+  Lüftung, Spengler), të organizuara në 26 seksione rajonale (p.sh. Nordostschweiz: 376 firma,
+  Aargau: 270+ firma). Shumica janë firma të vogla 1–15 vetash — klienti ynë ideal.
+  Vetëm 100 klientë = ~3% e tregut → objektiv plotësisht realist.
+- **Konkurrenti i specializuar legacy:** **OF-4000** (of-software.ch) — punon me katalogët
+  CRB, suissetec dhe IGH, mbulon gjithçka (oferta, kontrata, kalkulime, servis mobil)… por është
+  softuer i gjeneratës së vjetër, i rëndë, desktop-orientuar. **Pikërisht ky është boshllëku ynë:
+  "OF-4000-ja moderne, cloud, mobile-first, me çmim SaaS".**
+- **pds** (Gjermani) është i fortë në SHK por i orientuar te firmat e mëdha dhe pa lokalizim të plotë CH.
+- **Baunex** ka faqe për Sanitär por mbetet gjeneralist ndër-zanatesh.
+
+### Specifikat e sektorit SHK që MVP-ja duhet t'i kuptojë
+
+Sektori SHK ka një veçori ari që Maler-i s'e ka: **biznesi i servisit dhe mirëmbajtjes**:
+
+1. **Serviceaufträge (ndërhyrjet e shpejta):** bojleri prish, uji rrjedh → tekniku shkon, riparon,
+   dokumenton. Sot: fletë letre → zyra e deshifron → fatura del pas 2–4 javësh. Kjo është dhimbja
+   kryesore dhe rrjedha jonë e parë.
+2. **Wartungsverträge (kontratat vjetore të mirëmbajtjes):** çdo firmë Heizung-u ka dhjetëra/qindra
+   kontrata servisi vjetor kaldajash. Menaxhimi i tyre (kush, kur, çfarë çmimi, rikujtesa) sot bëhet
+   me Excel. Kjo është veçoria e dytë me vlerë të madhe — dhe krijon të dhëna që e mbajnë klientin
+   te ne përgjithmonë (moat i të dhënave).
+3. **Materiali me kataloge:** artikujt vijnë nga tregtarët me shumicë (Debrunner Acifer, Meier Tobler,
+   Sanitas Troesch…) me çmime në standardin **IGH**. Në MVP mjafton kërkim i thjeshtë artikujsh +
+   çmime manuale; integrimi i plotë IGH vjen në Fazën 3.
+
+Strategjia e zgjuar: arkitektura multi-zanat që nga dita 1 (asgjë e koduar fort për SHK në thelb),
+por 100% e fokusit produkt/shitje te SHK deri në 50+ klientë.
 
 ### 0.2 Intervistat e validimit (15 copë, të detyrueshme)
 
-- Vizitoni 15 firma të zanatit të zgjedhur (1–15 punonjës). Jo pyetësor online — **kafe dhe bisedë**.
-- Pyetjet kyçe (mos shisni asgjë, vetëm dëgjoni):
-  1. "Si e regjistron sot punën në teren?" (letër? WhatsApp? Excel?)
-  2. "Sa kohë kalon nga puna e kryer deri te fatura e dërguar?" (nëse >2 javë → dhimbje reale)
-  3. "Sa para humb në vit nga orët/materiali i paregjistruar?" (zakonisht 5–10% e qarkullimit!)
-  4. "Çfarë softueri ke provuar? Pse e le?"
-  5. "Nëse një vegël ta zgjidh këtë, sa do paguaje në muaj?"
+- Vizitoni 15 firma Sanitär/Heizung (1–15 punonjës). Jo pyetësor online — **kafe dhe bisedë**.
+  Filloni me kontaktet tuaja personale, pastaj kërkojuni t'ju lidhin me kolegë ("Kë njeh tjetër
+  që e ka këtë problem?").
+- Pyetjet kyçe për SHK (mos shisni asgjë, vetëm dëgjoni):
+  1. "Si e dokumenton montatori/tekniku një Serviceauftrag sot?" (letër? WhatsApp? Excel?)
+  2. "Sa kohë kalon nga riparimi i kryer deri te fatura e dërguar?" (nëse >2 javë → dhimbje reale)
+  3. "Sa para humb në vit nga orët/materiali i paregjistruar në rapporte?" (zakonisht 5–10% e qarkullimit!)
+  4. "Si i menaxhon Wartungsverträge-t — kush të kujton se cilës kaldajë i ka ardhur servisi?"
+  5. "Si i merr çmimet e artikujve nga Debrunner/Meier Tobler/Sanitas Troesch? (IGH? Katalog letre? Web-shop?)"
+  6. "Çfarë softueri ke provuar (OF-4000, Baunex, Bexio…)? Pse e le / pse s'të mjafton?"
+  7. "Nëse një vegël ta zgjidh këtë, sa do paguaje në muaj?"
 - **Regjistroni gjithçka** në një dokument (`validim/interviste-NN.md` në këtë repo).
 
 ### 0.3 Kriteret e kalimit në Fazën 1 (Go / No-Go)
@@ -87,16 +115,22 @@ Strategjia e zgjuar: filloni me njërin, arkitektura e lejon shtimin e të dytit
 
 ### Parimi: një rrjedhë e vetme, nga fillimi në fund
 
-**MVP = "Regierapport nga tereni → Faturë me QR brenda 5 minutash"**
+**MVP = "Serviceauftrag/Regierapport nga tereni → Faturë me QR brenda 5 minutash"**
 
 Përfshihet (dhe ASGJË më shumë):
-1. **Regierapport mobil** (punonjësi në teren): orët, materiali, foto, nënshkrimi i klientit në ekran
-2. **Menaxhim i thjeshtë klientësh e projektesh** (CRM minimal)
+1. **Serviceauftrag & Regierapport mobil** (montatori në teren): orët, materiali (kërkim i shpejtë
+   nga një listë artikujsh e importueshme CSV), foto para/pas, nënshkrimi i klientit në ekran
+2. **Menaxhim i thjeshtë klientësh, objektesh e pajisjesh** (CRM minimal — te SHK objekti/kaldaja
+   është njësia qendrore, jo vetëm klienti)
 3. **Gjenerimi i faturës** nga rapportet e mbledhura — PDF me **QR-Rechnung** konform SIX v2.3
 4. **Eksport për Treuhänder** (PDF/CSV) — kontabilistin s'e zëvendësoni, e furnizoni
 
+**Fast-follow direkt pas MVP-së (muaji 6–7): Wartungsverträge** — regjistri i kontratave të
+mirëmbajtjes me rikujtesa automatike ("kaldaja e familjes X ka servisin në tetor"). Zëvendëson
+Excel-in, gjeneron punë të re për klientin dhe i bën të dhënat e tij të pandashme nga sistemi ynë.
+
 NUK përfshihet në MVP (rezistojini tundimit): kontabilitet i plotë, paga, planifikim ekipesh,
-lager/inventar, oferta komplekse me NPK, integrimi IGH (vjen në Fazën 3).
+lager/inventar, oferta komplekse me NPK/CRB, integrimi i plotë IGH (vjen në Fazën 3).
 
 ### Stack-u teknik i rekomanduar për Solo-Founder
 
@@ -156,12 +190,16 @@ gjeni herët një bashkëpunëtor për shitje (edhe me komision, pa e ndarë fir
 
 ## FAZA 3 — Thellimi dhe moat-i (Muaji 10–18)
 
-1. **Integrimi IGH / katalogët e furnitorëve** (nëse Sanitär/Heizung): kontaktoni info@igh.ch,
-   qasje përmes DataSelect.ch. Kjo e bën produktin të pazëvendësueshëm dhe të pakopjueshëm nga jashtë.
-2. **Oferta (Offerten) me kataloge pozicionesh** sipas zanatit — hapi natyror pas rapporteve e faturave.
-3. **Planifikimi i ekipeve** (Einsatzplanung) — kërkesa më e shpeshtë e dytë.
+1. **Integrimi IGH / katalogët e furnitorëve** — tani i sigurt, meqë zanati është Sanitär/Heizung:
+   kontaktoni info@igh.ch (mundësisht që në Fazën 1 për të mësuar kushtet e anëtarësimit/qasjes),
+   qasje teknike përmes DataSelect.ch API dhe standardit BMDG/DataExpert®. Artikujt me çmimet neto
+   të Debrunner Acifer, Meier Tobler etj. direkt në rapport e ofertë — kjo e bën produktin të
+   pazëvendësueshëm dhe të pakopjueshëm nga konkurrentët jo-zviceranë.
+2. **Oferta (Offerten) me kataloge pozicionesh** (suissetec/NPK) — hapi natyror pas rapporteve e faturave.
+3. **Planifikimi i teknikëve** (Einsatzplanung/Disposition) — kërkesa më e shpeshtë e dytë në servis.
 4. **Frëngjishtja** → hap Romandinë (+25% treg).
-5. Vetëm PAS 50+ klientësh: mendoni zanatin e dytë.
+5. Vetëm PAS 50+ klientësh: mendoni zanatin e dytë (Spengler/Lüftung janë fqinjët natyrorë të SHK,
+   shpesh brenda të njëjtave firma — zgjerim pothuajse falas).
 
 **Objektivi i vitit të parë të plotë:** 30–50 klientë → CHF 15'000–25'000 ARR në rritje.
 **Objektivi i vitit të dytë:** 100–150 klientë → CHF 50'000–70'000 ARR → i mjaftueshëm për t'u fokusuar 100%.
@@ -199,12 +237,17 @@ analizoni, ose ndryshoni drejtim. Vendoseni këtë prag që tani, sa jeni objekt
 
 ## Hapat tuaj konkretë për 30 ditët e para
 
-1. **Java 1:** Zgjidhni zanatin (Maler apo Sanitär) sipas rrjetit tuaj personal. Listoni 20 firma që mund t'i kontaktoni.
-2. **Java 1–2:** Regjistrohuni për demo/trial te Baunex, Finito Pro dhe Bexio — mësojini përmendsh. Shënoni çdo dobësi.
-3. **Java 2–4:** Kryeni 15 intervistat. Dokumentojini në këtë repo (`validim/`).
+1. ~~Zgjidhni zanatin~~ ✅ **VENDOSUR: Sanitär/Heizung.** Java 1: listoni 20 firma SHK që mund t'i
+   kontaktoni personalisht (emri, personi i kontaktit, si e njihni, madhësia e firmës).
+2. **Java 1–2:** Regjistrohuni për demo/trial te Baunex, Finito Pro dhe Bexio, dhe kërkoni një demo
+   të OF-4000 (konkurrenti legacy i specializuar) — mësojini përmendsh. Shënoni çdo dobësi.
+3. **Java 2–4:** Kryeni 15 intervistat me pyetjet SHK të Fazës 0.2. Dokumentojini në këtë repo (`validim/`).
 4. **Java 4:** Vlerësoni kriteret Go/No-Go të Fazës 0. Vetëm pastaj vendosni për arkitekturën.
+5. **Paralelisht:** dërgoni një email informues te info@igh.ch — pyesni për kushtet e qasjes në
+   katalogët IGH për një ofrues të ri softueri (përgjigja ndikon planifikimin e Fazës 3).
 
 ---
 
-*Burimet kryesore: baunex.ch, finitopro.ch, igh.ch, dataselect.ch, github.com/schoero/swissqrbill,
-pypi.org/project/qrbill — hulumtuar korrik 2026.*
+*Burimet kryesore: baunex.ch, finitopro.ch, igh.ch, dataselect.ch, of-software.ch, suissetec.ch,
+pds.de, d-a.ch (Debrunner Acifer), github.com/schoero/swissqrbill, pypi.org/project/qrbill —
+hulumtuar korrik 2026.*
