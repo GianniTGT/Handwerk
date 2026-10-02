@@ -4,12 +4,41 @@ Rrjedha kryesore: **Serviceauftrag → Rapport nga tereni → Faturë PDF me QR-
 
 ## Si ta nisni lokalisht
 
+### Windows (laptopi juaj — pa server, pa Linux)
+
+1. Instaloni **Node.js LTS** nga [nodejs.org](https://nodejs.org) (Next/Weiter/Install — default-et mjaftojnë)
+2. Instaloni **Git** nga [git-scm.com](https://git-scm.com/download/win) (default-et mjaftojnë)
+3. Hapni **PowerShell** dhe ekzekutoni:
+
+```powershell
+git clone https://github.com/GianniTGT/Handwerk.git
+cd Handwerk
+git checkout claude/business-ideas-evaluation-3pqnqg
+cd handwerk-app
+npm install
+npx prisma migrate dev
+npm run dev
+```
+
+4. Hapni shfletuesin: **http://localhost:3000** — gati. Databaza është një skedar
+   SQLite lokal (`prisma/dev.db`), s'ka nevojë për asnjë server.
+
+**Testim nga telefoni (rrjedha e montatorit):** niseni me
+`npm run dev -- -H 0.0.0.0`, gjeni IP-në e laptopit me `ipconfig` (p.sh. 192.168.1.20)
+dhe hapni në telefon `http://192.168.1.20:3000` — telefoni dhe laptopi duhet të jenë
+në të njëjtin Wi-Fi (lejojeni në Windows Firewall nëse pyet).
+
+### Mac/Linux
+
 ```bash
 cd handwerk-app
 npm install
 npx prisma migrate dev   # krijon databazën SQLite + seed me të dhëna demo
 npm run dev              # hap http://localhost:3000
 ```
+
+Serveri cloud (Infomaniak etj., shih `docs/cloud-strategjia.md`) duhet VETËM kur
+firmat pilote të punojnë me të dhëna reale nga jashtë — jo për zhvillim e testim.
 
 ## Çfarë përmban tani (v0.1)
 
