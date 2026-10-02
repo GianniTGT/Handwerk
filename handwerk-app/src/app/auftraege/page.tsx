@@ -1,7 +1,8 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { db, aktuellerBetrieb } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
 import { createAuftrag } from "@/lib/actions";
 
 const statusFarben: Record<string, string> = {
@@ -12,7 +13,7 @@ const statusFarben: Record<string, string> = {
 };
 
 export default async function AuftraegePage() {
-  const betrieb = await aktuellerBetrieb();
+  const { betrieb } = await sitzungErforderlich();
   const [auftraege, kunden] = await Promise.all([
     db.auftrag.findMany({
       where: { betriebId: betrieb.id },

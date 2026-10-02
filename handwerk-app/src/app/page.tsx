@@ -1,10 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { db, aktuellerBetrieb } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
 
 export default async function Dashboard() {
-  const betrieb = await aktuellerBetrieb();
+  const { betrieb } = await sitzungErforderlich();
   const [kunden, offene, erledigte, rechnungen] = await Promise.all([
     db.kunde.count({ where: { betriebId: betrieb.id } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: { in: ["OFFEN", "IN_ARBEIT"] } } }),

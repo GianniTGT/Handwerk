@@ -1,0 +1,58 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
+import { db } from "./db";
+
+const COOKIE_NAME = "sitzung";
+const SITZUNG_TAGE = 30;
+
+export async function hashPasswort(passwort: string) {
+  return bcrypt.hash(passwort, 10);
+}
+
+export async function pruefePasswort(passwort: string, hash: string) {
+  if (!hash) return false;
+  return bcrypt.compare(passwort, hash);
+}
+
+export async function erstelleSitzung(mitarbeiterId: string) {
+  const token = randomBytes(32).toString("hex");
+  const gueltigBis = new Date(Date.now() + SITZUNG_TAGE * 24 * 60 * 60 * 1000);
+  await db.sitzung.create({ data: { token, mitarbeiterId, gueltigBis } });
+  const jar = await cookies();
+  jar.set(COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    // Vihet në "1" pas vendosjes prapa TLS (Caddy) në prod
+    secure: process.env.COOKIE_SECURE === "1",
+    maxAge: SITZUNG_TAGE * 24 * 60 * 60,
+  });
+}
+
+export async function leseSitzung() {
+  const jar = await cookies();
+  const token = jar.get(COOKIE_NAME)?.value;
+  if (!token) return null;
+  const sitzung = await db.sitzung.findUnique({
+    where: { token },
+    include: { mitarbeiter: { include: { betrieb: true } } },
+  });
+  if (!sitzung || sitzung.gueltigBis < new Date()) return null;
+  return sitzung;
+}
+
+// Përdoret në çdo faqe/action të mbrojtur: kthen mitarbeiter + betrieb ose ridrejton në /login
+export async function sitzungErforderlich() {
+  const sitzung = await leseSitzung();
+  if (!sitzung) redirect("/login");
+  return { mitarbeiter: sitzung.mitarbeiter, betrieb: sitzung.mitarbeiter.betrieb };
+}
+
+export async function beendeSitzung() {
+  const jar = await cookies();
+  const token = jar.get(COOKIE_NAME)?.value;
+  if (token) await db.sitzung.deleteMany({ where: { token } });
+  jar.delete(COOKIE_NAME);
+}

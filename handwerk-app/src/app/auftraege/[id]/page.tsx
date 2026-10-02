@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db, aktuellerBetrieb } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
 import {
   addRapportPosition,
   createRechnung,
@@ -14,9 +15,9 @@ const chf = (n: number) =>
 
 export default async function AuftragDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const betrieb = await aktuellerBetrieb();
-  const auftrag = await db.auftrag.findUnique({
-    where: { id },
+  const { betrieb } = await sitzungErforderlich();
+  const auftrag = await db.auftrag.findFirst({
+    where: { id, betriebId: betrieb.id },
     include: {
       kunde: true,
       objekt: true,

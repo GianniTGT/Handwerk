@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import { db, aktuellerBetrieb } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
 import { setRechnungStatus } from "@/lib/actions";
 
 const chf = (n: number) =>
@@ -13,7 +14,7 @@ const statusFarben: Record<string, string> = {
 };
 
 export default async function RechnungenPage() {
-  const betrieb = await aktuellerBetrieb();
+  const { betrieb } = await sitzungErforderlich();
   const rechnungen = await db.rechnung.findMany({
     where: { betriebId: betrieb.id },
     include: { auftrag: { include: { kunde: true } } },

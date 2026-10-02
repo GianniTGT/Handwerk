@@ -4,24 +4,36 @@ Rrjedha kryesore: **Serviceauftrag → Rapport nga tereni → Faturë PDF me QR-
 
 ## Si ta nisni lokalisht
 
-### Windows (laptopi juaj — pa server, pa Linux)
+Databaza tani është **PostgreSQL** (gati për prodhim/multi-tenant). Lokalisht niset
+më lehtë me Docker.
 
-1. Instaloni **Node.js LTS** nga [nodejs.org](https://nodejs.org) (Next/Weiter/Install — default-et mjaftojnë)
-2. Instaloni **Git** nga [git-scm.com](https://git-scm.com/download/win) (default-et mjaftojnë)
-3. Hapni **PowerShell** dhe ekzekutoni:
+### Windows (laptopi juaj — pa server cloud, pa Linux)
+
+1. Instaloni **Node.js LTS** nga [nodejs.org](https://nodejs.org) (default-et mjaftojnë)
+2. Instaloni **Git** nga [git-scm.com](https://git-scm.com/download/win)
+3. Instaloni **Docker Desktop** nga [docker.com](https://www.docker.com/products/docker-desktop/)
+   (vetëm për PostgreSQL-në lokale; pas instalimit niseni një herë)
+4. Hapni **PowerShell** dhe ekzekutoni:
 
 ```powershell
 git clone https://github.com/GianniTGT/Handwerk.git
 cd Handwerk
 git checkout claude/business-ideas-evaluation-3pqnqg
 cd handwerk-app
+copy .env.example .env
+docker compose up -d        # nis PostgreSQL në sfond
 npm install
-npx prisma migrate dev
+npx prisma migrate dev      # krijon tabelat + seed me të dhëna demo
 npm run dev
 ```
 
-4. Hapni shfletuesin: **http://localhost:3000** — gati. Databaza është një skedar
-   SQLite lokal (`prisma/dev.db`), s'ka nevojë për asnjë server.
+5. Hapni **http://localhost:3000** → ridrejtoheni te **/login**.
+
+**Llogaritë demo** (nga seed-i):
+- Chef: `chef@demo.ch` / `demo1234`
+- Monteur: `monteur@demo.ch` / `demo1234`
+
+Ose regjistroni firmë të re te **/registrieren** — çdo firmë sheh VETËM të dhënat e veta.
 
 **Testim nga telefoni (rrjedha e montatorit):** niseni me
 `npm run dev -- -H 0.0.0.0`, gjeni IP-në e laptopit me `ipconfig` (p.sh. 192.168.1.20)
@@ -32,8 +44,10 @@ në të njëjtin Wi-Fi (lejojeni në Windows Firewall nëse pyet).
 
 ```bash
 cd handwerk-app
+cp .env.example .env
+docker compose up -d
 npm install
-npx prisma migrate dev   # krijon databazën SQLite + seed me të dhëna demo
+npx prisma migrate dev
 npm run dev              # hap http://localhost:3000
 ```
 
@@ -42,6 +56,7 @@ firmat pilote të punojnë me të dhëna reale nga jashtë — jo për zhvillim 
 
 ## Çfarë përmban tani (v0.1)
 
+- **Login & multi-tenant** — çdo firmë (Betrieb) me përdoruesit e vet, sheh vetëm të dhënat e veta; regjistrim i firmave të reja në /registrieren
 - **Kunden** — klientët me objektet/pajisjet e tyre (kaldaja, bojleri…)
 - **Aufträge** — urdhrat e punës me status (OFFEN → IN_ARBEIT → ERLEDIGT → VERRECHNET)
 - **Rapport** — pozicionet Arbeit/Material (nga katalogu i artikujve ose të lira),
@@ -56,7 +71,7 @@ Next.js (App Router, TypeScript, Tailwind) · Prisma + SQLite (dev) · pdfkit + 
 
 ## Hapat e ardhshëm (sipas PLANI-I-NISJES.md)
 
-1. Login & ndarje e vërtetë tenantësh (auth)
+1. ~~Login & ndarje tenantësh~~ ✅ · ~~PostgreSQL~~ ✅
 2. Foto-upload në rapport
 3. Wartungsverträge me rikujtesa automatike
 4. Import artikujsh CSV → më vonë IGH/DataSelect

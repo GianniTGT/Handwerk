@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import { SwissQRBill } from "swissqrbill/pdf";
 import { db } from "@/lib/db";
+import { leseSitzung } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,9 +13,12 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const sitzung = await leseSitzung();
+  if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
+
   const { id } = await params;
-  const rechnung = await db.rechnung.findUnique({
-    where: { id },
+  const rechnung = await db.rechnung.findFirst({
+    where: { id, betriebId: sitzung.mitarbeiter.betriebId },
     include: {
       betrieb: true,
       auftrag: {

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -19,10 +20,25 @@ async function main() {
       ort: "Zürich",
       // IBAN shembulli zyrtar i SIX për teste — jo llogari reale
       iban: "CH5800791123000889012",
+      email: "info@demo-haustechnik.ch",
+      telefon: "044 000 00 00",
+      bank: "Demo Bank AG",
+      bic: "DEMOCHZZ",
+      mwstNr: "CHE-000.000.000 MWST",
       mitarbeiter: {
         create: [
-          { name: "Chef (Büro)", rolle: "CHEF" },
-          { name: "Monteur 1", rolle: "MONTEUR" },
+          {
+            name: "Chef (Büro)",
+            rolle: "CHEF",
+            email: "chef@demo.ch",
+            passwortHash: await bcrypt.hash("demo1234", 10),
+          },
+          {
+            name: "Monteur 1",
+            rolle: "MONTEUR",
+            email: "monteur@demo.ch",
+            passwortHash: await bcrypt.hash("demo1234", 10),
+          },
         ],
       },
       artikel: {

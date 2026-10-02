@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { db, aktuellerBetrieb } from "@/lib/db";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
 import { createKunde } from "@/lib/actions";
 
 export default async function KundenPage() {
-  const betrieb = await aktuellerBetrieb();
+  const { betrieb } = await sitzungErforderlich();
   const kunden = await db.kunde.findMany({
     where: { betriebId: betrieb.id },
     include: { objekte: true, auftraege: true },
