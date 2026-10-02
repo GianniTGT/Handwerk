@@ -195,7 +195,11 @@ gjeni herët një bashkëpunëtor për shitje (edhe me komision, pa e ndarë fir
    qasje teknike përmes DataSelect.ch API dhe standardit BMDG/DataExpert®. Artikujt me çmimet neto
    të Debrunner Acifer, Meier Tobler etj. direkt në rapport e ofertë — kjo e bën produktin të
    pazëvendësueshëm dhe të pakopjueshëm nga konkurrentët jo-zviceranë.
-2. **Oferta (Offerten) me kataloge pozicionesh** (suissetec/NPK) — hapi natyror pas rapporteve e faturave.
+2. **Oferta (Offerten)** me grupe pozicionesh hierarkike (1 / 1.1 / 1.2, subtotale grupi,
+   përshkrime të pasura) dhe konvertim Offerte → Auftrag. **⬆ Prioritet i ngritur (tetor 2026):**
+   analiza e ofertës reale të Wasserdichter tregoi se të dy pilotët shkruajnë oferta çdo javë
+   me Bexio — pa Offerten s'e braktisin dot. Vjen menjëherë pas auth + onboarding-ut, para IGH-së.
+   Katalogët e pozicioneve (suissetec/NPK) mbeten për më vonë.
 3. **Planifikimi i teknikëve** (Einsatzplanung/Disposition) — kërkesa më e shpeshtë e dytë në servis.
 4. **Frëngjishtja** → hap Romandinë (+25% treg).
 5. Vetëm PAS 50+ klientësh: mendoni zanatin e dytë (Spengler/Lüftung janë fqinjët natyrorë të SHK,

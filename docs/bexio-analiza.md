@@ -85,7 +85,44 @@ përshëndetje, footer në çdo faqe (adresa, email, telefon, Bank/BIC/IBAN, MWS
 numërim faqesh "Seite X von Y", QR në faqe të veçantë. **E vetmja gjë që na mungon
 ende: logo e firmës në krye** (vjen me ngarkimin e logos në konfigurim — Faza 2).
 
+## 2c. Oferta reale e Wasserdichter (klienti ynë pilot nr. 2) — si duken Offerten-et
+
+Edhe Wasserdichter GmbH (Liebefeld BE) **e përdor Bexio-n në prodhim**. Analiza e një
+oferte reale (AN-2025-00152, "Anschlüsse neue Pumpen", CHF 9'231.75) na mëson strukturën
+e ofertave që MVP-ja jonë do duhet ta mbështesë:
+
+**Struktura e pozicioneve është HIERARKIKE (2 nivele):**
+- Pos **1 "Demontage"** (totali i grupit: 1'140.00) → nën-pozicionet 1.1, 1.2, 1.3
+- Pos **2 "Neuanschluss Pumpen"** (7'400.00) → 2.1, 2.2, 2.3
+- Nën-pozicionet kanë përshkrime të pasura shumërreshtëshe: bullet-lista
+  ("· Anschluss Saugseite DN150 PN16") dhe tekst "inkl. Material: INOX: …"
+
+→ **Modeli ynë i të dhënave për Offerten duhet:** grupe pozicionesh me subtotale,
+përshkrime të gjata me rreshta/bullets, dhe numërim automatik 1 / 1.1 / 1.2.
+Rapport-pozicionet tona të sheshta NUK mjaftojnë për oferta projektesh.
+
+**Elemente të tjera të reja kundrejt faturës:**
+- **"Gültig bis"** (afati i vlefshmërisë, këtu 14 ditë) në vend të "Zahlbar bis"
+- **Kundennummer** (000189) — klientët kanë numra; modelit tonë Kunde i duhet `nummer`
+- **Ansprechpartner personal** (Besnik Gashi) në kokë dhe në përshëndetjen mbyllëse —
+  lidhet me konceptin tonë Mitarbeiter
+- **Branding për tenant**: ngjyra blu e firmës + logo + font — document-designer-i
+  i bexio-s e bën këtë; ne na duhet minimumi logo + një ngjyrë theksimi për firmë
+- Tarifa pune projekti: **CHF 95/h** (kundrejt 150/h servis i AINO-s) → firmat kanë
+  **disa tarifa sipas llojit të punës** — katalogu i artikujve tashmë e mbulon këtë
+
+**Kuriozitet i dobishëm:** edhe AINO edhe Wasserdichter i shërbejnë të njëjtit klient
+fundor (frigemo/fenaco në Cressier) — rrjeti mes pilotëve tanë është real; referencat
+do të qarkullojnë shpejt.
+
+**Pasojë për roadmap-in:** moduli **Offerten** (me grupe pozicionesh dhe konvertim
+Offerte → Auftrag) ngjitet në prioritet: jo më "Faza 3", por menjëherë pas
+auth + onboarding-ut të pilotëve — të dy pilotët shkruajnë oferta çdo javë me Bexio,
+dhe pa Offerten ata s'mund ta braktisin Bexio-n kurrë.
+
+
 ## 3. Dobësitë e Bexio-s për zanatlinjtë (vërejtje nga trial-i)
+
 
 1. **Zero funksione terreni:** asnjë Regierapport, asnjë app montatori, asnjë nënshkrim
    klienti në vend, asnjë foto-dokumentim. Gjithçka supozon një person që rri në zyrë.
