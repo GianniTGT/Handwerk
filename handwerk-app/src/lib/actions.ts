@@ -406,7 +406,7 @@ export async function addOffertePosition(formData: FormData) {
   if (!gruppe) throw new Error("Gruppe nicht gefunden");
 
   const artikelId = String(formData.get("artikelId") ?? "");
-  let bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  let bezeichnung = String(formData.get("bezeichnung") ?? "").replace(/\r/g, "").trim();
   let einheit = String(formData.get("einheit") ?? "Stk.");
   let ansatz = Number(formData.get("ansatz") ?? 0);
   if (artikelId) {
@@ -503,6 +503,83 @@ export async function konvertiereOfferte(formData: FormData) {
     data: { auftragId: auftrag.id, status: "ANGENOMMEN" },
   });
   redirect(`/auftraege/${auftrag.id}`);
+}
+
+export async function deleteKunde(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const kundeId = String(formData.get("kundeId"));
+  const kunde = await db.kunde.findFirst({
+    where: { id: kundeId, betriebId: betrieb.id },
+    include: { _count: { select: { auftraege: true, offerten: true } } },
+  });
+  if (!kunde) throw new Error("Kunde nicht gefunden");
+  // Mbrojtje: klientë me dokumente (auftrage/oferta/fatura) NUK fshihen —
+  // dokumentet janë regjistrime biznesi që duhen ruajtur
+  if (kunde._count.auftraege > 0 || kunde._count.offerten > 0) {
+    redirect(`/kunden/${kundeId}?fehler=hat-dokumente`);
+  }
+  await db.objekt.deleteMany({ where: { kundeId } });
+  await db.kunde.delete({ where: { id: kundeId } });
+  redirect("/kunden");
+}
+
+export async function deleteObjekt(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const objekt = await db.objekt.findFirst({
+    where: { id: String(formData.get("objektId")), kunde: { betriebId: betrieb.id } },
+    include: { _count: { select: { auftraege: true, offerten: true } } },
+  });
+  if (!objekt) throw new Error("Objekt nicht gefunden");
+  if (objekt._count.auftraege > 0 || objekt._count.offerten > 0) {
+    redirect(`/kunden/${objekt.kundeId}?fehler=objekt-hat-dokumente`);
+  }
+  await db.objekt.delete({ where: { id: objekt.id } });
+  revalidatePath(`/kunden/${objekt.kundeId}`);
+}
+
+// ---------- Einstellungen / Dokumenten-Designer ----------
+
+export async function updateBetrieb(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const hex = (name: string, fallback: string) => {
+    const wert = String(formData.get(name) ?? "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(wert) ? wert : fallback;
+  };
+
+  // Logo opsionale: PNG/JPEG deri 500 KB, ruhet si data-URL
+  let logo: string | undefined;
+  const datei = formData.get("logo");
+  if (datei instanceof File && datei.size > 0) {
+    if (datei.size > 500 * 1024) redirect("/einstellungen?fehler=logo-gross");
+    if (!["image/png", "image/jpeg"].includes(datei.type)) {
+      redirect("/einstellungen?fehler=logo-format");
+    }
+    const bytes = Buffer.from(await datei.arrayBuffer());
+    logo = `data:${datei.type};base64,${bytes.toString("base64")}`;
+  }
+  if (formData.get("logoEntfernen") === "1") logo = "";
+
+  await db.betrieb.update({
+    where: { id: betrieb.id },
+    data: {
+      name: String(formData.get("name") ?? betrieb.name).trim() || betrieb.name,
+      strasse: String(formData.get("strasse") ?? ""),
+      plz: String(formData.get("plz") ?? ""),
+      ort: String(formData.get("ort") ?? ""),
+      telefon: String(formData.get("telefon") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      iban: String(formData.get("iban") ?? "").replace(/\s/g, ""),
+      bank: String(formData.get("bank") ?? ""),
+      bic: String(formData.get("bic") ?? ""),
+      mwstNr: String(formData.get("mwstNr") ?? ""),
+      farbeTitel: hex("farbeTitel", betrieb.farbeTitel),
+      farbeLinien: hex("farbeLinien", betrieb.farbeLinien),
+      farbeText: hex("farbeText", betrieb.farbeText),
+      ...(logo !== undefined ? { logo } : {}),
+    },
+  });
+  revalidatePath("/einstellungen");
+  redirect("/einstellungen?gespeichert=1");
 }
 
 // ---------- Rechnungen ----------

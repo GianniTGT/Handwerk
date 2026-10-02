@@ -15,33 +15,36 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto mt-16 max-w-sm">
-      <h1 className="text-center text-2xl font-bold">🔧 Handwerk</h1>
-      <p className="mt-1 text-center text-sm text-slate-500">Anmelden</p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/tiff-logo.svg" alt="Tiff" className="mx-auto h-14 w-14 rounded-tiff" />
+      <h1 className="mt-3 text-center text-2xl font-bold">Handwerk</h1>
+      <p className="text-center text-[10px] uppercase tracking-widest text-gold">by Tiff Software Solutions</p>
+      <p className="mt-1 text-center text-sm text-muted">Anmelden</p>
       {fehler && (
         <p className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-700">
           E-Mail oder Passwort falsch.
         </p>
       )}
-      <form action={login} className="mt-6 grid gap-3 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form action={login} className="mt-6 grid gap-3 rounded-tiff border border-line bg-white p-6 shadow-sm">
         <input
           name="email"
           type="email"
           required
           placeholder="E-Mail"
-          className="rounded border border-slate-300 p-2 text-sm"
+          className="rounded border border-line p-2 text-sm"
         />
         <input
           name="passwort"
           type="password"
           required
           placeholder="Passwort"
-          className="rounded border border-slate-300 p-2 text-sm"
+          className="rounded border border-line p-2 text-sm"
         />
-        <button className="rounded bg-slate-900 p-2 text-sm font-medium text-white hover:bg-slate-700">
+        <button className="rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift">
           Anmelden
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-500">
+      <p className="mt-4 text-center text-sm text-muted">
         Noch kein Konto?{" "}
         <Link href="/registrieren" className="underline">
           Betrieb registrieren

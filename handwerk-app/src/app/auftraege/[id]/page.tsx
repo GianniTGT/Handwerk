@@ -47,7 +47,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
           <h1 className="text-xl font-bold">
             Auftrag #{auftrag.nummer} — {auftrag.titel}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             <Link href={`/kunden/${auftrag.kundeId}`} className="underline">
               {auftrag.kunde.name}
             </Link>
@@ -58,7 +58,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
         {!auftrag.rechnung && positionen.length > 0 && (
           <form action={createRechnung}>
             <input type="hidden" name="auftragId" value={auftrag.id} />
-            <button className="rounded bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600">
+            <button className="rounded bg-gold px-4 py-2 text-sm font-semibold text-white hover:bg-gold-soft">
               ⚡ Rechnung erstellen
             </button>
           </form>
@@ -66,7 +66,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
         {auftrag.rechnung && (
           <Link
             href="/rechnungen"
-            className="rounded bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+            className="rounded bg-surface2 px-4 py-2 text-sm font-medium text-ink"
           >
             Rechnung #{auftrag.rechnung.nummer} ansehen
           </Link>
@@ -76,9 +76,9 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
       <div className="mt-6 grid gap-6 md:grid-cols-[2fr_1fr]">
         <div>
           <h2 className="font-semibold">Rapport-Positionen</h2>
-          <table className="mt-2 w-full rounded-xl border border-slate-200 bg-white text-sm">
+          <table className="mt-2 w-full rounded-tiff border border-line bg-white text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+              <tr className="border-b border-line text-left text-xs uppercase text-muted">
                 <th className="p-2">Typ</th>
                 <th className="p-2">Bezeichnung</th>
                 <th className="p-2 text-right">Menge</th>
@@ -90,7 +90,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
             </thead>
             <tbody>
               {positionen.map((p) => (
-                <tr key={p.id} className="border-b border-slate-100">
+                <tr key={p.id} className="border-b border-line">
                   <td className="p-2">{p.typ === "ARBEIT" ? "🕐" : "🔩"}</td>
                   <td className="p-2">{p.bezeichnung}</td>
                   <td className="p-2 text-right">{p.menge}</td>
@@ -102,7 +102,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
                       <form action={deleteRapportPosition}>
                         <input type="hidden" name="auftragId" value={auftrag.id} />
                         <input type="hidden" name="positionId" value={p.id} />
-                        <button className="text-slate-400 hover:text-red-600">✕</button>
+                        <button className="text-muted hover:text-red-600">✕</button>
                       </form>
                     )}
                   </td>
@@ -110,7 +110,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
               ))}
               {positionen.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-3 text-slate-500">
+                  <td colSpan={7} className="p-3 text-muted">
                     Noch keine Positionen — unten erfassen.
                   </td>
                 </tr>
@@ -132,16 +132,16 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
           {!auftrag.rechnung && (
             <form
               action={addRapportPosition}
-              className="mt-4 rounded-xl border border-slate-200 bg-white p-4"
+              className="mt-4 rounded-tiff border border-line bg-white p-4"
             >
               <input type="hidden" name="auftragId" value={auftrag.id} />
               <h3 className="text-sm font-semibold">Position erfassen</h3>
               <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-6">
-                <select name="typ" className="rounded border border-slate-300 p-2 text-sm">
+                <select name="typ" className="rounded border border-line p-2 text-sm">
                   <option value="ARBEIT">Arbeit</option>
                   <option value="MATERIAL">Material</option>
                 </select>
-                <select name="artikelId" className="rounded border border-slate-300 p-2 text-sm md:col-span-2">
+                <select name="artikelId" className="rounded border border-line p-2 text-sm md:col-span-2">
                   <option value="">Aus Katalog…</option>
                   {artikel.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -152,17 +152,17 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
                 <input
                   name="bezeichnung"
                   placeholder="oder frei eingeben"
-                  className="rounded border border-slate-300 p-2 text-sm md:col-span-3"
+                  className="rounded border border-line p-2 text-sm md:col-span-3"
                 />
-                <input name="menge" type="number" step="0.25" defaultValue={1} className="rounded border border-slate-300 p-2 text-sm" />
-                <select name="einheit" className="rounded border border-slate-300 p-2 text-sm">
+                <input name="menge" type="number" step="0.25" defaultValue={1} className="rounded border border-line p-2 text-sm" />
+                <select name="einheit" className="rounded border border-line p-2 text-sm">
                   <option>Std.</option>
                   <option>Stk.</option>
                   <option>m</option>
                   <option>pauschal</option>
                 </select>
-                <input name="ansatz" type="number" step="0.05" placeholder="CHF/Einheit" className="rounded border border-slate-300 p-2 text-sm" />
-                <button className="rounded bg-slate-900 p-2 text-sm font-medium text-white hover:bg-slate-700 md:col-span-3">
+                <input name="ansatz" type="number" step="0.05" placeholder="CHF/Einheit" className="rounded border border-line p-2 text-sm" />
+                <button className="rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift md:col-span-3">
                   Hinzufügen
                 </button>
               </div>
@@ -170,7 +170,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        <div className="h-fit rounded-xl border border-slate-200 bg-white p-4">
+        <div className="h-fit rounded-tiff border border-line bg-white p-4">
           <SignaturePad
             auftragId={auftrag.id}
             vorhandeneUnterschrift={unterschrift}

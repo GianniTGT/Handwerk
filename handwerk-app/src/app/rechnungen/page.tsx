@@ -24,14 +24,14 @@ export default async function RechnungenPage() {
   return (
     <div>
       <h1 className="text-xl font-bold">Rechnungen</h1>
-      <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+      <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
         {rechnungen.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
             <div>
               <div className="font-medium">
                 Rechnung #{r.nummer} — {r.auftrag.kunde.name}
               </div>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm text-muted">
                 Auftrag #{r.auftrag.nummer} · {r.datum.toLocaleDateString("de-CH")} · netto CHF{" "}
                 {chf(r.totalNetto)} · <strong>brutto CHF {chf(r.totalBrutto)}</strong>
               </div>
@@ -42,7 +42,7 @@ export default async function RechnungenPage() {
               </span>
               <a
                 href={`/api/rechnungen/${r.id}/pdf`}
-                className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
+                className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift"
               >
                 📄 PDF mit QR
               </a>
@@ -50,7 +50,7 @@ export default async function RechnungenPage() {
                 <form action={setRechnungStatus}>
                   <input type="hidden" name="rechnungId" value={r.id} />
                   <input type="hidden" name="status" value={r.status === "ENTWURF" ? "VERSENDET" : "BEZAHLT"} />
-                  <button className="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">
+                  <button className="rounded border border-line px-3 py-1.5 text-sm hover:bg-surface2">
                     {r.status === "ENTWURF" ? "Als versendet markieren" : "Als bezahlt markieren"}
                   </button>
                 </form>
@@ -59,7 +59,7 @@ export default async function RechnungenPage() {
           </li>
         ))}
         {rechnungen.length === 0 && (
-          <li className="p-3 text-sm text-slate-500">
+          <li className="p-3 text-sm text-muted">
             Noch keine Rechnungen — erstelle sie direkt aus einem Auftrag.
           </li>
         )}

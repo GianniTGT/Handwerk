@@ -9,6 +9,11 @@ export const dynamic = "force-dynamic";
 const chf = (n: number) =>
   n.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+function logoBuffer(dataUrl: string): Buffer | null {
+  const m = dataUrl.match(/^data:image\/(png|jpeg);base64,(.+)$/);
+  return m ? Buffer.from(m[2], "base64") : null;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -32,6 +37,10 @@ export async function GET(
   const kunde = auftrag.kunde;
   const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
 
+  const fTitel = betrieb.farbeTitel || "#1C1C1E";
+  const fLinie = betrieb.farbeLinien || "#9AA5A0";
+  const fText = betrieb.farbeText || "#1C1C1E";
+
   const doc = new PDFDocument({ size: "A4", margin: 50, bufferPages: true });
   const chunks: Buffer[] = [];
   doc.on("data", (c: Buffer) => chunks.push(c));
@@ -41,21 +50,29 @@ export async function GET(
   // Hapësirë për footer-in në çdo faqe përmbajtjeje
   doc.page.margins.bottom = 90;
 
-  // Kopfzeile: Absender
-  doc.fontSize(14).font("Helvetica-Bold").text(betrieb.name, 50, 50);
-  doc.fontSize(9).font("Helvetica").text(`${betrieb.strasse} · ${betrieb.plz} ${betrieb.ort}`);
+  // Logo (Dokumenten-Designer) + Absender
+  const logo = betrieb.logo ? logoBuffer(betrieb.logo) : null;
+  if (logo) {
+    try {
+      doc.image(logo, 50, 42, { fit: [150, 55] });
+    } catch {
+      /* logo e palexueshme — vazhdo pa të */
+    }
+  }
+  doc.fillColor(fTitel).fontSize(12).font("Helvetica-Bold").text(betrieb.name, 50, logo ? 105 : 50);
+  doc.fillColor(fText).fontSize(9).font("Helvetica").text(`${betrieb.strasse} · ${betrieb.plz} ${betrieb.ort}`);
 
   // Empfänger djathtas
-  doc.fontSize(10).text(kunde.name, 350, 110);
+  doc.fontSize(10).text(kunde.name, 350, 120);
   if (kunde.strasse) doc.text(kunde.strasse, 350);
   doc.text(`${kunde.plz} ${kunde.ort}`, 350);
 
   // Titel + blloku informativ
   const zahlbarBis = new Date(rechnung.datum);
   zahlbarBis.setDate(zahlbarBis.getDate() + 30);
-  doc.fontSize(13).font("Helvetica-Bold").text(`Rechnung RE-${rechnung.nummer}`, 50, 190);
+  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Rechnung RE-${rechnung.nummer}`, 50, 190);
   doc.fontSize(11).text(auftrag.titel, 50).moveDown(0.5);
-  doc.fontSize(9);
+  doc.fillColor(fText).fontSize(9);
   const info: [string, string][] = [
     ["Datum:", rechnung.datum.toLocaleDateString("de-CH")],
     ["Zahlbar bis:", zahlbarBis.toLocaleDateString("de-CH")],
@@ -85,7 +102,7 @@ export async function GET(
   // Tabela e pozicioneve me numra Pos.
   const xPos = 50, xBez = 75, xMenge = 320, xEinheit = 370, xAnsatz = 420, xTotal = 490;
   let y = doc.y + 15;
-  doc.font("Helvetica-Bold").fontSize(9);
+  doc.fillColor(fTitel).font("Helvetica-Bold").fontSize(9);
   doc.text("Pos.", xPos, y);
   doc.text("Beschreibung", xBez, y);
   doc.text("Menge", xMenge, y, { width: 40, align: "right" });
@@ -93,10 +110,10 @@ export async function GET(
   doc.text("Ansatz", xAnsatz, y, { width: 60, align: "right" });
   doc.text("Preis in CHF", xTotal, y, { width: 60, align: "right" });
   y += 14;
-  doc.moveTo(xPos, y).lineTo(550, y).strokeColor("#999").stroke();
+  doc.moveTo(xPos, y).lineTo(550, y).strokeColor(fLinie).stroke();
   y += 6;
 
-  doc.font("Helvetica").fontSize(9);
+  doc.fillColor(fText).font("Helvetica").fontSize(9);
   positionen.forEach((p, i) => {
     const hoehe = Math.max(14, doc.heightOfString(p.bezeichnung, { width: 235 }) + 2);
     if (y + hoehe > doc.page.height - doc.page.margins.bottom - 20) {
@@ -113,7 +130,7 @@ export async function GET(
   });
 
   y += 4;
-  doc.moveTo(xPos, y).lineTo(550, y).strokeColor("#999").stroke();
+  doc.moveTo(xPos, y).lineTo(550, y).strokeColor(fLinie).stroke();
   y += 8;
 
   // Totalet me Rundungsdifferenz (rrumbullakimi 5-Rappen i shumës brutto)
@@ -150,7 +167,7 @@ export async function GET(
     const alteMargin = doc.page.margins.bottom;
     doc.page.margins.bottom = 0;
     const fy = doc.page.height - 65;
-    doc.fontSize(7).font("Helvetica");
+    doc.fontSize(7).font("Helvetica").fillColor(fText);
     const zeile1 = [
       `${betrieb.name} · ${betrieb.strasse}, ${betrieb.plz} ${betrieb.ort}`,
       betrieb.email && `E-Mail: ${betrieb.email}`,

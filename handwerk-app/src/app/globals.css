@@ -1,26 +1,22 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Paleta zyrtare TIFF — nga brand package (gusht 2026), src/styles/tokens.css i web-faqes */
+@theme {
+  --color-forest: #16653c;
+  --color-forest-deep: #0f4b2c;
+  --color-forest-lift: #1e8250;
+  --color-gold: #c9a053;
+  --color-gold-soft: #d9b876;
+  --color-ink: #1c1c1e;
+  --color-paper: #f7faf8;
+  --color-surface2: #eff4f1;
+  --color-line: #dce6e0;
+  --color-muted: #5b6862;
+  --radius-tiff: 12px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f7faf8;
+  color: #1c1c1e;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }

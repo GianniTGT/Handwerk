@@ -23,6 +23,11 @@ model Betrieb {
   telefon   String   @default("")
   bank      String   @default("") // p.sh. "UBS Switzerland AG"
   bic       String   @default("")
+  // Dokumenten-Designer (si te bexio): logo + ngjyrat e dokumenteve PDF
+  logo        String @default("") // data-URL (PNG/JPEG, max ~500 KB)
+  farbeTitel  String @default("#1C1C1E")
+  farbeLinien String @default("#9AA5A0")
+  farbeText   String @default("#1C1C1E")
   erstellt  DateTime @default(now())
 
   mitarbeiter Mitarbeiter[]

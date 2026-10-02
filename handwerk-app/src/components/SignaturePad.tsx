@@ -66,7 +66,7 @@ export default function SignaturePad({
         <img
           src={vorhandeneUnterschrift}
           alt="Unterschrift"
-          className="mt-2 h-24 rounded border border-slate-200 bg-white"
+          className="mt-2 h-24 rounded border border-line bg-white"
         />
       </div>
     );
@@ -79,7 +79,7 @@ export default function SignaturePad({
         ref={canvasRef}
         width={400}
         height={120}
-        className="mt-2 w-full touch-none rounded border border-slate-300 bg-white"
+        className="mt-2 w-full touch-none rounded border border-line bg-white"
         onPointerDown={start}
         onPointerMove={ziehen}
         onPointerUp={ende}
@@ -89,11 +89,11 @@ export default function SignaturePad({
         <button
           onClick={speichern}
           disabled={leer || speichert}
-          className="rounded bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
         >
           {speichert ? "Speichert…" : "Unterschrift speichern & Auftrag abschliessen"}
         </button>
-        <button onClick={loeschen} className="rounded border border-slate-300 px-3 py-1.5 text-sm">
+        <button onClick={loeschen} className="rounded border border-line px-3 py-1.5 text-sm">
           Löschen
         </button>
       </div>

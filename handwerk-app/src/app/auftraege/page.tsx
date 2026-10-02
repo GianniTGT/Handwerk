@@ -9,7 +9,7 @@ const statusFarben: Record<string, string> = {
   OFFEN: "bg-amber-100 text-amber-800",
   IN_ARBEIT: "bg-blue-100 text-blue-800",
   ERLEDIGT: "bg-green-100 text-green-800",
-  VERRECHNET: "bg-slate-200 text-slate-600",
+  VERRECHNET: "bg-surface2 text-muted",
 };
 
 export default async function AuftraegePage() {
@@ -31,15 +31,15 @@ export default async function AuftraegePage() {
     <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
       <div>
         <h1 className="text-xl font-bold">Aufträge</h1>
-        <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+        <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
           {auftraege.map((a) => (
             <li key={a.id}>
-              <Link href={`/auftraege/${a.id}`} className="flex items-center justify-between p-3 hover:bg-slate-50">
+              <Link href={`/auftraege/${a.id}`} className="flex items-center justify-between p-3 hover:bg-surface2">
                 <div>
                   <div className="font-medium">
                     #{a.nummer} — {a.titel}
                   </div>
-                  <div className="text-sm text-slate-500">
+                  <div className="text-sm text-muted">
                     {a.kunde.name}
                     {a.objekt && ` · ${a.objekt.bezeichnung}`}
                   </div>
@@ -51,15 +51,15 @@ export default async function AuftraegePage() {
             </li>
           ))}
           {auftraege.length === 0 && (
-            <li className="p-3 text-sm text-slate-500">Noch keine Aufträge.</li>
+            <li className="p-3 text-sm text-muted">Noch keine Aufträge.</li>
           )}
         </ul>
       </div>
 
-      <form action={createAuftrag} className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <form action={createAuftrag} className="h-fit rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Neuer Auftrag</h2>
         <div className="mt-3 grid gap-2">
-          <select name="kundeId" required className="rounded border border-slate-300 p-2 text-sm">
+          <select name="kundeId" required className="rounded border border-line p-2 text-sm">
             <option value="">Kunde wählen *</option>
             {kunden.map((k) => (
               <option key={k.id} value={k.id}>
@@ -67,7 +67,7 @@ export default async function AuftraegePage() {
               </option>
             ))}
           </select>
-          <select name="objektId" className="rounded border border-slate-300 p-2 text-sm">
+          <select name="objektId" className="rounded border border-line p-2 text-sm">
             <option value="">Objekt (optional)</option>
             {kunden.flatMap((k) =>
               k.objekte.map((o) => (
@@ -77,9 +77,9 @@ export default async function AuftraegePage() {
               ))
             )}
           </select>
-          <input name="titel" required placeholder="Titel (z.B. Boiler entkalken) *" className="rounded border border-slate-300 p-2 text-sm" />
-          <textarea name="beschreibung" placeholder="Beschreibung" rows={3} className="rounded border border-slate-300 p-2 text-sm" />
-          <button className="rounded bg-slate-900 p-2 text-sm font-medium text-white hover:bg-slate-700">
+          <input name="titel" required placeholder="Titel (z.B. Boiler entkalken) *" className="rounded border border-line p-2 text-sm" />
+          <textarea name="beschreibung" placeholder="Beschreibung" rows={3} className="rounded border border-line p-2 text-sm" />
+          <button className="rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift">
             Auftrag erstellen
           </button>
         </div>

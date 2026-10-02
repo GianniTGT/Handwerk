@@ -87,6 +87,55 @@ async function main() {
     },
   });
 
+  // Klientë shembull shtesë (realistë për demo)
+  await prisma.kunde.create({
+    data: {
+      betriebId: betrieb.id,
+      name: "Immobilien AG Seeblick",
+      strasse: "Bahnhofstrasse 4",
+      plz: "8800",
+      ort: "Thalwil",
+      telefon: "044 720 11 22",
+      email: "verwaltung@seeblick-demo.ch",
+      objekte: {
+        create: [
+          { bezeichnung: "MFH Seestrasse 40 — Heizzentrale Hoval UltraGas", strasse: "Seestrasse 40", plz: "8800", ort: "Thalwil" },
+          { bezeichnung: "MFH Seestrasse 42 — Boileranlage 500l", strasse: "Seestrasse 42", plz: "8800", ort: "Thalwil" },
+        ],
+      },
+    },
+  });
+  await prisma.kunde.create({
+    data: {
+      betriebId: betrieb.id,
+      name: "Restaurant Linde GmbH",
+      strasse: "Dorfplatz 2",
+      plz: "8942",
+      ort: "Oberrieden",
+      telefon: "044 721 33 44",
+      objekte: {
+        create: [
+          { bezeichnung: "Küche — Fettabscheider & Sanitärinstallation", strasse: "Dorfplatz 2", plz: "8942", ort: "Oberrieden" },
+        ],
+      },
+    },
+  });
+  await prisma.kunde.create({
+    data: {
+      betriebId: betrieb.id,
+      name: "Keller, Markus & Anna",
+      strasse: "Rebbergweg 11",
+      plz: "8820",
+      ort: "Wädenswil",
+      telefon: "079 555 66 77",
+      objekte: {
+        create: [
+          { bezeichnung: "EFH — Wärmepumpe Stiebel Eltron (2024)", strasse: "Rebbergweg 11", plz: "8820", ort: "Wädenswil" },
+        ],
+      },
+    },
+  });
+
   console.log("Seed fertig: Demo-Betrieb, Kunde, Objekt, Auftrag, Artikel erstellt.");
 }
 

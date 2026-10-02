@@ -23,7 +23,7 @@ export default async function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold">{betrieb.name}</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-muted">
         Vom Rapport zur QR-Rechnung in 5 Minuten.
       </p>
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -31,14 +31,14 @@ export default async function Dashboard() {
           <Link
             key={k.label}
             href={k.href}
-            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400"
+            className="rounded-tiff border border-line bg-white p-4 shadow-sm hover:border-forest"
           >
             <div className="text-3xl font-bold">{k.wert}</div>
-            <div className="mt-1 text-sm text-slate-500">{k.label}</div>
+            <div className="mt-1 text-sm text-muted">{k.label}</div>
           </Link>
         ))}
       </div>
-      <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-600">
+      <div className="mt-8 rounded-tiff border border-dashed border-line bg-white p-4 text-sm text-muted">
         <strong>Nächste Schritte im MVP:</strong> Foto-Upload im Rapport, Wartungsverträge mit
         Erinnerungen, Artikel-Import (CSV/IGH), Login & Mandanten-Trennung, PWA offline.
       </div>
