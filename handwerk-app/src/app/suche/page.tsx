@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { darf, type Bereich } from "@/lib/rechte";
 import { rechnungNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -11,7 +12,7 @@ export default async function SuchePage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const q = ((await searchParams).q ?? "").trim();
 
   if (!q) {
@@ -24,27 +25,29 @@ export default async function SuchePage({
   }
 
   const enthaelt = { contains: q, mode: "insensitive" as const };
+  // Vetëm zonat për të cilat përdoruesi ka të drejtë
+  const zona = (b: Bereich) => darf(mitarbeiter, b);
   const [kunden, offerten, auftraege, rechnungen, artikel] = await Promise.all([
-    db.kunde.findMany({
+    !zona("KONTAKTE") ? Promise.resolve([]) : db.kunde.findMany({
       where: { betriebId: betrieb.id, OR: [{ name: enthaelt }, { ort: enthaelt }, { email: enthaelt }] },
       take: 10,
     }),
-    db.offerte.findMany({
+    !zona("VERKAUF") ? Promise.resolve([]) : db.offerte.findMany({
       where: { betriebId: betrieb.id, OR: [{ titel: enthaelt }, { kunde: { name: enthaelt } }] },
       include: { kunde: true },
       take: 10,
     }),
-    db.auftrag.findMany({
+    !zona("AUFTRAEGE") ? Promise.resolve([]) : db.auftrag.findMany({
       where: { betriebId: betrieb.id, OR: [{ titel: enthaelt }, { kunde: { name: enthaelt } }] },
       include: { kunde: true },
       take: 10,
     }),
-    db.rechnung.findMany({
+    !zona("VERKAUF") ? Promise.resolve([]) : db.rechnung.findMany({
       where: { betriebId: betrieb.id, auftrag: { OR: [{ titel: enthaelt }, { kunde: { name: enthaelt } }] } },
       include: { auftrag: { include: { kunde: true } } },
       take: 10,
     }),
-    db.artikel.findMany({
+    !zona("PRODUKTE") ? Promise.resolve([]) : db.artikel.findMany({
       where: { betriebId: betrieb.id, OR: [{ bezeichnung: enthaelt }, { artikelNr: enthaelt }] },
       take: 10,
     }),

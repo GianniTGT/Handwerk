@@ -52,6 +52,7 @@ model Betrieb {
   zahlungen   Zahlung[]
   belege      Beleg[]
   nummernkreise Nummernkreis[]
+  mailvorlagen MailVorlage[]
   gutschriften Gutschrift[]
   projekte    Projekt[]
   zeiten      Zeiteintrag[]
@@ -68,6 +69,8 @@ model Mitarbeiter {
   email        String? @unique // e nevojshme vetëm për llogaritë me login
   passwortHash String  @default("")
   stundensatz  Float   @default(0) // CHF/h për zeitërfassung → faturim
+  aktiv        Boolean @default(true) // false = nuk mund të hyjë më (historia mbetet)
+  rechte       String  @default("") // lista e zonave me presje; bosh = standard sipas rolles
   zeiten       Zeiteintrag[]
   rapporte     Rapport[]
   sitzungen    Sitzung[]
@@ -475,6 +478,18 @@ model Nummernkreis {
   naechste    Int     @default(1)
   startNummer Int     @default(1) // fillimi pas rifillimit vjetor
   jahr        Int     @default(0) // viti i numrit të fundit të dhënë
+
+  @@unique([betriebId, typ])
+}
+
+// Shabllone email-i për dokumentet (Offerte, Rechnung, 3 shkallët e Mahnung)
+model MailVorlage {
+  id        String  @id @default(cuid())
+  betriebId String
+  betrieb   Betrieb @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  typ       String  // OFFERTE | RECHNUNG | MAHNUNG1 | MAHNUNG2 | MAHNUNG3
+  betreff   String
+  text      String
 
   @@unique([betriebId, typ])
 }

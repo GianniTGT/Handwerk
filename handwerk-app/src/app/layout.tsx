@@ -4,6 +4,7 @@ import { leseSitzung } from "@/lib/auth";
 import { logout, wechselBetrieb } from "@/lib/actions";
 import Sidebar, { MobileNav } from "@/components/Sidebar";
 import { TIFF } from "@/lib/tiff";
+import { wirksameRechte } from "@/lib/rechte";
 import PwaSetup from "@/components/PwaSetup";
 import "./globals.css";
 
@@ -58,7 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </>
             )}
           </div>
-          {sitzung && <MobileNav />}
+          {sitzung && <MobileNav erlaubt={wirksameRechte(sitzung.mitarbeiter)} />}
         </header>
 
         {sitzung ? (
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               betriebe={sitzung.betriebe.map((b) => ({ id: b.id, name: b.name }))}
               aktivId={sitzung.aktiverBetrieb.id}
               wechseln={wechselBetrieb}
+              erlaubt={wirksameRechte(sitzung.mitarbeiter)}
               support={{ email: TIFF.supportEmail, telefon: TIFF.supportTelefon }}
             />
             <main className="w-full max-w-6xl px-4 py-6 md:px-8">{children}</main>

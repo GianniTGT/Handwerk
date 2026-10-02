@@ -1,3 +1,4 @@
+import { darf } from "@/lib/rechte";
 import { db } from "@/lib/db";
 import { leseSitzung } from "@/lib/auth";
 
@@ -11,6 +12,7 @@ export async function GET(
 ) {
   const sitzung = await leseSitzung();
   if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
+  if (!darf(sitzung.mitarbeiter, "EINKAUF")) return new Response("Keine Berechtigung", { status: 403 });
 
   const { id } = await params;
   const beleg = await db.beleg.findFirst({

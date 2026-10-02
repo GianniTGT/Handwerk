@@ -16,7 +16,10 @@ export function middleware(req: NextRequest) {
   if (!req.cookies.get("sitzung")) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
-  return NextResponse.next();
+  // Rruga e kërkesës për kontrollin e të drejtave (faqe + server actions)
+  const headers = new Headers(req.headers);
+  headers.set("x-pathname", pathname);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

@@ -1,9 +1,13 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
+import { darf } from "@/lib/rechte";
 import { sitzungErforderlich } from "@/lib/auth";
 import { updateBetrieb } from "@/lib/actions";
 import { saveStundensaetze } from "@/lib/actions-projekte";
 import { db } from "@/lib/db";
+import { saveMailvorlagen } from "@/lib/actions-mail";
+import { MAIL_TYPEN, PLATZHALTER, ladeVorlagen } from "@/lib/mailvorlagen";
 import { saveNummernkreise } from "@/lib/actions-nummern";
 import { holeKreis } from "@/lib/nummern";
 import { NR_STANDARD, formatNr, type NrTyp } from "@/lib/nrtext";
@@ -13,6 +17,7 @@ const fehlerTexte: Record<string, string> = {
   "logo-format": "Nur PNG oder JPEG als Logo.",
   nummernformat: "Nummernformat ungültig — es muss {NR} enthalten und darf nur Buchstaben, Ziffern und - _ . / # enthalten.",
   recht: "Keine Berechtigung für diese Einstellung.",
+  "mail-zu-lang": "Betreff oder Text einer Mailvorlage ist zu lang.",
 };
 
 export default async function EinstellungenPage({
@@ -20,9 +25,10 @@ export default async function EinstellungenPage({
 }: {
   searchParams: Promise<{ gespeichert?: string; fehler?: string }>;
 }) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const sp = await searchParams;
   const kreise = await Promise.all((Object.keys(NR_STANDARD) as NrTyp[]).map((t) => holeKreis(betrieb.id, t)));
+  const mailVorlagen = await ladeVorlagen(betrieb.id);
   const team = await db.mitarbeiter.findMany({ where: { betriebId: betrieb.id }, orderBy: { name: "asc" } });
 
   const feld = "rounded border border-line p-2 text-sm";
@@ -34,6 +40,11 @@ export default async function EinstellungenPage({
         Firmendaten, Logo und Farben — erscheinen auf Offerten und Rechnungen.
       </p>
 
+      {darf(mitarbeiter, "BENUTZER") && (
+        <Link href="/einstellungen/benutzer" className="mt-3 inline-block rounded border border-forest px-3 py-1.5 text-sm font-medium text-forest hover:bg-surface2">
+          👥 Benutzer &amp; Rechte verwalten
+        </Link>
+      )}
       {sp.gespeichert && (
         <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>
       )}
@@ -181,6 +192,31 @@ export default async function EinstellungenPage({
         </div>
         <button className="mt-3 rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
           Nummernkreise speichern
+        </button>
+      </form>
+
+      <form action={saveMailvorlagen} className="mt-6 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Mailvorlagen</h2>
+        <p className="mt-1 text-xs text-muted">
+          Vorlagen für den E-Mail-Versand von Offerten, Rechnungen und Mahnungen. Platzhalter:{" "}
+          {PLATZHALTER.map((p) => (
+            <code key={p} className="mr-1">{p}</code>
+          ))}
+          Beide Felder leeren = Standardtext.
+        </p>
+        <div className="mt-3 grid gap-2">
+          {MAIL_TYPEN.map(({ typ, label }) => (
+            <details key={typ} className="rounded border border-line">
+              <summary className="cursor-pointer select-none p-2 text-sm font-medium hover:bg-surface2">{label}</summary>
+              <div className="grid gap-2 border-t border-line p-2">
+                <input name={`betreff_${typ}`} defaultValue={mailVorlagen[typ].betreff} placeholder="Betreff" className={feld} />
+                <textarea name={`text_${typ}`} rows={7} defaultValue={mailVorlagen[typ].text} className={feld} />
+              </div>
+            </details>
+          ))}
+        </div>
+        <button className="mt-3 rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
+          Mailvorlagen speichern
         </button>
       </form>
 

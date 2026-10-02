@@ -6,6 +6,7 @@ import { sitzungErforderlich } from "@/lib/auth";
 import { sendeRechnungEmail, setRechnungStatus } from "@/lib/actions";
 import { faelligDatum, istUeberfaellig, tageUeberfaellig } from "@/lib/faellig";
 import Link from "next/link";
+import { fuelle, ladeVorlagen } from "@/lib/mailvorlagen";
 import { createGutschrift } from "@/lib/actions-verkauf";
 import { MAHNSTUFEN, offenerBetrag } from "@/lib/mahnwesen";
 import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
@@ -30,6 +31,15 @@ export default async function RechnungenPage({
     where: { betriebId: betrieb.id },
     include: { auftrag: { include: { kunde: true } }, gutschriften: true },
     orderBy: { nummer: "desc" },
+  });
+  const vorlagen = await ladeVorlagen(betrieb.id);
+  const rechnungWerte = (r: (typeof alle)[number]) => ({
+    KUNDE: r.auftrag.kunde.name,
+    NUMMER: rechnungNr(r),
+    TITEL: r.auftrag.titel,
+    BETRAG: chf(offenerBetrag(r)),
+    FAELLIG: faelligDatum(r, betrieb.zahlungsfristTage).toLocaleDateString("de-CH"),
+    FIRMA: betrieb.name,
   });
   const mitFrist = alle.map((r) => {
     const faellig = faelligDatum(r, betrieb.zahlungsfristTage);
@@ -144,8 +154,8 @@ export default async function RechnungenPage({
                 hiddenName="rechnungId"
                 hiddenValue={r.id}
                 an={r.auftrag.kunde.email}
-                betreff={`Rechnung ${rechnungNr(r)} — ${betrieb.name}`}
-                text={`Guten Tag ${r.auftrag.kunde.name}\n\nIm Anhang finden Sie unsere Rechnung ${rechnungNr(r)}. Die QR-Rechnung für die Zahlung befindet sich auf der letzten Seite.\n\nVielen Dank für Ihren Auftrag.\n\nFreundliche Grüsse\n${betrieb.name}`}
+                betreff={fuelle(vorlagen.RECHNUNG.betreff, rechnungWerte(r))}
+                text={fuelle(vorlagen.RECHNUNG.text, rechnungWerte(r))}
               />
             </div>
           </li>

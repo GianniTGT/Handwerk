@@ -1,3 +1,4 @@
+import { darf } from "@/lib/rechte";
 import { leseSitzung } from "@/lib/auth";
 import { bestellungPdf } from "@/lib/pdf-bestellung";
 
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   const sitzung = await leseSitzung();
   if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
+  if (!darf(sitzung.mitarbeiter, "EINKAUF")) return new Response("Keine Berechtigung", { status: 403 });
 
   const { id } = await params;
   const pdf = await bestellungPdf(id, sitzung.aktiverBetrieb.id);

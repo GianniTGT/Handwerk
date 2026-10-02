@@ -9,7 +9,11 @@ import { sitzungErforderlich } from "./auth";
 import { sendeDokument } from "./email";
 import { vergibNummer } from "./nummern";
 import { mahnungPdf } from "./pdf-mahnung";
-import { MAHNSTUFEN, naechsteMahnstufe, offenerBetrag } from "./mahnwesen";
+import { naechsteMahnstufe, offenerBetrag } from "./mahnwesen";
+import { ladeVorlagen, fuelle } from "./mailvorlagen";
+import { rechnungNr } from "./nrtext";
+import { faelligDatum } from "./faellig";
+import { chf } from "./format";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,13 +32,29 @@ async function mahneEine(
   const pdf = await mahnungPdf(rechnungId, betrieb.id);
   if (!pdf) return "fehler";
   if (!EMAIL_RE.test(pdf.empfaengerEmail)) return "ohne-email";
-  const titel = MAHNSTUFEN[stufe];
+  const [rechnung, vorlagen, betriebVoll] = await Promise.all([
+    db.rechnung.findUniqueOrThrow({
+      where: { id: rechnungId },
+      include: { auftrag: { include: { kunde: true } }, gutschriften: true },
+    }),
+    ladeVorlagen(betrieb.id),
+    db.betrieb.findUniqueOrThrow({ where: { id: betrieb.id } }),
+  ]);
+  const vorlage = vorlagen[`MAHNUNG${stufe}` as "MAHNUNG1" | "MAHNUNG2" | "MAHNUNG3"];
+  const werte = {
+    KUNDE: rechnung.auftrag.kunde.name,
+    NUMMER: rechnungNr(rechnung),
+    TITEL: rechnung.auftrag.titel,
+    BETRAG: chf(offenerBetrag(rechnung)),
+    FAELLIG: faelligDatum(rechnung, betriebVoll.zahlungsfristTage).toLocaleDateString("de-CH"),
+    FIRMA: betrieb.name,
+  };
   const r = await sendeDokument({
     an: pdf.empfaengerEmail,
     antwortAn: betrieb.email,
     absenderName: betrieb.name,
-    betreff: `${titel} — ${pdf.dateiname.replace(/\.pdf$/, "")}`,
-    text: `Guten Tag\n\nIm Anhang finden Sie unsere ${titel}. Die QR-Rechnung zur Zahlung befindet sich auf der letzten Seite.\n\nFreundliche Grüsse\n${betrieb.name}`,
+    betreff: fuelle(vorlage.betreff, werte),
+    text: fuelle(vorlage.text, werte),
     anhang: { dateiname: pdf.dateiname, buffer: pdf.buffer },
   });
   return r.ok ? "gesendet" : "fehler";

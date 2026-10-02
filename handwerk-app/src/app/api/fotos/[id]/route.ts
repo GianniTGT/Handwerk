@@ -1,3 +1,4 @@
+import { darf } from "@/lib/rechte";
 import { db } from "@/lib/db";
 import { leseSitzung } from "@/lib/auth";
 
@@ -12,6 +13,7 @@ export async function GET(
 ) {
   const sitzung = await leseSitzung();
   if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
+  if (!darf(sitzung.mitarbeiter, "AUFTRAEGE")) return new Response("Keine Berechtigung", { status: 403 });
 
   const { id } = await params;
   const foto = await db.rapportFoto.findFirst({

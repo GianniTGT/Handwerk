@@ -24,7 +24,7 @@ export async function login(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const passwort = String(formData.get("passwort") ?? "");
   const mitarbeiter = await db.mitarbeiter.findUnique({ where: { email } });
-  if (!mitarbeiter || !(await pruefePasswort(passwort, mitarbeiter.passwortHash))) {
+  if (!mitarbeiter || !mitarbeiter.aktiv || !(await pruefePasswort(passwort, mitarbeiter.passwortHash))) {
     redirect("/login?fehler=1");
   }
   await erstelleSitzung(mitarbeiter.id);
@@ -810,7 +810,7 @@ const MWST_STANDARD = 8.1;
 
 // Schlussrechnung: të gjitha pozicionet e rapporteve minus Teilrechnung-et (Akonto) e dhëna më parë
 export async function createRechnung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
 
@@ -846,7 +846,7 @@ export async function createRechnung(formData: FormData) {
 
 // Teilrechnung / Akonto: shumë fikse ose % e vlerës së Auftrag-ut (oferta, ndryshe rapportet)
 export async function createTeilrechnung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
 

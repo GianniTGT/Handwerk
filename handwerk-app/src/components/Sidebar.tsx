@@ -2,6 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { bereichFuerPfad, type Bereich } from "@/lib/rechte";
+
+// Mban vetëm lidhjet për zonat e lejuara (zonat pa mbrojtje, p.sh. Dashboard, janë gjithmonë të lejuara)
+const filtro = (lista: Eintrag[], erlaubt: Bereich[]) =>
+  lista.filter((e) => {
+    const b = bereichFuerPfad(e.href);
+    return !b || erlaubt.includes(b);
+  });
 
 type Eintrag = { href: string; label: string; icon: string };
 
@@ -51,13 +59,19 @@ export default function Sidebar({
   aktivId,
   wechseln,
   support,
+  erlaubt,
 }: {
   betriebe: BetriebInfo[];
   aktivId: string;
   wechseln: (formData: FormData) => void | Promise<void>;
   support: { email: string; telefon: string };
+  erlaubt: Bereich[];
 }) {
   const pfad = usePathname();
+  const hauptF = filtro(haupt, erlaubt);
+  const verkaufF = filtro(verkauf, erlaubt);
+  const weitereF = filtro(weitere, erlaubt);
+  const mehrF = filtro(mehr, erlaubt);
   const istAktiv = (href: string) => (href === "/" ? pfad === "/" : pfad.startsWith(href));
 
   return (
@@ -85,23 +99,27 @@ export default function Sidebar({
             <div className="mt-1 text-sm font-semibold">{betriebe[0]?.name}</div>
           )}
         </div>
-        {haupt.map((e) => (
+        {hauptF.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
-        <div className="mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">
-          Verkauf
-        </div>
-        {verkauf.map((e) => (
+        {verkaufF.length > 0 && (
+          <div className="mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Verkauf
+          </div>
+        )}
+        {verkaufF.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
         <div className="my-2 border-t border-line" />
-        {weitere.map((e) => (
+        {weitereF.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
-        <div className="mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">
-          Mehr
-        </div>
-        {mehr.map((e) => (
+        {mehrF.length > 0 && (
+          <div className="mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Mehr
+          </div>
+        )}
+        {mehrF.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
         <div className="mt-4 rounded border border-line bg-paper p-2 text-xs">
@@ -121,9 +139,9 @@ export default function Sidebar({
 }
 
 // Navigim kompakt për mobile (sidebar-i fshihet nën md)
-export function MobileNav() {
+export function MobileNav({ erlaubt }: { erlaubt: Bereich[] }) {
   const pfad = usePathname();
-  const alles = [...haupt, ...verkauf, ...weitere, ...mehr];
+  const alles = filtro([...haupt, ...verkauf, ...weitere, ...mehr], erlaubt);
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-line bg-white px-2 py-1.5 md:hidden">
       {alles.map((e) => (

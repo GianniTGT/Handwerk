@@ -1,8 +1,9 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
+import { bereichFuerPfad, darf, type Bereich } from "./rechte";
 
 const COOKIE_NAME = "sitzung";
 const SITZUNG_TAGE = 30;
@@ -41,7 +42,7 @@ export async function leseSitzung() {
       mitarbeiter: { include: { betrieb: true, zugaenge: { include: { betrieb: true } } } },
     },
   });
-  if (!sitzung || sitzung.gueltigBis < new Date()) return null;
+  if (!sitzung || sitzung.gueltigBis < new Date() || !sitzung.mitarbeiter.aktiv) return null;
 
   // Firma aktive: Betrieb-i vetë ose një nga qasjet shtesë (dropdown si te bexio)
   const eigener = sitzung.mitarbeiter.betrieb;
@@ -51,10 +52,17 @@ export async function leseSitzung() {
 }
 
 // Përdoret në çdo faqe/action të mbrojtur: kthen mitarbeiter + betrieb ose ridrejton në /login
-export async function sitzungErforderlich() {
+// Përdoret në çdo faqe/action të mbrojtur: kthen mitarbeiter + betrieb ose ridrejton.
+// Kontrollon të drejtat: sipas rrugës aktuale (x-pathname nga middleware, vlen edhe për
+// server actions) dhe, opsionalisht, sipas një zone të kërkuar shprehimisht.
+export async function sitzungErforderlich(bereich?: Bereich) {
   const sitzung = await leseSitzung();
   if (!sitzung) redirect("/login");
-  return { mitarbeiter: sitzung.mitarbeiter, betrieb: sitzung.aktiverBetrieb };
+  const m = sitzung.mitarbeiter;
+  const pfadBereich = bereichFuerPfad((await headers()).get("x-pathname") ?? "");
+  if (pfadBereich && !darf(m, pfadBereich)) redirect("/kein-zugriff");
+  if (bereich && !darf(m, bereich)) redirect("/kein-zugriff");
+  return { mitarbeiter: m, betrieb: sitzung.aktiverBetrieb };
 }
 
 export async function beendeSitzung() {

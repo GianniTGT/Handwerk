@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { verkaufsPreis } from "@/lib/preise";
 import { chf, offerteNummer, runde5Rappen } from "@/lib/format";
+import { fuelle, ladeVorlagen } from "@/lib/mailvorlagen";
 import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
 import {
   addOfferteGruppe,
@@ -45,6 +46,13 @@ export default async function OfferteDetail({
     db.kondition.findMany({ where: { betriebId: betrieb.id } }),
   ]);
 
+  const vorlagen = await ladeVorlagen(betrieb.id);
+  const offerteWerte = {
+    KUNDE: offerte.kunde.name,
+    NUMMER: offerteNummer(offerte),
+    TITEL: offerte.titel,
+    FIRMA: betrieb.name,
+  };
   const totalNetto = offerte.gruppen
     .flatMap((g) => g.positionen)
     .reduce((s, p) => s + p.menge * p.ansatz, 0);
@@ -220,8 +228,8 @@ export default async function OfferteDetail({
           hiddenName="offerteId"
           hiddenValue={offerte.id}
           an={offerte.kunde.email}
-          betreff={`Angebot ${offerteNummer(offerte)} — ${betrieb.name}`}
-          text={`Guten Tag ${offerte.kunde.name}\n\nVielen Dank für Ihr Interesse. Im Anhang finden Sie unser Angebot ${offerteNummer(offerte)} «${offerte.titel}».\n\nBei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nFreundliche Grüsse\n${betrieb.name}`}
+          betreff={fuelle(vorlagen.OFFERTE.betreff, offerteWerte)}
+          text={fuelle(vorlagen.OFFERTE.text, offerteWerte)}
         />
 
         <div className="ml-auto w-72 rounded-tiff border border-line bg-white p-4 text-sm">

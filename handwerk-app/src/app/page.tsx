@@ -4,12 +4,14 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { TIFF } from "@/lib/tiff";
+import { darf, type Bereich } from "@/lib/rechte";
 import { chf } from "@/lib/format";
 import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 
 export default async function Dashboard() {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const sieht = (b: Bereich) => darf(mitarbeiter, b);
   const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const [kunden, offerten, offene, erledigte, rechnungen, wartungen] = await Promise.all([
     db.kunde.count({ where: { betriebId: betrieb.id } }),
@@ -61,14 +63,16 @@ export default async function Dashboard() {
   );
   const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
-  const karten = [
-    { label: "Kontakte", wert: kunden, href: "/kunden" },
-    { label: "Offene Offerten", wert: offerten, href: "/offerten" },
-    { label: "Offene Aufträge", wert: offene, href: "/auftraege" },
-    { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege" },
-    { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen" },
-    { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung" },
+  const alleKarten: { label: string; wert: number; href: string; bereich: Bereich }[] = [
+    { label: "Kontakte", wert: kunden, href: "/kunden", bereich: "KONTAKTE" },
+    { label: "Offene Offerten", wert: offerten, href: "/offerten", bereich: "VERKAUF" },
+    { label: "Offene Aufträge", wert: offene, href: "/auftraege", bereich: "AUFTRAEGE" },
+    { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege", bereich: "AUFTRAEGE" },
+    { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen", bereich: "VERKAUF" },
+    { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung", bereich: "AUFTRAEGE" },
   ];
+  const karten = alleKarten.filter((k) => sieht(k.bereich));
+
 
   return (
     <div>
@@ -98,6 +102,7 @@ export default async function Dashboard() {
         ))}
       </div>
 
+      {sieht("FINANZEN") && (
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <section className="rounded-tiff border border-line bg-white p-4 shadow-sm lg:col-span-2">
           <h2 className="font-semibold">Flüssige Mittel — Eingänge und Ausgänge {jahr}</h2>
@@ -154,6 +159,7 @@ export default async function Dashboard() {
           })}
         </div>
       </div>
+      )}
 
       {/* «Erste Schritte» — struktura e njohur nga bexio */}
       <section className="mt-8 rounded-tiff border border-line bg-white p-5 shadow-sm">
