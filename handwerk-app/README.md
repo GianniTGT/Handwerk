@@ -67,7 +67,7 @@ firmat pilote të punojnë me të dhëna reale nga jashtë — jo për zhvillim 
 
 ## Stack
 
-Next.js (App Router, TypeScript, Tailwind) · Prisma + SQLite (dev) · pdfkit + swissqrbill
+Next.js (App Router, TypeScript, Tailwind) · Prisma + PostgreSQL · bcryptjs · pdfkit + swissqrbill
 
 ## Hapat e ardhshëm (sipas PLANI-I-NISJES.md)
 
@@ -76,7 +76,7 @@ Next.js (App Router, TypeScript, Tailwind) · Prisma + SQLite (dev) · pdfkit + 
 3. Wartungsverträge me rikujtesa automatike
 4. Import artikujsh CSV → më vonë IGH/DataSelect
 5. PWA offline-first për montatorët në teren
-6. PostgreSQL në prodhim + hosting CH (Infomaniak/Exoscale)
+6. Deploy në hosting CH (Infomaniak/Exoscale) sipas docs/cloud-strategjia.md
 
 ## Shënime
 
