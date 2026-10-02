@@ -1,0 +1,131 @@
+// Modeli i të dhënave — Handwerk (Sanitär/Heizung)
+// Multi-tenant që nga dita 1: çdo tabelë operative lidhet me një Betrieb.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Firma që përdor softuerin (tenant-i), p.sh. Aino Haustechnik GmbH
+model Betrieb {
+  id        String   @id @default(cuid())
+  name      String
+  strasse   String   @default("")
+  plz       String   @default("")
+  ort       String   @default("")
+  iban      String   @default("") // IBAN/QR-IBAN për QR-Rechnung
+  mwstNr    String   @default("")
+  erstellt  DateTime @default(now())
+
+  mitarbeiter Mitarbeiter[]
+  kunden      Kunde[]
+  auftraege   Auftrag[]
+  artikel     Artikel[]
+  rechnungen  Rechnung[]
+}
+
+model Mitarbeiter {
+  id        String  @id @default(cuid())
+  betriebId String
+  betrieb   Betrieb @relation(fields: [betriebId], references: [id])
+  name      String
+  rolle     String  @default("MONTEUR") // MONTEUR | BUERO | CHEF
+  rapporte  Rapport[]
+}
+
+model Kunde {
+  id        String  @id @default(cuid())
+  betriebId String
+  betrieb   Betrieb @relation(fields: [betriebId], references: [id])
+  name      String
+  strasse   String  @default("")
+  plz       String  @default("")
+  ort       String  @default("")
+  telefon   String  @default("")
+  email     String  @default("")
+  objekte   Objekt[]
+  auftraege Auftrag[]
+}
+
+// Objekti/pajisja te klienti (kaldaja, bojleri, banjoja...) — njësia qendrore në SHK
+model Objekt {
+  id          String  @id @default(cuid())
+  kundeId     String
+  kunde       Kunde   @relation(fields: [kundeId], references: [id])
+  bezeichnung String  // p.sh. "Heizung Keller — Viessmann Vitodens 200"
+  strasse     String  @default("")
+  plz         String  @default("")
+  ort         String  @default("")
+  bemerkung   String  @default("")
+  auftraege   Auftrag[]
+}
+
+model Auftrag {
+  id           String   @id @default(cuid())
+  betriebId    String
+  betrieb      Betrieb  @relation(fields: [betriebId], references: [id])
+  kundeId      String
+  kunde        Kunde    @relation(fields: [kundeId], references: [id])
+  objektId     String?
+  objekt       Objekt?  @relation(fields: [objektId], references: [id])
+  nummer       Int
+  titel        String
+  beschreibung String   @default("")
+  status       String   @default("OFFEN") // OFFEN | IN_ARBEIT | ERLEDIGT | VERRECHNET
+  datum        DateTime @default(now())
+  rapporte     Rapport[]
+  rechnung     Rechnung?
+}
+
+// Regierapport / Serviceauftrag-dokumentimi nga tereni
+model Rapport {
+  id            String   @id @default(cuid())
+  auftragId     String
+  auftrag       Auftrag  @relation(fields: [auftragId], references: [id])
+  mitarbeiterId String?
+  mitarbeiter   Mitarbeiter? @relation(fields: [mitarbeiterId], references: [id])
+  datum         DateTime @default(now())
+  bemerkung     String   @default("")
+  unterschrift  String   @default("") // nënshkrimi i klientit si data-URL (PNG)
+  positionen    RapportPosition[]
+}
+
+model RapportPosition {
+  id          String  @id @default(cuid())
+  rapportId   String
+  rapport     Rapport @relation(fields: [rapportId], references: [id], onDelete: Cascade)
+  typ         String  // ARBEIT | MATERIAL
+  bezeichnung String
+  menge       Float   @default(1)
+  einheit     String  @default("Std.") // Std. | Stk. | m | pauschal
+  ansatz      Float   @default(0) // çmimi për njësi në CHF
+}
+
+// Katalogu i artikujve (më vonë: import IGH/CSV nga Debrunner, Meier Tobler…)
+model Artikel {
+  id          String  @id @default(cuid())
+  betriebId   String
+  betrieb     Betrieb @relation(fields: [betriebId], references: [id])
+  artikelNr   String  @default("")
+  bezeichnung String
+  einheit     String  @default("Stk.")
+  preis       Float   @default(0)
+}
+
+model Rechnung {
+  id         String   @id @default(cuid())
+  betriebId  String
+  betrieb    Betrieb  @relation(fields: [betriebId], references: [id])
+  auftragId  String   @unique
+  auftrag    Auftrag  @relation(fields: [auftragId], references: [id])
+  nummer     Int
+  datum      DateTime @default(now())
+  status     String   @default("ENTWURF") // ENTWURF | VERSENDET | BEZAHLT
+  totalNetto Float    @default(0)
+  mwstSatz   Float    @default(8.1) // norma standarde CH 2026
+  totalBrutto Float   @default(0)
+}
