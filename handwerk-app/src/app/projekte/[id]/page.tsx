@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
 import { SUBSTATUS, stunden } from "@/lib/projekte";
+import { projektNr, rechnungNr } from "@/lib/nrtext";
 import { auftragVonProjekt, auftragZuProjekt, deleteProjekt, updateProjekt } from "@/lib/actions-projekte";
 
 const isoTag = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
@@ -24,7 +25,7 @@ export default async function ProjektDetail({
     where: { id, betriebId: betrieb.id },
     include: {
       kunde: true,
-      auftraege: { include: { rechnung: true }, orderBy: { nummer: "desc" } },
+      auftraege: { include: { rechnungen: true }, orderBy: { nummer: "desc" } },
       zeiten: { include: { mitarbeiter: true }, orderBy: { datum: "desc" } },
     },
   });
@@ -41,7 +42,7 @@ export default async function ProjektDetail({
   ]);
 
   // Nachkalkulation: ertrag nga faturat e Auftrag-eve − material (neto)
-  const erloes = projekt.auftraege.reduce((s, a) => s + (a.rechnung?.totalNetto ?? 0), 0);
+  const erloes = projekt.auftraege.reduce((s, a) => s + a.rechnungen.reduce((t, r) => t + r.totalNetto, 0), 0);
   const materialNetto = material.reduce((s, a) => s + a.betragBrutto / (1 + a.mwstSatz / 100), 0);
   const minutenGesamt = projekt.zeiten.reduce((s, z) => s + z.minuten, 0);
   const zeitWert = projekt.zeiten.filter((z) => z.abrechenbar).reduce((s, z) => s + (z.minuten / 60) * z.stundensatz, 0);
@@ -50,7 +51,7 @@ export default async function ProjektDetail({
   return (
     <div>
       <Link href="/projekte" className="text-sm text-forest underline">← Projekte</Link>
-      <h1 className="mt-1 text-xl font-bold">P-{projekt.nummer} — {projekt.name}</h1>
+      <h1 className="mt-1 text-xl font-bold">{projektNr(projekt)} — {projekt.name}</h1>
       <p className="text-sm text-muted">{projekt.kunde ? projekt.kunde.name : "Internes Projekt"}</p>
       {sp.gespeichert && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       {sp.fehler && <p className="mt-3 rounded bg-amber-100 p-2 text-sm text-amber-800">Projekt hat Aufträge/Zeiten und wurde archiviert statt gelöscht.</p>}
@@ -102,7 +103,7 @@ export default async function ProjektDetail({
           <li key={a.id} className="flex items-center justify-between gap-2 p-3 text-sm">
             <Link href={`/auftraege/${a.id}`} className="font-medium text-forest underline">#{a.nummer} — {a.titel}</Link>
             <span className="flex items-center gap-2 text-muted">
-              {a.status}{a.rechnung && ` · RE-${a.rechnung.nummer} CHF ${chf(a.rechnung.totalNetto)}`}
+              {a.status}{a.rechnungen.length > 0 && ` · ${a.rechnungen.map((r) => rechnungNr(r)).join(", ")} CHF ${chf(a.rechnungen.reduce((t, r) => t + r.totalNetto, 0))}`}
               <form action={auftragVonProjekt}>
                 <input type="hidden" name="projektId" value={projekt.id} />
                 <input type="hidden" name="auftragId" value={a.id} />

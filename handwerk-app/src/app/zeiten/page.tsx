@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { projektNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -94,7 +95,7 @@ export default async function ZeitenPage({
         <select name="projektId" className={feld}>
           <option value="">Projekt (optional)</option>
           {projekte.map((p) => (
-            <option key={p.id} value={p.id}>P-{p.nummer} {p.name}</option>
+            <option key={p.id} value={p.id}>{projektNr(p)} {p.name}</option>
           ))}
         </select>
         <select name="auftragId" className={feld}>
@@ -134,7 +135,7 @@ export default async function ZeitenPage({
               </div>
               <div className="text-sm text-muted">
                 {z.datum.toLocaleDateString("de-CH")}
-                {z.projekt && ` · P-${z.projekt.nummer} ${z.projekt.name}`}
+                {z.projekt && ` · ${projektNr(z.projekt)} ${z.projekt.name}`}
                 {z.auftrag && ` · Auftrag #${z.auftrag.nummer}`}
                 {z.kunde && ` · ${z.kunde.name}`}
                 {z.bemerkung && ` · ${z.bemerkung}`}

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { sitzungErforderlich } from "./auth";
+import { vergibNummer } from "./nummern";
 
 const emptyToNull = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").trim();
@@ -39,12 +40,12 @@ export async function createProjekt(formData: FormData) {
   if (kundeId && !(await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } }))) {
     redirect("/projekte?fehler=kunde");
   }
-  const letzte = await db.projekt.findFirst({ where: { betriebId: betrieb.id }, orderBy: { nummer: "desc" } });
+  const nr = await vergibNummer(betrieb.id, "PROJEKT");
   const p = await db.projekt.create({
     data: {
       betriebId: betrieb.id,
       kundeId,
-      nummer: (letzte?.nummer ?? 0) + 1,
+      ...nr,
       name,
       typ: kundeId ? "KUNDE" : "INTERN",
       status: "OFFEN",

@@ -4,10 +4,15 @@ import { sitzungErforderlich } from "@/lib/auth";
 import { updateBetrieb } from "@/lib/actions";
 import { saveStundensaetze } from "@/lib/actions-projekte";
 import { db } from "@/lib/db";
+import { saveNummernkreise } from "@/lib/actions-nummern";
+import { holeKreis } from "@/lib/nummern";
+import { NR_STANDARD, formatNr, type NrTyp } from "@/lib/nrtext";
 
 const fehlerTexte: Record<string, string> = {
   "logo-gross": "Logo zu gross — max. 500 KB.",
   "logo-format": "Nur PNG oder JPEG als Logo.",
+  nummernformat: "Nummernformat ungültig — es muss {NR} enthalten und darf nur Buchstaben, Ziffern und - _ . / # enthalten.",
+  recht: "Keine Berechtigung für diese Einstellung.",
 };
 
 export default async function EinstellungenPage({
@@ -17,6 +22,7 @@ export default async function EinstellungenPage({
 }) {
   const { betrieb } = await sitzungErforderlich();
   const sp = await searchParams;
+  const kreise = await Promise.all((Object.keys(NR_STANDARD) as NrTyp[]).map((t) => holeKreis(betrieb.id, t)));
   const team = await db.mitarbeiter.findMany({ where: { betriebId: betrieb.id }, orderBy: { name: "asc" } });
 
   const feld = "rounded border border-line p-2 text-sm";
@@ -139,6 +145,42 @@ export default async function EinstellungenPage({
 
         <button className="rounded bg-forest p-2.5 text-sm font-semibold text-white hover:bg-forest-lift">
           Speichern
+        </button>
+      </form>
+
+      <form action={saveNummernkreise} className="mt-6 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Nummernkreise</h2>
+        <p className="mt-1 text-xs text-muted">
+          Format mit Platzhaltern: <code>{"{NR}"}</code> Nummer, <code>{"{JJJJ}"}</code> Jahr (2026), <code>{"{JJ}"}</code> Jahr (26).
+          «Nächste Nummer» ändert nur künftige Dokumente. Bereits erstellte behalten ihre Nummer.
+        </p>
+        <div className="mt-3 grid gap-3">
+          {kreise.map((k) => (
+            <div key={k.typ} className="grid items-end gap-2 md:grid-cols-[110px_1.4fr_70px_100px_90px_auto]">
+              <div className="text-sm font-medium">{NR_STANDARD[k.typ as NrTyp].label}</div>
+              <label className="grid gap-0.5 text-xs text-muted">Format
+                <input name={`format_${k.typ}`} defaultValue={k.format} className={feld} />
+              </label>
+              <label className="grid gap-0.5 text-xs text-muted">Stellen
+                <input name={`laenge_${k.typ}`} type="number" min={1} max={10} defaultValue={k.laenge} className={feld} />
+              </label>
+              <label className="grid gap-0.5 text-xs text-muted">Nächste Nr.
+                <input name={`naechste_${k.typ}`} type="number" min={1} defaultValue={k.naechste} className={feld} />
+              </label>
+              <label className="grid gap-0.5 text-xs text-muted">Start/Jahr
+                <input name={`start_${k.typ}`} type="number" min={1} defaultValue={k.startNummer} className={feld} />
+              </label>
+              <label className="flex items-center gap-1 pb-2 text-xs">
+                <input type="checkbox" name={`jaehrlich_${k.typ}`} value="1" defaultChecked={k.jaehrlichNeu} /> jährlich neu
+              </label>
+              <div className="text-xs text-muted md:col-span-6">
+                Vorschau: <strong>{formatNr(k.format, k.naechste, k.laenge)}</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="mt-3 rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
+          Nummernkreise speichern
         </button>
       </form>
 

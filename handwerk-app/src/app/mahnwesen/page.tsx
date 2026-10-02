@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { rechnungNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -74,7 +75,7 @@ export default async function MahnwesenPage({
           <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
             <div>
               <div className="font-medium">
-                RE-{r.nummer} — {r.auftrag.kunde.name}
+                {rechnungNr(r)} — {r.auftrag.kunde.name}
               </div>
               <div className="text-sm text-muted">
                 offen CHF {chf(offenerBetrag(r))} · fällig {faellig.toLocaleDateString("de-CH")}

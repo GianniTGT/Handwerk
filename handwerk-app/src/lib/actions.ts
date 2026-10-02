@@ -8,6 +8,7 @@ import { verkaufsPreis } from "./preise";
 import { offertePdf, rechnungPdf } from "./pdf";
 import { sendeDokument } from "./email";
 import { offerteNummer } from "./format";
+import { vergibNummer } from "./nummern";
 import {
   beendeSitzung,
   erstelleSitzung,
@@ -384,16 +385,13 @@ export async function createOfferte(formData: FormData) {
     ? new Date(gueltigBisRoh)
     : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  const letzte = await db.offerte.findFirst({
-    where: { betriebId: betrieb.id },
-    orderBy: { nummer: "desc" },
-  });
+  const nr = await vergibNummer(betrieb.id, "OFFERTE");
   const offerte = await db.offerte.create({
     data: {
       betriebId: betrieb.id,
       kundeId,
       objektId: objektId || null,
-      nummer: (letzte?.nummer ?? 0) + 1,
+      ...nr,
       titel: String(formData.get("titel") ?? "").trim(),
       gueltigBis,
       gruppen: { create: [{ titel: "Leistungen", reihenfolge: 0 }] },
@@ -807,38 +805,95 @@ export async function wartungAuftragErstellen(formData: FormData) {
 
 // ---------- Rechnungen ----------
 
+const runde5 = (n: number) => Math.round(n * 20) / 20; // rrumbullakim 5 Rappen
+const MWST_STANDARD = 8.1;
+
+// Schlussrechnung: të gjitha pozicionet e rapporteve minus Teilrechnung-et (Akonto) e dhëna më parë
 export async function createRechnung(formData: FormData) {
   const { betrieb } = await sitzungErforderlich();
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
 
-  const vorhanden = await db.rechnung.findUnique({ where: { auftragId } });
+  const vorhanden = await db.rechnung.findFirst({ where: { auftragId, art: "SCHLUSS" } });
   if (vorhanden) redirect(`/rechnungen`);
 
-  const positionen = await db.rapportPosition.findMany({
-    where: { rapport: { auftragId } },
-  });
-  const totalNetto = positionen.reduce((sum, p) => sum + p.menge * p.ansatz, 0);
-  const mwstSatz = 8.1;
-  const totalBrutto = Math.round(totalNetto * (1 + mwstSatz / 100) * 20) / 20; // rrumbullakim 5 rappen
+  const [positionen, teile] = await Promise.all([
+    db.rapportPosition.findMany({ where: { rapport: { auftragId } } }),
+    db.rechnung.findMany({ where: { auftragId, art: "TEIL" } }),
+  ]);
+  const summePositionen = positionen.reduce((sum, p) => sum + p.menge * p.ansatz, 0);
+  const abzugNetto = teile.reduce((sum, t) => sum + t.totalNetto, 0);
+  const totalNetto = Math.round((summePositionen - abzugNetto) * 100) / 100;
+  if (totalNetto < 0) redirect(`/auftraege/${auftragId}?fehler=akonto-zu-hoch`);
 
-  const letzte = await db.rechnung.findFirst({
-    where: { betriebId: betrieb.id },
-    orderBy: { nummer: "desc" },
-  });
-
+  const nr = await vergibNummer(betrieb.id, "RECHNUNG");
   await db.rechnung.create({
     data: {
       betriebId: betrieb.id,
       auftragId,
-      nummer: (letzte?.nummer ?? 20260000) + 1,
+      ...nr,
+      art: "SCHLUSS",
+      abzugNetto,
       faelligAm: new Date(Date.now() + betrieb.zahlungsfristTage * 24 * 60 * 60 * 1000),
       totalNetto,
-      mwstSatz,
-      totalBrutto,
+      mwstSatz: MWST_STANDARD,
+      totalBrutto: runde5(totalNetto * (1 + MWST_STANDARD / 100)),
     },
   });
   await db.auftrag.update({ where: { id: auftragId }, data: { status: "VERRECHNET" } });
+  redirect(`/rechnungen`);
+}
+
+// Teilrechnung / Akonto: shumë fikse ose % e vlerës së Auftrag-ut (oferta, ndryshe rapportet)
+export async function createTeilrechnung(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const auftragId = String(formData.get("auftragId"));
+  await eigenerAuftrag(auftragId, betrieb.id);
+
+  const auftrag = await db.auftrag.findUniqueOrThrow({
+    where: { id: auftragId },
+    include: {
+      offerte: { include: { gruppen: { include: { positionen: true } } } },
+      rapporte: { include: { positionen: true } },
+    },
+  });
+  if (auftrag.status === "VERRECHNET") redirect(`/auftraege/${auftragId}?fehler=verrechnet`);
+
+  const offertenWert =
+    auftrag.offerte?.gruppen.flatMap((g) => g.positionen).reduce((sum, p) => sum + p.menge * p.ansatz, 0) ?? 0;
+  const rapportWert = auftrag.rapporte.flatMap((r) => r.positionen).reduce((sum, p) => sum + p.menge * p.ansatz, 0);
+  const auftragswert = offertenWert > 0 ? offertenWert : rapportWert;
+
+  const prozent = parseFloat(String(formData.get("prozent") ?? "").replace(",", "."));
+  const betragEingabe = parseFloat(String(formData.get("betragNetto") ?? "").replace(",", "."));
+  let netto = 0;
+  if (Number.isFinite(betragEingabe) && betragEingabe > 0) netto = betragEingabe;
+  else if (Number.isFinite(prozent) && prozent > 0 && auftragswert > 0) netto = (auftragswert * prozent) / 100;
+  netto = Math.round(netto * 100) / 100;
+  if (netto <= 0) redirect(`/auftraege/${auftragId}?fehler=akonto-betrag`);
+
+  const bisher = await db.rechnung.aggregate({ where: { auftragId, art: "TEIL" }, _sum: { totalNetto: true } });
+  if (auftragswert > 0 && netto + (bisher._sum.totalNetto ?? 0) > auftragswert + 0.005) {
+    redirect(`/auftraege/${auftragId}?fehler=akonto-zu-hoch`);
+  }
+
+  const nr = await vergibNummer(betrieb.id, "RECHNUNG");
+  await db.rechnung.create({
+    data: {
+      betriebId: betrieb.id,
+      auftragId,
+      ...nr,
+      art: "TEIL",
+      bezeichnung:
+        String(formData.get("bezeichnung") ?? "").trim() ||
+        (prozent > 0 && !(betragEingabe > 0) ? `Akonto ${prozent}%` : "Akonto"),
+      faelligAm: new Date(Date.now() + betrieb.zahlungsfristTage * 24 * 60 * 60 * 1000),
+      totalNetto: netto,
+      mwstSatz: MWST_STANDARD,
+      totalBrutto: runde5(netto * (1 + MWST_STANDARD / 100)),
+    },
+  });
+  revalidatePath(`/auftraege/${auftragId}`);
   redirect(`/rechnungen`);
 }
 

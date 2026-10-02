@@ -1,4 +1,5 @@
 // Gjeneratorët e PDF-ve — të përdorshëm nga API-routes DHE nga email-dërgimi.
+import { rechnungNr, dateiTeil } from "./nrtext";
 import PDFDocument from "pdfkit";
 import { SwissQRBill } from "swissqrbill/pdf";
 import { db } from "./db";
@@ -114,7 +115,11 @@ export async function rechnungPdf(
 
   const { betrieb, auftrag } = rechnung;
   const kunde = auftrag.kunde;
-  const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
+  // Teilrechnung = një rresht pauschal; Schlussrechnung = pozicionet e rapporteve (− Akonto)
+  const positionen =
+    rechnung.art === "TEIL"
+      ? [{ bezeichnung: rechnung.bezeichnung || "Akonto", menge: 1, einheit: "pauschal", ansatz: rechnung.totalNetto }]
+      : auftrag.rapporte.flatMap((r) => r.positionen);
   const { doc, fertig, fTitel, fLinie, fText } = dokumentStart(betrieb);
 
   // Empfänger djathtas
@@ -124,7 +129,7 @@ export async function rechnungPdf(
 
   // Titel + blloku informativ
   const zahlbarBis = faelligDatum(rechnung, betrieb.zahlungsfristTage);
-  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Rechnung RE-${rechnung.nummer}`, 50, 190);
+  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`${rechnung.art === "TEIL" ? "Teilrechnung" : "Rechnung"} ${rechnungNr(rechnung)}`, 50, 190);
   doc.fontSize(11).text(auftrag.titel, 50).moveDown(0.5);
   doc.fillColor(fText).fontSize(9);
   const info: [string, string][] = [
@@ -194,6 +199,10 @@ export async function rechnungPdf(
     doc.text(wert, xTotal, y, { width: 60, align: "right" });
     y += 13;
   };
+  if (rechnung.abzugNetto > 0) {
+    zeile("Total Leistungen", chf(rechnung.totalNetto + rechnung.abzugNetto));
+    zeile("Abzgl. Akonto-Rechnungen", `-${chf(rechnung.abzugNetto)}`);
+  }
   zeile("Total netto", chf(rechnung.totalNetto));
   zeile(`Zzgl. MwSt. ${rechnung.mwstSatz}%`, chf(mwstBetrag));
   if (Math.abs(rundung) >= 0.005) zeile("Rundungsdifferenz", chf(rundung));
@@ -210,7 +219,7 @@ export async function rechnungPdf(
     .fontSize(8)
     .text("Ihre QR-Rechnung befindet sich auf der nächsten Seite.");
 
-  const inhaltSeiten = footerAufSeiten(doc, betrieb, fText, `Rechnung RE-${rechnung.nummer}`);
+  const inhaltSeiten = footerAufSeiten(doc, betrieb, fText, `Rechnung ${rechnungNr(rechnung)}`);
 
   // QR-Rechnung në faqe të veçantë
   doc.switchToPage(inhaltSeiten - 1);
@@ -218,7 +227,7 @@ export async function rechnungPdf(
   const qrBill = new SwissQRBill({
     amount: rechnung.totalBrutto,
     currency: "CHF",
-    message: `Rechnung RE-${rechnung.nummer}, Auftrag ${auftrag.nummer}`,
+    message: `Rechnung ${rechnungNr(rechnung)}, Auftrag ${auftrag.nummer}`,
     creditor: {
       account: betrieb.iban.replace(/\s/g, ""),
       name: betrieb.name,
@@ -244,7 +253,7 @@ export async function rechnungPdf(
   doc.end();
   return {
     buffer: await fertig,
-    dateiname: `Rechnung-RE-${rechnung.nummer}.pdf`,
+    dateiname: `Rechnung-${dateiTeil(rechnungNr(rechnung))}.pdf`,
     empfaengerEmail: kunde.email,
   };
 }
@@ -394,7 +403,7 @@ export async function offertePdf(
   doc.end();
   return {
     buffer: await fertig,
-    dateiname: `Angebot-${nr}.pdf`,
+    dateiname: `Angebot-${dateiTeil(nr)}.pdf`,
     empfaengerEmail: kunde.email,
   };
 }

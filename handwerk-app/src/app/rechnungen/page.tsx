@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { rechnungNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { sendeRechnungEmail, setRechnungStatus } from "@/lib/actions";
@@ -75,7 +76,7 @@ export default async function RechnungenPage({
             <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="font-medium">
-                Rechnung #{r.nummer} — {r.auftrag.kunde.name}
+                {r.art === "TEIL" ? "Teilrechnung" : "Rechnung"} {rechnungNr(r)} — {r.auftrag.kunde.name}
               </div>
               <div className="text-sm text-muted">
                 Auftrag #{r.auftrag.nummer} · {r.datum.toLocaleDateString("de-CH")} · netto CHF{" "}
@@ -143,8 +144,8 @@ export default async function RechnungenPage({
                 hiddenName="rechnungId"
                 hiddenValue={r.id}
                 an={r.auftrag.kunde.email}
-                betreff={`Rechnung RE-${r.nummer} — ${betrieb.name}`}
-                text={`Guten Tag ${r.auftrag.kunde.name}\n\nIm Anhang finden Sie unsere Rechnung RE-${r.nummer}. Die QR-Rechnung für die Zahlung befindet sich auf der letzten Seite.\n\nVielen Dank für Ihren Auftrag.\n\nFreundliche Grüsse\n${betrieb.name}`}
+                betreff={`Rechnung ${rechnungNr(r)} — ${betrieb.name}`}
+                text={`Guten Tag ${r.auftrag.kunde.name}\n\nIm Anhang finden Sie unsere Rechnung ${rechnungNr(r)}. Die QR-Rechnung für die Zahlung befindet sich auf der letzten Seite.\n\nVielen Dank für Ihren Auftrag.\n\nFreundliche Grüsse\n${betrieb.name}`}
               />
             </div>
           </li>

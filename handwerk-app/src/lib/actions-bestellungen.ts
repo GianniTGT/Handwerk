@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { sitzungErforderlich } from "./auth";
 import { einkaufsPreis } from "./preise";
+import { vergibNummer } from "./nummern";
 
 async function eigeneBestellung(id: string, betriebId: string) {
   const b = await db.bestellung.findFirst({ where: { id, betriebId } });
@@ -19,12 +20,12 @@ export async function createBestellung(formData: FormData) {
   const lieferantId = String(formData.get("lieferantId") ?? "");
   const lieferant = await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } });
   if (!lieferant) redirect("/bestellungen?fehler=lieferant");
-  const letzte = await db.bestellung.findFirst({ where: { betriebId: betrieb.id }, orderBy: { nummer: "desc" } });
+  const nr = await vergibNummer(betrieb.id, "BESTELLUNG");
   const b = await db.bestellung.create({
     data: {
       betriebId: betrieb.id,
       lieferantId,
-      nummer: (letzte?.nummer ?? 0) + 1,
+      ...nr,
       bemerkung: String(formData.get("bemerkung") ?? "").trim(),
     },
   });

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { rechnungNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -102,7 +103,7 @@ export default async function SuchePage({
             {rechnungen.map((r) => (
               <li key={r.id}>
                 <Link href="/rechnungen" className="block px-3 py-2 text-sm hover:bg-surface2">
-                  RE-{r.nummer} — {r.auftrag.kunde.name}{" "}
+                  {rechnungNr(r)} — {r.auftrag.kunde.name}{" "}
                   <span className="text-muted">· CHF {chf(r.totalBrutto)} · {r.status}</span>
                 </Link>
               </li>

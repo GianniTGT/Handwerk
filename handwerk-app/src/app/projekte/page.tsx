@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { projektNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -77,7 +78,7 @@ export default async function ProjektePage({
           <li key={p.id}>
             <Link href={`/projekte/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 p-3 hover:bg-surface2">
               <div>
-                <div className="font-medium">P-{p.nummer} — {p.name}</div>
+                <div className="font-medium">{projektNr(p)} — {p.name}</div>
                 <div className="text-sm text-muted">
                   {p.kunde?.name ?? "intern"}
                   {p.substatus && ` · ${p.substatus}`} · {p._count.auftraege} Auftrag/Aufträge · {stunden(p.zeiten.reduce((s, z) => s + z.minuten, 0))} h

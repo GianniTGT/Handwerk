@@ -51,6 +51,7 @@ model Betrieb {
   ausgaben    Ausgabe[]
   zahlungen   Zahlung[]
   belege      Beleg[]
+  nummernkreise Nummernkreis[]
   gutschriften Gutschrift[]
   projekte    Projekt[]
   zeiten      Zeiteintrag[]
@@ -163,7 +164,7 @@ model Auftrag {
   projekt      Projekt? @relation(fields: [projektId], references: [id])
   zeiten       Zeiteintrag[]
   rapporte     Rapport[]
-  rechnung     Rechnung?
+  rechnungen   Rechnung[]
   offerte      Offerte?
 }
 
@@ -178,6 +179,7 @@ model Offerte {
   objektId   String?
   objekt     Objekt?  @relation(fields: [objektId], references: [id])
   nummer     Int
+  nummerText String @default("")
   titel      String
   status     String   @default("ENTWURF") // ENTWURF | GESENDET | ANGENOMMEN | ABGELEHNT
   datum      DateTime @default(now())
@@ -293,9 +295,13 @@ model Rechnung {
   id         String   @id @default(cuid())
   betriebId  String
   betrieb    Betrieb  @relation(fields: [betriebId], references: [id])
-  auftragId  String   @unique
+  auftragId  String
   auftrag    Auftrag  @relation(fields: [auftragId], references: [id])
   nummer     Int
+  nummerText String   @default("") // numri i formatuar sipas Nummernkreis
+  art        String   @default("SCHLUSS") // TEIL (Akonto) | SCHLUSS
+  bezeichnung String  @default("") // titulli i Teilrechnung-it (p.sh. Akonto 30%)
+  abzugNetto Float    @default(0) // Schlussrechnung: neto e Teilrechnung-eve të zbritura
   datum      DateTime @default(now())
   faelligAm  DateTime? // afati i pagesës; null = datum + 30 ditë (faturat e vjetra)
   status     String   @default("ENTWURF") // ENTWURF | VERSENDET | BEZAHLT
@@ -379,6 +385,7 @@ model Gutschrift {
   rechnungId  String
   rechnung    Rechnung @relation(fields: [rechnungId], references: [id])
   nummer      Int
+  nummerText String @default("")
   datum       DateTime @default(now())
   grund       String   @default("")
   totalNetto  Float
@@ -394,6 +401,7 @@ model Projekt {
   kundeId      String?
   kunde        Kunde?   @relation(fields: [kundeId], references: [id])
   nummer       Int
+  nummerText String @default("")
   name         String
   typ          String   @default("KUNDE") // KUNDE | INTERN
   status       String   @default("OFFEN") // OFFEN | AKTIV | ARCHIVIERT
@@ -437,6 +445,7 @@ model Bestellung {
   lieferantId String
   lieferant   Lieferant @relation(fields: [lieferantId], references: [id])
   nummer      Int
+  nummerText String @default("")
   datum       DateTime  @default(now())
   status      String    @default("ENTWURF") // ENTWURF | BESTELLT | GELIEFERT
   bemerkung   String    @default("")
@@ -452,4 +461,20 @@ model BestellPosition {
   menge        Float      @default(1)
   einheit      String     @default("Stk.")
   preis        Float      @default(0)
+}
+
+// Numërimi i dokumenteve (si te bexio): format, gjatësi minimale, fillim, rifillim vjetor
+model Nummernkreis {
+  id          String  @id @default(cuid())
+  betriebId   String
+  betrieb     Betrieb @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  typ         String  // OFFERTE | RECHNUNG | GUTSCHRIFT | BESTELLUNG | PROJEKT
+  format      String  // p.sh. "RE-{JJJJ}-{NR}"  ({JJJJ}=viti 4-shifror, {JJ}=2-shifror, {NR}=numri)
+  laenge      Int     @default(1) // gjatësia minimale e {NR} (plotësuar me zero)
+  jaehrlichNeu Boolean @default(false)
+  naechste    Int     @default(1)
+  startNummer Int     @default(1) // fillimi pas rifillimit vjetor
+  jahr        Int     @default(0) // viti i numrit të fundit të dhënë
+
+  @@unique([betriebId, typ])
 }

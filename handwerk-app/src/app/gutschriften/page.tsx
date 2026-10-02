@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { gutschriftNr, rechnungNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -32,10 +33,10 @@ export default async function GutschriftenPage({
           <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
             <div>
               <div className="font-medium">
-                GS-{g.nummer} — {g.rechnung.auftrag.kunde.name}
+                {gutschriftNr(g)} — {g.rechnung.auftrag.kunde.name}
               </div>
               <div className="text-sm text-muted">
-                zu RE-{g.rechnung.nummer} · {g.datum.toLocaleDateString("de-CH")}
+                zu {rechnungNr(g.rechnung)} · {g.datum.toLocaleDateString("de-CH")}
                 {g.grund && ` · ${g.grund}`}
               </div>
             </div>

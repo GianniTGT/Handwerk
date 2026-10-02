@@ -1,4 +1,5 @@
 // PDF për Bestellung (porosi te furnitori)
+import { bestellungNr, dateiTeil } from "./nrtext";
 import { db } from "./db";
 import { chf } from "./format";
 import { dokumentStart, footerAufSeiten } from "./pdf";
@@ -17,7 +18,7 @@ export async function bestellungPdf(
 
   doc.fontSize(10).text(b.lieferant.name, 350, 120);
 
-  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Bestellung BE-${b.nummer}`, 50, 190);
+  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Bestellung ${bestellungNr(b)}`, 50, 190);
   doc.fillColor(fText).fontSize(9).font("Helvetica").moveDown(0.5);
   doc.text(`Datum: ${b.datum.toLocaleDateString("de-CH")}`, 50);
   if (b.bemerkung) doc.text(`Bemerkung: ${b.bemerkung}`, 50, doc.y, { width: 495 });
@@ -58,7 +59,7 @@ export async function bestellungPdf(
   doc.font("Helvetica").text("Bitte bestätigen Sie die Bestellung und den Liefertermin.", 50, y + 40);
   doc.moveDown(1).text("Freundliche Grüsse").text(betrieb.name);
 
-  footerAufSeiten(doc, betrieb, fText, `Bestellung BE-${b.nummer}`);
+  footerAufSeiten(doc, betrieb, fText, `Bestellung ${bestellungNr(b)}`);
   doc.end();
-  return { buffer: await fertig, dateiname: `Bestellung-BE-${b.nummer}.pdf` };
+  return { buffer: await fertig, dateiname: `Bestellung-${dateiTeil(bestellungNr(b))}.pdf` };
 }

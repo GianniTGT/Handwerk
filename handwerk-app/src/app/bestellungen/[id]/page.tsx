@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { bestellungNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -47,7 +48,7 @@ export default async function BestellungDetail({
       <Link href="/bestellungen" className="text-sm text-forest underline">← Bestellungen</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-bold">Bestellung BE-{b.nummer} — {b.lieferant.name}</h1>
+          <h1 className="text-xl font-bold">Bestellung {bestellungNr(b)} — {b.lieferant.name}</h1>
           <p className="text-sm text-muted">{b.datum.toLocaleDateString("de-CH")} · {b.status}{b.bemerkung && ` · ${b.bemerkung}`}</p>
         </div>
         <div className="flex gap-2">

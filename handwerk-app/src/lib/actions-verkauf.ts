@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { sitzungErforderlich } from "./auth";
 import { sendeDokument } from "./email";
+import { vergibNummer } from "./nummern";
 import { mahnungPdf } from "./pdf-mahnung";
 import { MAHNSTUFEN, naechsteMahnstufe, offenerBetrag } from "./mahnwesen";
 
@@ -90,15 +91,12 @@ export async function createGutschrift(formData: FormData) {
   if (brutto <= 0 || brutto > rechnung.totalBrutto) redirect(`/rechnungen?fehler=gutschrift-betrag`);
   const netto = Math.round((brutto / (1 + rechnung.mwstSatz / 100)) * 100) / 100;
 
-  const letzte = await db.gutschrift.findFirst({
-    where: { betriebId: betrieb.id },
-    orderBy: { nummer: "desc" },
-  });
+  const nr = await vergibNummer(betrieb.id, "GUTSCHRIFT");
   const g = await db.gutschrift.create({
     data: {
       betriebId: betrieb.id,
       rechnungId,
-      nummer: (letzte?.nummer ?? 20260000) + 1,
+      ...nr,
       grund: String(formData.get("grund") ?? "").trim(),
       totalNetto: netto,
       mwstSatz: rechnung.mwstSatz,

@@ -1,4 +1,5 @@
 // PDF për Mahnung (3 shkallë) dhe Gutschrift — përdor ndërtuesit e përbashkët nga pdf.ts
+import { gutschriftNr, rechnungNr, dateiTeil } from "./nrtext";
 import { SwissQRBill } from "swissqrbill/pdf";
 import { db } from "./db";
 import { chf } from "./format";
@@ -44,7 +45,7 @@ export async function mahnungPdf(id: string, betriebId: string): Promise<PdfErge
     .fillColor(fTitel)
     .fontSize(13)
     .font("Helvetica-Bold")
-    .text(`${info.titel} — Rechnung RE-${rechnung.nummer}`, 50, 190);
+    .text(`${info.titel} — Rechnung ${rechnungNr(rechnung)}`, 50, 190);
   doc.fillColor(fText).fontSize(9).font("Helvetica").moveDown(0.8);
   const zeilen: [string, string][] = [
     ["Datum:", new Date().toLocaleDateString("de-CH")],
@@ -73,13 +74,13 @@ export async function mahnungPdf(id: string, betriebId: string): Promise<PdfErge
     .text("Freundliche Grüsse")
     .text(betrieb.name);
 
-  const inhaltSeiten = footerAufSeiten(doc, betrieb, fText, `${info.titel} RE-${rechnung.nummer}`);
+  const inhaltSeiten = footerAufSeiten(doc, betrieb, fText, `${info.titel} ${rechnungNr(rechnung)}`);
   doc.switchToPage(inhaltSeiten - 1);
   doc.addPage();
   new SwissQRBill({
     amount: offen,
     currency: "CHF",
-    message: `${info.titel} Rechnung RE-${rechnung.nummer}`,
+    message: `${info.titel} Rechnung ${rechnungNr(rechnung)}`,
     creditor: {
       account: betrieb.iban.replace(/\s/g, ""),
       name: betrieb.name,
@@ -103,7 +104,7 @@ export async function mahnungPdf(id: string, betriebId: string): Promise<PdfErge
   doc.end();
   return {
     buffer: await fertig,
-    dateiname: `${info.titel.replace(/[^A-Za-z0-9]+/g, "-")}-RE-${rechnung.nummer}.pdf`,
+    dateiname: `${info.titel.replace(/[^A-Za-z0-9]+/g, "-")}-${dateiTeil(rechnungNr(rechnung))}.pdf`,
     empfaengerEmail: kunde.email,
   };
 }
@@ -122,11 +123,11 @@ export async function gutschriftPdf(id: string, betriebId: string): Promise<PdfE
   if (kunde.strasse) doc.text(kunde.strasse, 350);
   doc.text(`${kunde.plz} ${kunde.ort}`, 350);
 
-  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Gutschrift GS-${g.nummer}`, 50, 190);
+  doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Gutschrift ${gutschriftNr(g)}`, 50, 190);
   doc.fillColor(fText).fontSize(9).font("Helvetica").moveDown(0.8);
   const zeilen: [string, string][] = [
     ["Datum:", g.datum.toLocaleDateString("de-CH")],
-    ["Zu Rechnung:", `RE-${g.rechnung.nummer} vom ${g.rechnung.datum.toLocaleDateString("de-CH")}`],
+    ["Zu Rechnung:", `${rechnungNr(g.rechnung)} vom ${g.rechnung.datum.toLocaleDateString("de-CH")}`],
   ];
   if (g.grund) zeilen.push(["Grund:", g.grund]);
   for (const [label, wert] of zeilen) {
@@ -151,11 +152,11 @@ export async function gutschriftPdf(id: string, betriebId: string): Promise<PdfE
   );
   doc.moveDown(1).text("Freundliche Grüsse").text(betrieb.name);
 
-  footerAufSeiten(doc, betrieb, fText, `Gutschrift GS-${g.nummer}`);
+  footerAufSeiten(doc, betrieb, fText, `Gutschrift ${gutschriftNr(g)}`);
   doc.end();
   return {
     buffer: await fertig,
-    dateiname: `Gutschrift-GS-${g.nummer}.pdf`,
+    dateiname: `Gutschrift-${dateiTeil(gutschriftNr(g))}.pdf`,
     empfaengerEmail: kunde.email,
   };
 }

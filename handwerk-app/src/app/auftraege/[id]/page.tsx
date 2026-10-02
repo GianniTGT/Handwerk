@@ -6,11 +6,13 @@ import { sitzungErforderlich } from "@/lib/auth";
 import {
   addRapportPosition,
   createRechnung,
+  createTeilrechnung,
   deleteRapportFoto,
   deleteRapportPosition,
   saveRapportFoto,
   saveUnterschrift,
 } from "@/lib/actions";
+import { rechnungNr } from "@/lib/nrtext";
 import { zeitenInRapport } from "@/lib/actions-projekte";
 import { stunden } from "@/lib/projekte";
 import SignaturePad from "@/components/SignaturePad";
@@ -34,7 +36,8 @@ export default async function AuftragDetail({
     include: {
       kunde: true,
       objekt: true,
-      rechnung: true,
+      rechnungen: { orderBy: { nummer: "asc" } },
+      offerte: { include: { gruppen: { include: { positionen: true } } } },
       rapporte: { include: { positionen: true, fotos: { orderBy: { erstellt: "asc" } } } },
     },
   });
@@ -55,10 +58,17 @@ export default async function AuftragDetail({
   const zeitMinuten = offeneZeiten.reduce((s, z) => s + z.minuten, 0);
   const zeitWert = offeneZeiten.reduce((s, z) => s + (z.minuten / 60) * z.stundensatz, 0);
 
+  const schluss = auftrag.rechnungen.find((r) => r.art === "SCHLUSS");
+  const teile = auftrag.rechnungen.filter((r) => r.art === "TEIL");
+  const akontoNetto = teile.reduce((s, r) => s + r.totalNetto, 0);
+
   const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
   const fotos = auftrag.rapporte.flatMap((r) => r.fotos);
   const unterschrift = auftrag.rapporte.find((r) => r.unterschrift)?.unterschrift ?? "";
   const totalNetto = positionen.reduce((s, p) => s + p.menge * p.ansatz, 0);
+  const offertenWert =
+    auftrag.offerte?.gruppen.flatMap((g) => g.positionen).reduce((s, p) => s + p.menge * p.ansatz, 0) ?? 0;
+  const auftragswert = offertenWert > 0 ? offertenWert : totalNetto;
 
   return (
     <div>
@@ -75,26 +85,32 @@ export default async function AuftragDetail({
           </p>
           {auftrag.beschreibung && <p className="mt-2 text-sm">{auftrag.beschreibung}</p>}
         </div>
-        {!auftrag.rechnung && positionen.length > 0 && (
+        {!schluss && positionen.length > 0 && (
           <form action={createRechnung}>
             <input type="hidden" name="auftragId" value={auftrag.id} />
             <button className="rounded bg-gold px-4 py-2 text-sm font-semibold text-white hover:bg-gold-soft">
-              ⚡ Rechnung erstellen
+              ⚡ {teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
             </button>
           </form>
         )}
-        {auftrag.rechnung && (
+        {schluss && (
           <Link
             href="/rechnungen"
             className="rounded bg-surface2 px-4 py-2 text-sm font-medium text-ink"
           >
-            Rechnung #{auftrag.rechnung.nummer} ansehen
+            Rechnung {rechnungNr(schluss)} ansehen
           </Link>
         )}
       </div>
 
       {sp.zeiten && (
         <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">{sp.zeiten} Zeiteintrag/-einträge als Rapport-Positionen übernommen ✓</p>
+      )}
+      {sp.fehler === "akonto-zu-hoch" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Die Akonto-Rechnungen würden den Auftragswert übersteigen.</p>
+      )}
+      {sp.fehler === "akonto-betrag" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte einen Betrag oder Prozentsatz angeben.</p>
       )}
       {sp.fehler === "verrechnet" && (
         <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Auftrag ist bereits verrechnet.</p>
@@ -109,6 +125,38 @@ export default async function AuftragDetail({
             In Rapport übernehmen
           </button>
         </form>
+      )}
+
+      {auftrag.rechnungen.length > 0 && (
+        <ul className="mt-3 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
+          {auftrag.rechnungen.map((r) => (
+            <li key={r.id} className="flex flex-wrap justify-between gap-2 p-2">
+              <span>
+                {r.art === "TEIL" ? "Teilrechnung" : "Schlussrechnung"} {rechnungNr(r)}
+                {r.bezeichnung && ` — ${r.bezeichnung}`}
+              </span>
+              <span className="text-muted">netto CHF {chf(r.totalNetto)} · {r.status}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!schluss && positionen.length > 0 && (
+        <details className="mt-3 rounded-tiff border border-line bg-white">
+          <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
+            💶 Teilrechnung (Akonto) erstellen
+          </summary>
+          <form action={createTeilrechnung} className="grid gap-2 border-t border-line p-3 md:grid-cols-[2fr_1fr_1fr_auto]">
+            <input type="hidden" name="auftragId" value={auftrag.id} />
+            <input name="bezeichnung" placeholder="Bezeichnung (z.B. Akonto bei Auftragsbeginn)" className="rounded border border-line p-2 text-sm" />
+            <input name="prozent" inputMode="decimal" placeholder="% vom Auftragswert" className="rounded border border-line p-2 text-sm" />
+            <input name="betragNetto" inputMode="decimal" placeholder="oder Betrag netto" className="rounded border border-line p-2 text-sm" />
+            <button className="rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Erstellen</button>
+            <p className="text-xs text-muted md:col-span-4">
+              Auftragswert netto CHF {chf(auftragswert)}{offertenWert > 0 ? " (laut Offerte)" : " (laut Rapport)"} · bereits per Akonto: CHF {chf(akontoNetto)}.
+              Die Schlussrechnung zieht die Akonto-Rechnungen automatisch ab.
+            </p>
+          </form>
+        </details>
       )}
 
       <div className="mt-6 grid gap-6 md:grid-cols-[2fr_1fr]">
@@ -136,7 +184,7 @@ export default async function AuftragDetail({
                   <td className="p-2 text-right">{chf(p.ansatz)}</td>
                   <td className="p-2 text-right font-medium">{chf(p.menge * p.ansatz)}</td>
                   <td className="p-2">
-                    {!auftrag.rechnung && (
+                    {!schluss && (
                       <form action={deleteRapportPosition}>
                         <input type="hidden" name="auftragId" value={auftrag.id} />
                         <input type="hidden" name="positionId" value={p.id} />
@@ -167,7 +215,7 @@ export default async function AuftragDetail({
             )}
           </table>
 
-          {!auftrag.rechnung && (
+          {!schluss && (
             <form
               action={addRapportPosition}
               className="mt-4 rounded-tiff border border-line bg-white p-4"

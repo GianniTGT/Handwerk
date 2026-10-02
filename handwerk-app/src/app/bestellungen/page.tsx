@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { bestellungNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -65,7 +66,7 @@ export default async function BestellungenPage({
           <li key={b.id}>
             <Link href={`/bestellungen/${b.id}`} className="flex flex-wrap items-center justify-between gap-2 p-3 hover:bg-surface2">
               <div>
-                <div className="font-medium">BE-{b.nummer} — {b.lieferant.name}</div>
+                <div className="font-medium">{bestellungNr(b)} — {b.lieferant.name}</div>
                 <div className="text-sm text-muted">
                   {b.datum.toLocaleDateString("de-CH")} · {b.positionen.length} Position(en) · CHF{" "}
                   {chf(b.positionen.reduce((s, p) => s + p.menge * p.preis, 0))}
