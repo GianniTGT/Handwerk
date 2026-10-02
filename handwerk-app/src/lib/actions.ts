@@ -547,12 +547,18 @@ export async function deleteKunde(formData: FormData) {
   const kundeId = String(formData.get("kundeId"));
   const kunde = await db.kunde.findFirst({
     where: { id: kundeId, betriebId: betrieb.id },
-    include: { _count: { select: { auftraege: true, offerten: true } } },
+    include: { _count: { select: { auftraege: true, offerten: true, projekte: true, zeiten: true, wartungsvertraege: true } } },
   });
   if (!kunde) throw new Error("Kunde nicht gefunden");
   // Mbrojtje: klientë me dokumente (auftrage/oferta/fatura) NUK fshihen —
   // dokumentet janë regjistrime biznesi që duhen ruajtur
-  if (kunde._count.auftraege > 0 || kunde._count.offerten > 0) {
+  if (
+    kunde._count.auftraege > 0 ||
+    kunde._count.offerten > 0 ||
+    kunde._count.projekte > 0 ||
+    kunde._count.zeiten > 0 ||
+    kunde._count.wartungsvertraege > 0
+  ) {
     redirect(`/kunden/${kundeId}?fehler=hat-dokumente`);
   }
   await db.objekt.deleteMany({ where: { kundeId } });
