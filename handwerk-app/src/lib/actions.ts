@@ -186,6 +186,29 @@ export async function deleteRapportPosition(formData: FormData) {
   revalidatePath(`/auftraege/${auftragId}`);
 }
 
+export async function saveRapportFoto(auftragId: string, dataUrl: string) {
+  const { betrieb } = await sitzungErforderlich();
+  await eigenerAuftrag(auftragId, betrieb.id);
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl) || dataUrl.length > 2_000_000) {
+    throw new Error("Ungültiges Foto (max. ~1.5 MB nach Komprimierung)");
+  }
+  const rapport = await rapportFuerAuftrag(auftragId);
+  const anzahl = await db.rapportFoto.count({ where: { rapportId: rapport.id } });
+  if (anzahl >= 20) throw new Error("Max. 20 Fotos pro Rapport");
+  await db.rapportFoto.create({ data: { rapportId: rapport.id, daten: dataUrl } });
+  revalidatePath(`/auftraege/${auftragId}`);
+}
+
+export async function deleteRapportFoto(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const auftragId = String(formData.get("auftragId"));
+  await eigenerAuftrag(auftragId, betrieb.id);
+  await db.rapportFoto.deleteMany({
+    where: { id: String(formData.get("fotoId")), rapport: { auftragId } },
+  });
+  revalidatePath(`/auftraege/${auftragId}`);
+}
+
 export async function saveUnterschrift(auftragId: string, dataUrl: string) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
   await eigenerAuftrag(auftragId, betrieb.id);

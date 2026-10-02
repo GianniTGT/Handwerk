@@ -6,10 +6,13 @@ import { sitzungErforderlich } from "@/lib/auth";
 import {
   addRapportPosition,
   createRechnung,
+  deleteRapportFoto,
   deleteRapportPosition,
+  saveRapportFoto,
   saveUnterschrift,
 } from "@/lib/actions";
 import SignaturePad from "@/components/SignaturePad";
+import FotoUpload from "@/components/FotoUpload";
 
 const chf = (n: number) =>
   n.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -23,7 +26,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
       kunde: true,
       objekt: true,
       rechnung: true,
-      rapporte: { include: { positionen: true } },
+      rapporte: { include: { positionen: true, fotos: { orderBy: { erstellt: "asc" } } } },
     },
   });
   if (!auftrag) notFound();
@@ -37,6 +40,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
   ]);
 
   const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
+  const fotos = auftrag.rapporte.flatMap((r) => r.fotos);
   const unterschrift = auftrag.rapporte.find((r) => r.unterschrift)?.unterschrift ?? "";
   const totalNetto = positionen.reduce((s, p) => s + p.menge * p.ansatz, 0);
 
@@ -170,12 +174,43 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        <div className="h-fit rounded-tiff border border-line bg-white p-4">
-          <SignaturePad
-            auftragId={auftrag.id}
-            vorhandeneUnterschrift={unterschrift}
-            onSave={saveUnterschrift}
-          />
+        <div className="grid h-fit gap-4">
+          <div className="rounded-tiff border border-line bg-white p-4">
+            <div className="text-sm font-semibold">Foto-Dokumentation ({fotos.length})</div>
+            {fotos.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {fotos.map((foto) => (
+                  <div key={foto.id} className="group relative">
+                    <a href={`/api/fotos/${foto.id}`} target="_blank">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/api/fotos/${foto.id}`}
+                        alt="Rapport-Foto"
+                        className="h-20 w-full rounded border border-line object-cover"
+                      />
+                    </a>
+                    <form action={deleteRapportFoto} className="absolute right-1 top-1">
+                      <input type="hidden" name="auftragId" value={auftrag.id} />
+                      <input type="hidden" name="fotoId" value={foto.id} />
+                      <button className="rounded bg-white/90 px-1.5 text-xs text-red-600 opacity-0 shadow group-hover:opacity-100">
+                        ✕
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-3">
+              <FotoUpload auftragId={auftrag.id} onSave={saveRapportFoto} />
+            </div>
+          </div>
+          <div className="rounded-tiff border border-line bg-white p-4">
+            <SignaturePad
+              auftragId={auftrag.id}
+              vorhandeneUnterschrift={unterschrift}
+              onSave={saveUnterschrift}
+            />
+          </div>
         </div>
       </div>
     </div>

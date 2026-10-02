@@ -163,6 +163,19 @@ model Rapport {
   bemerkung     String   @default("")
   unterschrift  String   @default("") // nënshkrimi i klientit si data-URL (PNG)
   positionen    RapportPosition[]
+  fotos         RapportFoto[]
+}
+
+// Foto-dokumentimi nga tereni (para/pas, defekti, pjesa e montuar…)
+// Ruhet si data-URL i zvogëluar në klient (max ~1600px JPEG) — për pilotin
+// në DB; më vonë object storage (shih docs/cloud-strategjia.md)
+model RapportFoto {
+  id        String   @id @default(cuid())
+  rapportId String
+  rapport   Rapport  @relation(fields: [rapportId], references: [id], onDelete: Cascade)
+  daten     String // data-URL (image/jpeg|png|webp)
+  bemerkung String   @default("")
+  erstellt  DateTime @default(now())
 }
 
 model RapportPosition {
