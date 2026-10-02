@@ -15,6 +15,7 @@ const nav = [
   { href: "/kunden", label: "Kunden" },
   { href: "/auftraege", label: "Aufträge" },
   { href: "/rechnungen", label: "Rechnungen" },
+  { href: "/artikel", label: "Artikel" },
 ];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

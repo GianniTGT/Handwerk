@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
+import { parseArtikelCsv } from "./csv";
+import { nettoPreis } from "./preise";
 import {
   beendeSitzung,
   erstelleSitzung,
@@ -150,9 +152,10 @@ export async function addRapportPosition(formData: FormData) {
       where: { id: artikelId, betriebId: betrieb.id },
     });
     if (artikel) {
+      const konditionen = await db.kondition.findMany({ where: { betriebId: betrieb.id } });
       bezeichnung = bezeichnung || artikel.bezeichnung;
       einheit = artikel.einheit;
-      ansatz = ansatz || artikel.preis;
+      ansatz = ansatz || nettoPreis(artikel, konditionen);
     }
   }
 
@@ -193,6 +196,134 @@ export async function saveUnterschrift(auftragId: string, dataUrl: string) {
   });
   await db.auftrag.update({ where: { id: auftragId }, data: { status: "ERLEDIGT" } });
   revalidatePath(`/auftraege/${auftragId}`);
+}
+
+// ---------- Artikel, Lieferanten & Konditionen ----------
+
+export async function createLieferant(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await db.lieferant.create({ data: { betriebId: betrieb.id, name } });
+  revalidatePath("/artikel");
+}
+
+export async function setKondition(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const lieferantId = String(formData.get("lieferantId"));
+  const lieferant = await db.lieferant.findFirst({
+    where: { id: lieferantId, betriebId: betrieb.id },
+  });
+  if (!lieferant) throw new Error("Lieferant nicht gefunden");
+  const rabattgruppe = String(formData.get("rabattgruppe") ?? "").trim();
+  const rabattProzent = Number(formData.get("rabattProzent") ?? 0);
+  if (rabattProzent < 0 || rabattProzent > 100) throw new Error("Rabatt 0–100%");
+  await db.kondition.upsert({
+    where: {
+      betriebId_lieferantId_rabattgruppe: { betriebId: betrieb.id, lieferantId, rabattgruppe },
+    },
+    update: { rabattProzent },
+    create: { betriebId: betrieb.id, lieferantId, rabattgruppe, rabattProzent },
+  });
+  revalidatePath("/artikel");
+}
+
+export async function deleteKondition(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  await db.kondition.deleteMany({
+    where: { id: String(formData.get("konditionId")), betriebId: betrieb.id },
+  });
+  revalidatePath("/artikel");
+}
+
+export async function importArtikelCsv(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const lieferantId = String(formData.get("lieferantId") ?? "");
+  const lieferant = lieferantId
+    ? await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } })
+    : null;
+  if (lieferantId && !lieferant) throw new Error("Lieferant nicht gefunden");
+
+  const datei = formData.get("datei");
+  if (!(datei instanceof File) || datei.size === 0) {
+    redirect("/artikel?import=fehler&grund=datei");
+  }
+  if (datei.size > 10 * 1024 * 1024) redirect("/artikel?import=fehler&grund=gross");
+
+  const { zeilen, fehler } = parseArtikelCsv(await datei.text());
+  if (zeilen.length === 0) redirect("/artikel?import=fehler&grund=leer");
+
+  // Upsert sipas (betrieb, lieferant, artikelNr); pa ArtNr → krijohet gjithmonë i ri
+  let neu = 0;
+  let aktualisiert = 0;
+  const mitNr = zeilen.filter((z) => z.artikelNr);
+  const ohneNr = zeilen.filter((z) => !z.artikelNr);
+
+  const vorhandene = mitNr.length
+    ? await db.artikel.findMany({
+        where: {
+          betriebId: betrieb.id,
+          lieferantId: lieferantId || null,
+          artikelNr: { in: mitNr.map((z) => z.artikelNr) },
+        },
+        select: { id: true, artikelNr: true },
+      })
+    : [];
+  const proNr = new Map(vorhandene.map((a) => [a.artikelNr, a.id]));
+
+  const updates = [];
+  const creates = [];
+  for (const z of mitNr) {
+    const daten = {
+      bezeichnung: z.bezeichnung,
+      einheit: z.einheit,
+      bruttoPreis: z.bruttoPreis,
+      rabattgruppe: z.rabattgruppe,
+    };
+    const id = proNr.get(z.artikelNr);
+    if (id) {
+      updates.push(db.artikel.update({ where: { id }, data: daten }));
+      aktualisiert++;
+    } else {
+      creates.push({
+        betriebId: betrieb.id,
+        lieferantId: lieferantId || null,
+        artikelNr: z.artikelNr,
+        ...daten,
+      });
+      neu++;
+    }
+  }
+  for (const z of ohneNr) {
+    creates.push({
+      betriebId: betrieb.id,
+      lieferantId: lieferantId || null,
+      artikelNr: "",
+      bezeichnung: z.bezeichnung,
+      einheit: z.einheit,
+      bruttoPreis: z.bruttoPreis,
+      rabattgruppe: z.rabattgruppe,
+    });
+    neu++;
+  }
+
+  await db.$transaction([
+    ...(creates.length ? [db.artikel.createMany({ data: creates })] : []),
+    ...updates,
+  ]);
+
+  revalidatePath("/artikel");
+  redirect(
+    `/artikel?import=ok&neu=${neu}&aktualisiert=${aktualisiert}&uebersprungen=${fehler.length}`
+  );
+}
+
+export async function deleteArtikel(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  await db.artikel.deleteMany({
+    where: { id: String(formData.get("artikelId")), betriebId: betrieb.id },
+  });
+  revalidatePath("/artikel");
 }
 
 // ---------- Rechnungen ----------

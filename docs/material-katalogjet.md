@@ -49,7 +49,7 @@ dhe pikërisht ajo është "moat"-i: kush e ka integrimin, s'zëvendësohet dot.
 
 ## 3. Plani ynë me 3 faza (pa pritur askënd)
 
-### Faza A — Import i përgjithshëm + modeli i zbritjeve (PA IGH, direkt pas auth-it)
+### Faza A — Import i përgjithshëm + modeli i zbritjeve ✅ IMPLEMENTUAR (tetor 2026)
 Furnitorët lejojnë tashmë shkarkim të listave të çmimeve si **Excel/CSV** nga e-shop-et
 e tyre (shpesh edhe si listë neto). Ne ndërtojmë:
 

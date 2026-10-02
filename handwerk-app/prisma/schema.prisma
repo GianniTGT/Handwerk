@@ -30,6 +30,8 @@ model Betrieb {
   auftraege   Auftrag[]
   artikel     Artikel[]
   rechnungen  Rechnung[]
+  lieferanten Lieferant[]
+  konditionen Kondition[]
 }
 
 model Mitarbeiter {
@@ -122,15 +124,43 @@ model RapportPosition {
   ansatz      Float   @default(0) // çmimi për njësi në CHF
 }
 
-// Katalogu i artikujve (më vonë: import IGH/CSV nga Debrunner, Meier Tobler…)
-model Artikel {
+// Furnitori (Debrunner Acifer, Meier Tobler, Sanitas Troesch…)
+model Lieferant {
   id          String  @id @default(cuid())
   betriebId   String
   betrieb     Betrieb @relation(fields: [betriebId], references: [id])
-  artikelNr   String  @default("")
-  bezeichnung String
-  einheit     String  @default("Stk.")
-  preis       Float   @default(0)
+  name        String
+  artikel     Artikel[]
+  konditionen Kondition[]
+}
+
+// Katalogu i artikujve (import CSV/Excel; më vonë IGH/DataExpert)
+model Artikel {
+  id           String     @id @default(cuid())
+  betriebId    String
+  betrieb      Betrieb    @relation(fields: [betriebId], references: [id])
+  lieferantId  String?
+  lieferant    Lieferant? @relation(fields: [lieferantId], references: [id])
+  artikelNr    String     @default("")
+  bezeichnung  String
+  einheit      String     @default("Stk.")
+  preis        Float      @default(0) // çmimi neto manual (për artikuj pa furnitor/zbritje)
+  bruttoPreis  Float      @default(0) // çmimi bruto i katalogut
+  rabattgruppe String     @default("") // grupi i zbritjes te furnitori
+}
+
+// Zbritja e firmës te një furnitor për një grup artikujsh:
+// neto = bruttoPreis × (1 − rabattProzent/100)
+model Kondition {
+  id            String    @id @default(cuid())
+  betriebId     String
+  betrieb       Betrieb   @relation(fields: [betriebId], references: [id])
+  lieferantId   String
+  lieferant     Lieferant @relation(fields: [lieferantId], references: [id])
+  rabattgruppe  String
+  rabattProzent Float
+
+  @@unique([betriebId, lieferantId, rabattgruppe])
 }
 
 model Rechnung {

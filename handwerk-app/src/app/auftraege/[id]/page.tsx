@@ -1,3 +1,4 @@
+import { nettoPreis } from "@/lib/preise";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -27,10 +28,13 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
   });
   if (!auftrag) notFound();
 
-  const artikel = await db.artikel.findMany({
-    where: { betriebId: betrieb.id },
-    orderBy: { bezeichnung: "asc" },
-  });
+  const [artikel, konditionen] = await Promise.all([
+    db.artikel.findMany({
+      where: { betriebId: betrieb.id },
+      orderBy: { bezeichnung: "asc" },
+    }),
+    db.kondition.findMany({ where: { betriebId: betrieb.id } }),
+  ]);
 
   const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
   const unterschrift = auftrag.rapporte.find((r) => r.unterschrift)?.unterschrift ?? "";
@@ -141,7 +145,7 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
                   <option value="">Aus Katalog…</option>
                   {artikel.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.bezeichnung} ({chf(a.preis)}/{a.einheit})
+                      {a.bezeichnung} ({chf(nettoPreis(a, konditionen))}/{a.einheit})
                     </option>
                   ))}
                 </select>
