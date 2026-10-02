@@ -15,7 +15,13 @@ export default function PwaSetup() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      } else {
+        // Dev: SW-i cache-first mbi /_next/static prish HMR — çregjistro dhe pastro cache
+        navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+        caches?.keys().then((ks) => ks.filter((k) => k.startsWith("handwerk-")).forEach((k) => caches.delete(k)));
+      }
     }
 
     const aktualisiereQueue = () => setWartend(leseQueue().length);

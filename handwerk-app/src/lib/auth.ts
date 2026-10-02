@@ -37,17 +37,24 @@ export async function leseSitzung() {
   if (!token) return null;
   const sitzung = await db.sitzung.findUnique({
     where: { token },
-    include: { mitarbeiter: { include: { betrieb: true } } },
+    include: {
+      mitarbeiter: { include: { betrieb: true, zugaenge: { include: { betrieb: true } } } },
+    },
   });
   if (!sitzung || sitzung.gueltigBis < new Date()) return null;
-  return sitzung;
+
+  // Firma aktive: Betrieb-i vetë ose një nga qasjet shtesë (dropdown si te bexio)
+  const eigener = sitzung.mitarbeiter.betrieb;
+  const betriebe = [eigener, ...sitzung.mitarbeiter.zugaenge.map((z) => z.betrieb)];
+  const aktiver = betriebe.find((b) => b.id === sitzung.aktiverBetriebId) ?? eigener;
+  return { ...sitzung, aktiverBetrieb: aktiver, betriebe };
 }
 
 // Përdoret në çdo faqe/action të mbrojtur: kthen mitarbeiter + betrieb ose ridrejton në /login
 export async function sitzungErforderlich() {
   const sitzung = await leseSitzung();
   if (!sitzung) redirect("/login");
-  return { mitarbeiter: sitzung.mitarbeiter, betrieb: sitzung.mitarbeiter.betrieb };
+  return { mitarbeiter: sitzung.mitarbeiter, betrieb: sitzung.aktiverBetrieb };
 }
 
 export async function beendeSitzung() {

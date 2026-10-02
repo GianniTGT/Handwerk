@@ -12,6 +12,7 @@ import {
   beendeSitzung,
   erstelleSitzung,
   hashPasswort,
+  leseSitzung,
   pruefePasswort,
   sitzungErforderlich,
 } from "./auth";
@@ -32,6 +33,16 @@ export async function login(formData: FormData) {
 export async function logout() {
   await beendeSitzung();
   redirect("/login");
+}
+
+// Dropdown i firmës (si te bexio): lejohet vetëm Betrieb-i vetë ose qasjet shtesë
+export async function wechselBetrieb(formData: FormData) {
+  const sitzung = await leseSitzung();
+  if (!sitzung) redirect("/login");
+  const betriebId = String(formData.get("betriebId") ?? "");
+  if (!sitzung.betriebe.some((b) => b.id === betriebId)) redirect("/");
+  await db.sitzung.update({ where: { id: sitzung.id }, data: { aktiverBetriebId: betriebId } });
+  redirect("/");
 }
 
 export async function registriereBetrieb(formData: FormData) {

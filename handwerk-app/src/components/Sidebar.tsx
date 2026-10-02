@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type Eintrag = { href: string; label: string; icon: string; bald?: boolean };
+type Eintrag = { href: string; label: string; icon: string };
 
 // Struktura e njohur e Bexio-s — klientët e Bexio-s orientohen menjëherë
 const haupt: Eintrag[] = [
@@ -17,11 +17,11 @@ const verkauf: Eintrag[] = [
   { href: "/rechnungen", label: "Rechnungen", icon: "🧾" },
 ];
 const weitere: Eintrag[] = [
-  { href: "/ausgaben", label: "Ausgaben", icon: "🛒", bald: true },
+  { href: "/ausgaben", label: "Ausgaben", icon: "🛒" },
   { href: "/artikel", label: "Produkte", icon: "📦" },
-  { href: "/banking", label: "Banking", icon: "🏦", bald: true },
-  { href: "/buchhaltung", label: "Buchhaltung", icon: "📊", bald: true },
-  { href: "/posteingang", label: "Posteingang", icon: "📥", bald: true },
+  { href: "/banking", label: "Banking", icon: "🏦" },
+  { href: "/buchhaltung", label: "Buchhaltung", icon: "📊" },
+  { href: "/posteingang", label: "Posteingang", icon: "📥" },
 ];
 const mehr: Eintrag[] = [{ href: "/einstellungen", label: "Einstellungen", icon: "⚙️" }];
 
@@ -35,22 +35,51 @@ function Punkt({ e, aktiv }: { e: Eintrag; aktiv: boolean }) {
     >
       <span className="w-5 text-center">{e.icon}</span>
       {e.label}
-      {e.bald && (
-        <span className="ml-auto rounded-full bg-surface2 px-1.5 text-[10px] uppercase text-muted">
-          bald
-        </span>
-      )}
     </Link>
   );
 }
 
-export default function Sidebar() {
+type BetriebInfo = { id: string; name: string };
+
+export default function Sidebar({
+  betriebe,
+  aktivId,
+  wechseln,
+  support,
+}: {
+  betriebe: BetriebInfo[];
+  aktivId: string;
+  wechseln: (formData: FormData) => void | Promise<void>;
+  support: { email: string; telefon: string };
+}) {
   const pfad = usePathname();
   const istAktiv = (href: string) => (href === "/" ? pfad === "/" : pfad.startsWith(href));
 
   return (
     <aside className="hidden w-56 shrink-0 border-r border-line bg-white md:block">
-      <nav className="sticky top-14 grid gap-0.5 p-3">
+      <nav className="sticky top-14 grid max-h-[calc(100vh-3.5rem)] gap-0.5 overflow-y-auto p-3">
+        {/* Firma aktive — dropdown si te bexio (vetëm kur ka më shumë se një firmë) */}
+        <div className="mb-3 rounded border border-line bg-paper p-2">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Betrieb</div>
+          {betriebe.length > 1 ? (
+            <form action={wechseln}>
+              <select
+                name="betriebId"
+                defaultValue={aktivId}
+                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                className="mt-1 w-full rounded border border-line bg-white p-1 text-sm font-semibold"
+              >
+                {betriebe.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </form>
+          ) : (
+            <div className="mt-1 text-sm font-semibold">{betriebe[0]?.name}</div>
+          )}
+        </div>
         {haupt.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
@@ -70,6 +99,17 @@ export default function Sidebar() {
         {mehr.map((e) => (
           <Punkt key={e.href} e={e} aktiv={istAktiv(e.href)} />
         ))}
+        <div className="mt-4 rounded border border-line bg-paper p-2 text-xs">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            Support · TIFF
+          </div>
+          <a href={`mailto:${support.email}`} className="mt-1 block break-all text-forest underline">
+            {support.email}
+          </a>
+          <a href={`tel:${support.telefon.replace(/\s/g, "")}`} className="block text-forest underline">
+            {support.telefon}
+          </a>
+        </div>
       </nav>
     </aside>
   );
@@ -78,7 +118,7 @@ export default function Sidebar() {
 // Navigim kompakt për mobile (sidebar-i fshihet nën md)
 export function MobileNav() {
   const pfad = usePathname();
-  const alles = [...haupt, ...verkauf, { href: "/artikel", label: "Produkte", icon: "📦" }, ...mehr];
+  const alles = [...haupt, ...verkauf, ...weitere, ...mehr];
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-line bg-white px-2 py-1.5 md:hidden">
       {alles.map((e) => (

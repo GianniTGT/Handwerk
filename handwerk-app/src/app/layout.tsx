@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { leseSitzung } from "@/lib/auth";
-import { logout } from "@/lib/actions";
+import { logout, wechselBetrieb } from "@/lib/actions";
 import Sidebar, { MobileNav } from "@/components/Sidebar";
+import { TIFF } from "@/lib/tiff";
 import PwaSetup from "@/components/PwaSetup";
 import "./globals.css";
 
@@ -46,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </form>
                 <div className="ml-auto flex shrink-0 items-center gap-3 text-sm">
                   <span className="hidden text-muted md:inline">
-                    {sitzung.mitarbeiter.name} · {sitzung.mitarbeiter.betrieb.name}
+                    {sitzung.mitarbeiter.name} · {sitzung.aktiverBetrieb.name}
                   </span>
                   <form action={logout}>
                     <button className="rounded border border-line px-2 py-1 text-xs hover:bg-surface2">
@@ -62,7 +63,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {sitzung ? (
           <div className="flex min-h-[calc(100vh-3.5rem)]">
-            <Sidebar />
+            <Sidebar
+              betriebe={sitzung.betriebe.map((b) => ({ id: b.id, name: b.name }))}
+              aktivId={sitzung.aktiverBetrieb.id}
+              wechseln={wechselBetrieb}
+              support={{ email: TIFF.supportEmail, telefon: TIFF.supportTelefon }}
+            />
             <main className="w-full max-w-6xl px-4 py-6 md:px-8">{children}</main>
           </div>
         ) : (

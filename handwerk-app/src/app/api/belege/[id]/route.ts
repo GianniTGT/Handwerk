@@ -4,8 +4,7 @@ import { leseSitzung } from "@/lib/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Serviron një foto rapporti si imazh real (jo data-URL në HTML) —
-// me kontroll pronësie të tenant-it
+// Serviron dokumentin e Posteingang-ut (PDF/imazh) me kontroll pronësie të tenant-it
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,21 +13,19 @@ export async function GET(
   if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
 
   const { id } = await params;
-  const foto = await db.rapportFoto.findFirst({
-    where: {
-      id,
-      rapport: { auftrag: { betriebId: sitzung.aktiverBetrieb.id } },
-    },
-    select: { daten: true },
+  const beleg = await db.beleg.findFirst({
+    where: { id, betriebId: sitzung.aktiverBetrieb.id },
+    select: { daten: true, dateiname: true },
   });
-  if (!foto) return new Response("Foto nicht gefunden", { status: 404 });
+  if (!beleg) return new Response("Beleg nicht gefunden", { status: 404 });
 
-  const m = foto.daten.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
+  const m = beleg.daten.match(/^data:(application\/pdf|image\/(?:jpeg|png));base64,(.+)$/);
   if (!m) return new Response("Ungültige Daten", { status: 500 });
 
   return new Response(new Uint8Array(Buffer.from(m[2], "base64")), {
     headers: {
       "Content-Type": m[1],
+      "Content-Disposition": `inline; filename="${encodeURIComponent(beleg.dateiname)}"`,
       "Cache-Control": "private, max-age=3600",
     },
   });

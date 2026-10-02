@@ -39,6 +39,10 @@ model Betrieb {
   konditionen Kondition[]
   offerten    Offerte[]
   wartungsvertraege Wartungsvertrag[]
+  ausgaben    Ausgabe[]
+  zahlungen   Zahlung[]
+  belege      Beleg[]
+  zugaenge    BetriebZugang[]
 }
 
 model Mitarbeiter {
@@ -51,6 +55,17 @@ model Mitarbeiter {
   passwortHash String  @default("")
   rapporte     Rapport[]
   sitzungen    Sitzung[]
+  zugaenge     BetriebZugang[] // firma-klientë shtesë që mund t'i ndërrojë (TIFF-Support)
+}
+
+// Qasje shtesë: p.sh. mbështetja e TIFF ndërron mes firmave-klientë (si te bexio)
+model BetriebZugang {
+  mitarbeiterId String
+  mitarbeiter   Mitarbeiter @relation(fields: [mitarbeiterId], references: [id], onDelete: Cascade)
+  betriebId     String
+  betrieb       Betrieb     @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+
+  @@id([mitarbeiterId, betriebId])
 }
 
 // Sesionet e login-it (cookie httpOnly me token)
@@ -61,6 +76,7 @@ model Sitzung {
   mitarbeiter   Mitarbeiter @relation(fields: [mitarbeiterId], references: [id], onDelete: Cascade)
   erstellt      DateTime    @default(now())
   gueltigBis    DateTime
+  aktiverBetriebId String? // firma e zgjedhur me dropdown (null = Betrieb-i vetë)
 }
 
 model Kunde {
@@ -261,4 +277,46 @@ model Wartungsvertrag {
   bemerkung       String   @default("")
   status          String   @default("AKTIV") // AKTIV | PAUSIERT | GEKUENDIGT
   erstellt        DateTime @default(now())
+}
+
+// Shpenzim / faturë furnitori (Ausgaben)
+model Ausgabe {
+  id           String    @id @default(cuid())
+  betriebId    String
+  betrieb      Betrieb   @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  lieferant    String    @default("")
+  beschreibung String
+  kategorie    String    @default("Material")
+  datum        DateTime  @default(now())
+  faelligAm    DateTime?
+  betragBrutto Float     @default(0)
+  mwstSatz     Float     @default(8.1)
+  status       String    @default("OFFEN") // OFFEN | BEZAHLT
+  erstellt     DateTime  @default(now())
+}
+
+// Lëvizje banke (Banking): pozitive = hyrje (pagesë klienti), negative = dalje
+model Zahlung {
+  id         String   @id @default(cuid())
+  betriebId  String
+  betrieb    Betrieb  @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  datum      DateTime @default(now())
+  text       String   @default("")
+  betrag     Float
+  referenz   String   @default("")
+  rechnungId String? // e lidhur me faturë klienti (shënohet BEZAHLT)
+  erstellt   DateTime @default(now())
+}
+
+// Posteingang: dokumente të ngarkuara (fatura furnitori, letra) për t'u përpunuar
+model Beleg {
+  id        String   @id @default(cuid())
+  betriebId String
+  betrieb   Betrieb  @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  titel     String
+  dateiname String   @default("")
+  mimeTyp   String   @default("")
+  daten     String   @default("") // data-URL (PDF/JPEG/PNG, max ~3 MB)
+  status    String   @default("NEU") // NEU | ERLEDIGT
+  erstellt  DateTime @default(now())
 }

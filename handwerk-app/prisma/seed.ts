@@ -3,10 +3,39 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+// Shembull multi-firmë (si te bexio): "Frigemo AG" si klient i dytë i TIFF; chef@demo.ch
+// (si mbështetje TIFF) mund të ndërrojë mes firmave me dropdown. Idempotent.
+async function demoBetriebe() {
+  const chef = await prisma.mitarbeiter.findUnique({ where: { email: "chef@demo.ch" } });
+  if (!chef) return;
+  let frigemo = await prisma.betrieb.findFirst({ where: { name: "Frigemo AG" } });
+  if (!frigemo) {
+    frigemo = await prisma.betrieb.create({
+      data: {
+        name: "Frigemo AG",
+        strasse: "Kühlweg 5",
+        plz: "8600",
+        ort: "Dübendorf",
+        email: "info@frigemo-demo.ch",
+        telefon: "044 000 11 22",
+        iban: "CH5800791123000889012",
+        bank: "Demo Bank AG",
+      },
+    });
+    console.log("Demo-Betrieb Frigemo AG angelegt.");
+  }
+  await prisma.betriebZugang.upsert({
+    where: { mitarbeiterId_betriebId: { mitarbeiterId: chef.id, betriebId: frigemo.id } },
+    update: {},
+    create: { mitarbeiterId: chef.id, betriebId: frigemo.id },
+  });
+}
+
 async function main() {
   const existing = await prisma.betrieb.findFirst();
   if (existing) {
     console.log("Seed übersprungen — Betrieb existiert bereits.");
+    await demoBetriebe();
     return;
   }
 
@@ -154,6 +183,7 @@ async function main() {
   });
 
   console.log("Seed fertig: Demo-Betrieb, Kunde, Objekt, Auftrag, Artikel erstellt.");
+  await demoBetriebe();
 }
 
 main()

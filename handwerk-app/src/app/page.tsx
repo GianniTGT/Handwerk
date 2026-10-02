@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
+import { TIFF } from "@/lib/tiff";
 
 export default async function Dashboard() {
   const { betrieb } = await sitzungErforderlich();
@@ -31,6 +32,16 @@ export default async function Dashboard() {
     <div>
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <p className="mt-1 text-sm text-muted">{betrieb.name} — vom Rapport zur QR-Rechnung in 5 Minuten.</p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-tiff border border-line bg-white px-4 py-2 text-sm shadow-sm">
+        <span className="font-semibold">Support · {TIFF.name}</span>
+        <a href={`mailto:${TIFF.supportEmail}`} className="text-forest underline">
+          ✉ {TIFF.supportEmail}
+        </a>
+        <a href={`tel:${TIFF.supportTelefon.replace(/\s/g, "")}`} className="text-forest underline">
+          ☎ {TIFF.supportTelefon}
+        </a>
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
         {karten.map((k) => (

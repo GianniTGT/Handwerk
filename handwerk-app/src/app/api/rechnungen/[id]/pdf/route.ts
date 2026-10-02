@@ -12,7 +12,7 @@ export async function GET(
   if (!sitzung) return new Response("Nicht angemeldet", { status: 401 });
 
   const { id } = await params;
-  const pdf = await rechnungPdf(id, sitzung.mitarbeiter.betriebId);
+  const pdf = await rechnungPdf(id, sitzung.aktiverBetrieb.id);
   if (!pdf) return new Response("Rechnung nicht gefunden", { status: 404 });
 
   return new Response(new Uint8Array(pdf.buffer), {
