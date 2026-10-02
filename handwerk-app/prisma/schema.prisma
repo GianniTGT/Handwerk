@@ -32,6 +32,7 @@ model Betrieb {
   rechnungen  Rechnung[]
   lieferanten Lieferant[]
   konditionen Kondition[]
+  offerten    Offerte[]
 }
 
 model Mitarbeiter {
@@ -68,6 +69,7 @@ model Kunde {
   email     String  @default("")
   objekte   Objekt[]
   auftraege Auftrag[]
+  offerten  Offerte[]
 }
 
 // Objekti/pajisja te klienti (kaldaja, bojleri, banjoja...) — njësia qendrore në SHK
@@ -81,6 +83,7 @@ model Objekt {
   ort         String  @default("")
   bemerkung   String  @default("")
   auftraege   Auftrag[]
+  offerten    Offerte[]
 }
 
 model Auftrag {
@@ -98,6 +101,47 @@ model Auftrag {
   datum        DateTime @default(now())
   rapporte     Rapport[]
   rechnung     Rechnung?
+  offerte      Offerte?
+}
+
+// Oferta (Angebot) me grupe pozicionesh hierarkike: 1 / 1.1 / 1.2 …
+// (struktura e vërejtur te oferta reale e Wasserdichter me Bexio)
+model Offerte {
+  id         String   @id @default(cuid())
+  betriebId  String
+  betrieb    Betrieb  @relation(fields: [betriebId], references: [id])
+  kundeId    String
+  kunde      Kunde    @relation(fields: [kundeId], references: [id])
+  objektId   String?
+  objekt     Objekt?  @relation(fields: [objektId], references: [id])
+  nummer     Int
+  titel      String
+  status     String   @default("ENTWURF") // ENTWURF | GESENDET | ANGENOMMEN | ABGELEHNT
+  datum      DateTime @default(now())
+  gueltigBis DateTime
+  auftragId  String?  @unique // vendoset pas konvertimit Offerte → Auftrag
+  auftrag    Auftrag? @relation(fields: [auftragId], references: [id])
+  gruppen    OfferteGruppe[]
+}
+
+model OfferteGruppe {
+  id          String  @id @default(cuid())
+  offerteId   String
+  offerte     Offerte @relation(fields: [offerteId], references: [id], onDelete: Cascade)
+  reihenfolge Int     @default(0)
+  titel       String
+  positionen  OffertePosition[]
+}
+
+model OffertePosition {
+  id          String        @id @default(cuid())
+  gruppeId    String
+  gruppe      OfferteGruppe @relation(fields: [gruppeId], references: [id], onDelete: Cascade)
+  reihenfolge Int           @default(0)
+  bezeichnung String // shumërreshtore: rreshtat shtesë bëhen bullets në PDF
+  menge       Float         @default(1)
+  einheit     String        @default("Stk.")
+  ansatz      Float         @default(0)
 }
 
 // Regierapport / Serviceauftrag-dokumentimi nga tereni
