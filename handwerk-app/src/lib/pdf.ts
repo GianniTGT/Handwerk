@@ -27,7 +27,7 @@ type BetriebDesign = {
   farbeText: string;
 };
 
-function dokumentStart(betrieb: BetriebDesign) {
+export function dokumentStart(betrieb: BetriebDesign) {
   const fTitel = betrieb.farbeTitel || "#1C1C1E";
   const fLinie = betrieb.farbeLinien || "#9AA5A0";
   const fText = betrieb.farbeText || "#1C1C1E";
@@ -57,7 +57,7 @@ function dokumentStart(betrieb: BetriebDesign) {
   return { doc, fertig, fTitel, fLinie, fText };
 }
 
-function footerAufSeiten(
+export function footerAufSeiten(
   doc: InstanceType<typeof PDFDocument>,
   betrieb: BetriebDesign,
   fText: string,
@@ -150,7 +150,7 @@ export async function rechnungPdf(
     .fontSize(9)
     .text(`Guten Tag ${kunde.name}`, 50)
     .moveDown(0.5)
-    .text("Danke für Ihr Vertrauen. Ihre Rechnung setzt sich wie folgt zusammen:");
+    .text(betrieb.rechnungKopftext.trim() || "Danke für Ihr Vertrauen. Ihre Rechnung setzt sich wie folgt zusammen:");
 
   const xPos = 50, xBez = 75, xMenge = 320, xEinheit = 370, xAnsatz = 420, xTotal = 490;
   let y = doc.y + 15;
@@ -202,7 +202,7 @@ export async function rechnungPdf(
   doc
     .font("Helvetica")
     .fontSize(9)
-    .text("Sie haben Fragen? Melden Sie sich bei uns.", 50, y + 25)
+    .text(betrieb.rechnungFusstext.trim() || "Sie haben Fragen? Melden Sie sich bei uns.", 50, y + 25, { width: 495 })
     .moveDown(1)
     .text("Freundliche Grüsse")
     .text(betrieb.name)
@@ -295,7 +295,7 @@ export async function offertePdf(
     .font("Helvetica")
     .text(`Guten Tag ${kunde.name}`, 50)
     .moveDown(0.5)
-    .text("Danke für Ihr Interesse. Gerne unterbreiten wir Ihnen dieses Angebot:");
+    .text(betrieb.offerteKopftext.trim() || "Danke für Ihr Interesse. Gerne unterbreiten wir Ihnen dieses Angebot:");
 
   const xPos = 50, xBez = 85, xMenge = 330, xEinheit = 380, xAnsatz = 420, xTotal = 490;
   let y = doc.y + 15;
@@ -384,7 +384,7 @@ export async function offertePdf(
     .font("Helvetica")
     .fillColor(fText)
     .fontSize(9)
-    .text("Bei Fragen oder Unklarheiten stehen wir Ihnen gerne zur Verfügung.", 50, y + 25)
+    .text(betrieb.offerteFusstext.trim() || "Bei Fragen oder Unklarheiten stehen wir Ihnen gerne zur Verfügung.", 50, y + 25, { width: 495 })
     .moveDown(1)
     .text("Freundliche Grüsse")
     .text(betrieb.name);

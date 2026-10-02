@@ -29,6 +29,14 @@ model Betrieb {
   farbeLinien String @default("#9AA5A0")
   farbeText   String @default("#1C1C1E")
   zahlungsfristTage Int @default(30) // afati i pagesës për faturat e reja
+  // Mahnwesen (si te bexio): ditë pas afatit / pas mahnimit të mëparshëm
+  mahnfrist1Tage Int @default(14) // Zahlungserinnerung pas afatit
+  mahnfrist2Tage Int @default(10) // Mahnung 1 pas kujtesës
+  mahnfrist3Tage Int @default(7)  // Mahnung 2 pas Mahnung 1
+  rechnungKopftext String @default("")
+  rechnungFusstext String @default("")
+  offerteKopftext  String @default("")
+  offerteFusstext  String @default("")
   erstellt  DateTime @default(now())
 
   mitarbeiter Mitarbeiter[]
@@ -43,6 +51,10 @@ model Betrieb {
   ausgaben    Ausgabe[]
   zahlungen   Zahlung[]
   belege      Beleg[]
+  gutschriften Gutschrift[]
+  projekte    Projekt[]
+  zeiten      Zeiteintrag[]
+  bestellungen Bestellung[]
   zugaenge    BetriebZugang[]
 }
 
@@ -54,6 +66,8 @@ model Mitarbeiter {
   rolle        String  @default("MONTEUR") // MONTEUR | BUERO | CHEF
   email        String? @unique // e nevojshme vetëm për llogaritë me login
   passwortHash String  @default("")
+  stundensatz  Float   @default(0) // CHF/h për zeitërfassung → faturim
+  zeiten       Zeiteintrag[]
   rapporte     Rapport[]
   sitzungen    Sitzung[]
   zugaenge     BetriebZugang[] // firma-klientë shtesë që mund t'i ndërrojë (TIFF-Support)
@@ -90,10 +104,31 @@ model Kunde {
   ort       String  @default("")
   telefon   String  @default("")
   email     String  @default("")
+  typ       String  @default("FIRMA") // FIRMA | PRIVAT
+  kategorie String  @default("") // p.sh. Hausverwaltung, Privatkunde, Gewerbe
+  mobile    String  @default("")
+  website   String  @default("")
+  bemerkung String  @default("")
+  archiviert Boolean @default(false)
+  kontaktpersonen Kontaktperson[]
+  projekte  Projekt[]
+  zeiten    Zeiteintrag[]
   objekte   Objekt[]
   auftraege Auftrag[]
   offerten  Offerte[]
   wartungsvertraege Wartungsvertrag[]
+}
+
+// Person kontakti te një klient (p.sh. Hausverwaltung → administratori)
+model Kontaktperson {
+  id       String @id @default(cuid())
+  kundeId  String
+  kunde    Kunde  @relation(fields: [kundeId], references: [id], onDelete: Cascade)
+  name     String
+  funktion String @default("")
+  email    String @default("")
+  telefon  String @default("")
+  mobile   String @default("")
 }
 
 // Objekti/pajisja te klienti (kaldaja, bojleri, banjoja...) — njësia qendrore në SHK
@@ -124,6 +159,9 @@ model Auftrag {
   beschreibung String   @default("")
   status       String   @default("OFFEN") // OFFEN | IN_ARBEIT | ERLEDIGT | VERRECHNET
   datum        DateTime @default(now())
+  projektId    String?
+  projekt      Projekt? @relation(fields: [projektId], references: [id])
+  zeiten       Zeiteintrag[]
   rapporte     Rapport[]
   rechnung     Rechnung?
   offerte      Offerte?
@@ -214,6 +252,7 @@ model Lieferant {
   name        String
   artikel     Artikel[]
   konditionen Kondition[]
+  bestellungen Bestellung[]
 }
 
 // Katalogu i artikujve (import CSV/Excel; më vonë IGH/DataExpert)
@@ -229,6 +268,11 @@ model Artikel {
   preis        Float      @default(0) // çmimi neto manual (për artikuj pa furnitor/zbritje)
   bruttoPreis  Float      @default(0) // çmimi bruto i katalogut
   rabattgruppe String     @default("") // grupi i zbritjes te furnitori
+  art          String     @default("WARE") // WARE | DIENSTLEISTUNG
+  gruppe       String     @default("")
+  einkaufspreis Float     @default(0) // EK manual → me zuschlag jep preis (VK)
+  zuschlagProzent Float   @default(0)
+  mwstSatz     Float      @default(8.1)
 }
 
 // Zbritja e firmës te një furnitor për një grup artikujsh:
@@ -255,6 +299,9 @@ model Rechnung {
   datum      DateTime @default(now())
   faelligAm  DateTime? // afati i pagesës; null = datum + 30 ditë (faturat e vjetra)
   status     String   @default("ENTWURF") // ENTWURF | VERSENDET | BEZAHLT
+  mahnstufe  Int      @default(0) // 0 = pa | 1 Zahlungserinnerung | 2 Mahnung 1 | 3 Mahnung 2
+  letzteMahnungAm DateTime?
+  gutschriften Gutschrift[]
   totalNetto Float    @default(0)
   mwstSatz   Float    @default(8.1) // norma standarde CH 2026
   totalBrutto Float   @default(0)
@@ -294,6 +341,7 @@ model Ausgabe {
   betragBrutto Float     @default(0)
   mwstSatz     Float     @default(8.1)
   status       String    @default("OFFEN") // OFFEN | BEZAHLT
+  projektId    String? // material i lidhur me projektin (Nachkalkulation)
   erstellt     DateTime  @default(now())
 }
 
@@ -321,4 +369,87 @@ model Beleg {
   daten     String   @default("") // data-URL (PDF/JPEG/PNG, max ~3 MB)
   status    String   @default("NEU") // NEU | ERLEDIGT
   erstellt  DateTime @default(now())
+}
+
+// Kreditnotë për faturë klienti (Gutschrift) — zvogëlon shumën e hapur
+model Gutschrift {
+  id          String   @id @default(cuid())
+  betriebId   String
+  betrieb     Betrieb  @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  rechnungId  String
+  rechnung    Rechnung @relation(fields: [rechnungId], references: [id])
+  nummer      Int
+  datum       DateTime @default(now())
+  grund       String   @default("")
+  totalNetto  Float
+  mwstSatz    Float    @default(8.1)
+  totalBrutto Float
+}
+
+// Projekti = kantier / objekt-pune (si te bexio, me substatus të lirë)
+model Projekt {
+  id           String   @id @default(cuid())
+  betriebId    String
+  betrieb      Betrieb  @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  kundeId      String?
+  kunde        Kunde?   @relation(fields: [kundeId], references: [id])
+  nummer       Int
+  name         String
+  typ          String   @default("KUNDE") // KUNDE | INTERN
+  status       String   @default("OFFEN") // OFFEN | AKTIV | ARCHIVIERT
+  substatus    String   @default("")
+  start        DateTime?
+  ende         DateTime?
+  beschreibung String   @default("")
+  erstellt     DateTime @default(now())
+  auftraege    Auftrag[]
+  zeiten       Zeiteintrag[]
+}
+
+// Orë pune (Zeiterfassung) — e abrechenbar → bëhet pozicion rapporti/faturë
+model Zeiteintrag {
+  id            String       @id @default(cuid())
+  betriebId     String
+  betrieb       Betrieb      @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  mitarbeiterId String
+  mitarbeiter   Mitarbeiter  @relation(fields: [mitarbeiterId], references: [id])
+  projektId     String?
+  projekt       Projekt?     @relation(fields: [projektId], references: [id])
+  auftragId     String?
+  auftrag       Auftrag?     @relation(fields: [auftragId], references: [id])
+  kundeId       String?
+  kunde         Kunde?       @relation(fields: [kundeId], references: [id])
+  taetigkeit    String       @default("Umsetzung")
+  datum         DateTime     @default(now())
+  minuten       Int
+  bemerkung     String       @default("")
+  abrechenbar   Boolean      @default(true)
+  stundensatz   Float        @default(0)
+  status        String       @default("OFFEN") // OFFEN | ERLEDIGT | FAKTURIERT
+  erstellt      DateTime     @default(now())
+}
+
+// Porosi te furnitori (Bestellung)
+model Bestellung {
+  id          String    @id @default(cuid())
+  betriebId   String
+  betrieb     Betrieb   @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  lieferantId String
+  lieferant   Lieferant @relation(fields: [lieferantId], references: [id])
+  nummer      Int
+  datum       DateTime  @default(now())
+  status      String    @default("ENTWURF") // ENTWURF | BESTELLT | GELIEFERT
+  bemerkung   String    @default("")
+  positionen  BestellPosition[]
+}
+
+model BestellPosition {
+  id           String     @id @default(cuid())
+  bestellungId String
+  bestellung   Bestellung @relation(fields: [bestellungId], references: [id], onDelete: Cascade)
+  artikelNr    String     @default("")
+  bezeichnung  String
+  menge        Float      @default(1)
+  einheit      String     @default("Stk.")
+  preis        Float      @default(0)
 }

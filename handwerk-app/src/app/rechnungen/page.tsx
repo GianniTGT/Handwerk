@@ -5,6 +5,8 @@ import { sitzungErforderlich } from "@/lib/auth";
 import { sendeRechnungEmail, setRechnungStatus } from "@/lib/actions";
 import { faelligDatum, istUeberfaellig, tageUeberfaellig } from "@/lib/faellig";
 import Link from "next/link";
+import { createGutschrift } from "@/lib/actions-verkauf";
+import { MAHNSTUFEN, offenerBetrag } from "@/lib/mahnwesen";
 import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
 
 const chf = (n: number) =>
@@ -25,7 +27,7 @@ export default async function RechnungenPage({
   const { email, filter = "alle" } = await searchParams;
   const alle = await db.rechnung.findMany({
     where: { betriebId: betrieb.id },
-    include: { auftrag: { include: { kunde: true } } },
+    include: { auftrag: { include: { kunde: true } }, gutschriften: true },
     orderBy: { nummer: "desc" },
   });
   const mitFrist = alle.map((r) => {
@@ -78,6 +80,9 @@ export default async function RechnungenPage({
               <div className="text-sm text-muted">
                 Auftrag #{r.auftrag.nummer} · {r.datum.toLocaleDateString("de-CH")} · netto CHF{" "}
                 {chf(r.totalNetto)} · <strong>brutto CHF {chf(r.totalBrutto)}</strong>
+                {r.gutschriften.length > 0 && (
+                  <span> · Gutschrift CHF {chf(r.gutschriften.reduce((s, g) => s + g.totalBrutto, 0))} → offen CHF {chf(offenerBetrag(r))}</span>
+                )}
                 {r.status !== "ENTWURF" && (
                   <span className={ueberfaellig ? "font-medium text-red-700" : ""}>
                     {" "}· fällig {faellig.toLocaleDateString("de-CH")}
@@ -90,6 +95,11 @@ export default async function RechnungenPage({
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ueberfaellig ? "bg-red-100 text-red-800" : statusFarben[r.status] ?? ""}`}>
                 {ueberfaellig ? "ÜBERFÄLLIG" : r.status}
               </span>
+              {r.mahnstufe > 0 && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                  {MAHNSTUFEN[r.mahnstufe]}
+                </span>
+              )}
               <a
                 href={`/api/rechnungen/${r.id}/pdf`}
                 className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift"
@@ -107,6 +117,26 @@ export default async function RechnungenPage({
               )}
             </div>
             </div>
+            {r.status !== "ENTWURF" && (
+              <details className="mt-2 rounded-tiff border border-line bg-white">
+                <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
+                  ↩️ Gutschrift erstellen
+                </summary>
+                <form action={createGutschrift} className="grid gap-2 border-t border-line p-3 md:grid-cols-[1fr_1fr_auto]">
+                  <input type="hidden" name="rechnungId" value={r.id} />
+                  <input name="grund" placeholder="Grund (z.B. Preisnachlass)" className="rounded border border-line p-2 text-sm" />
+                  <input
+                    name="betragBrutto"
+                    inputMode="decimal"
+                    placeholder={`Betrag brutto (leer = offen CHF ${chf(offenerBetrag(r))})`}
+                    className="rounded border border-line p-2 text-sm"
+                  />
+                  <button className="rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">
+                    Erstellen
+                  </button>
+                </form>
+              </details>
+            )}
             <div className="mt-2">
               <EmailForm
                 action={sendeRechnungEmail}

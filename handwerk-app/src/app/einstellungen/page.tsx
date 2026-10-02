@@ -64,6 +64,36 @@ export default async function EinstellungenPage({
         </section>
 
         <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
+          <h2 className="font-semibold">Mahnwesen</h2>
+          <p className="mt-1 text-xs text-muted">Tage bis zur jeweils nächsten Stufe (wie bei bexio: 14 / 10 / 7).</p>
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            {(
+              [
+                ["mahnfrist1Tage", "Zahlungserinnerung nach Fälligkeit", betrieb.mahnfrist1Tage],
+                ["mahnfrist2Tage", "1. Mahnung nach Erinnerung", betrieb.mahnfrist2Tage],
+                ["mahnfrist3Tage", "2. Mahnung nach 1. Mahnung", betrieb.mahnfrist3Tage],
+              ] as const
+            ).map(([name, label, wert]) => (
+              <label key={name} className="grid gap-0.5 text-xs text-muted">
+                {label} (Tage)
+                <input name={name} type="number" min={0} max={365} defaultValue={wert} className={feld} />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
+          <h2 className="font-semibold">Kopf- und Fusstexte der Dokumente</h2>
+          <p className="mt-1 text-xs text-muted">Leer lassen = Standardtext.</p>
+          <div className="mt-3 grid gap-2">
+            <textarea name="rechnungKopftext" defaultValue={betrieb.rechnungKopftext} rows={2} placeholder="Rechnung — Kopftext" className={feld} />
+            <textarea name="rechnungFusstext" defaultValue={betrieb.rechnungFusstext} rows={2} placeholder="Rechnung — Fusstext" className={feld} />
+            <textarea name="offerteKopftext" defaultValue={betrieb.offerteKopftext} rows={2} placeholder="Offerte — Kopftext" className={feld} />
+            <textarea name="offerteFusstext" defaultValue={betrieb.offerteFusstext} rows={2} placeholder="Offerte — Fusstext" className={feld} />
+          </div>
+        </section>
+
+        <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
           <h2 className="font-semibold">Dokumentenlogo</h2>
           <div className="mt-3 flex items-center gap-4">
             {betrieb.logo ? (

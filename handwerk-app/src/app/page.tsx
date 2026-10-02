@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { TIFF } from "@/lib/tiff";
 import { chf } from "@/lib/format";
+import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 
 export default async function Dashboard() {
@@ -28,7 +29,7 @@ export default async function Dashboard() {
       where: { betriebId: betrieb.id, datum: { gte: new Date(jahr, 0, 1), lt: new Date(jahr + 1, 0, 1) } },
       select: { datum: true, betrag: true },
     }),
-    db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" } }),
+    db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" }, include: { gutschriften: true } }),
     db.ausgabe.findMany({ where: { betriebId: betrieb.id, status: "OFFEN" } }),
   ]);
   const monate = Array.from({ length: 12 }, (_, i) => {
@@ -48,7 +49,7 @@ export default async function Dashboard() {
   });
   const debitoren = teile(
     offeneRechnungen.map((r) => ({
-      betrag: r.totalBrutto,
+      betrag: offenerBetrag(r),
       ueberfaellig: istUeberfaellig(faelligDatum(r, betrieb.zahlungsfristTage), r.status),
     }))
   );

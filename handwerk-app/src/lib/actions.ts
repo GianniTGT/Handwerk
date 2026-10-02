@@ -583,6 +583,11 @@ export async function updateBetrieb(formData: FormData) {
     return /^#[0-9a-fA-F]{6}$/.test(wert) ? wert : fallback;
   };
 
+  const tage = (name: string, fallback: number) => {
+    const n = parseInt(String(formData.get(name) ?? ""));
+    return Number.isFinite(n) ? Math.min(365, Math.max(0, n)) : fallback;
+  };
+
   // Logo opsionale: PNG/JPEG deri 500 KB, ruhet si data-URL
   let logo: string | undefined;
   const datei = formData.get("logo");
@@ -610,6 +615,13 @@ export async function updateBetrieb(formData: FormData) {
       bic: String(formData.get("bic") ?? ""),
       zahlungsfristTage: Math.min(365, Math.max(0, parseInt(String(formData.get("zahlungsfristTage") ?? "")) || betrieb.zahlungsfristTage)),
       mwstNr: String(formData.get("mwstNr") ?? ""),
+      mahnfrist1Tage: tage("mahnfrist1Tage", betrieb.mahnfrist1Tage),
+      mahnfrist2Tage: tage("mahnfrist2Tage", betrieb.mahnfrist2Tage),
+      mahnfrist3Tage: tage("mahnfrist3Tage", betrieb.mahnfrist3Tage),
+      rechnungKopftext: String(formData.get("rechnungKopftext") ?? "").trim(),
+      rechnungFusstext: String(formData.get("rechnungFusstext") ?? "").trim(),
+      offerteKopftext: String(formData.get("offerteKopftext") ?? "").trim(),
+      offerteFusstext: String(formData.get("offerteFusstext") ?? "").trim(),
       farbeTitel: hex("farbeTitel", betrieb.farbeTitel),
       farbeLinien: hex("farbeLinien", betrieb.farbeLinien),
       farbeText: hex("farbeText", betrieb.farbeText),
