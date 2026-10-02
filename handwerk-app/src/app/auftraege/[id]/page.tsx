@@ -11,14 +11,23 @@ import {
   saveRapportFoto,
   saveUnterschrift,
 } from "@/lib/actions";
+import { zeitenInRapport } from "@/lib/actions-projekte";
+import { stunden } from "@/lib/projekte";
 import SignaturePad from "@/components/SignaturePad";
 import FotoUpload from "@/components/FotoUpload";
 
 const chf = (n: number) =>
   n.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default async function AuftragDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function AuftragDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ zeiten?: string; fehler?: string }>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
   const { betrieb } = await sitzungErforderlich();
   const auftrag = await db.auftrag.findFirst({
     where: { id, betriebId: betrieb.id },
@@ -38,6 +47,13 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
     }),
     db.kondition.findMany({ where: { betriebId: betrieb.id } }),
   ]);
+
+  const offeneZeiten = await db.zeiteintrag.findMany({
+    where: { auftragId: auftrag.id, betriebId: betrieb.id, abrechenbar: true, status: { not: "FAKTURIERT" } },
+    select: { minuten: true, stundensatz: true },
+  });
+  const zeitMinuten = offeneZeiten.reduce((s, z) => s + z.minuten, 0);
+  const zeitWert = offeneZeiten.reduce((s, z) => s + (z.minuten / 60) * z.stundensatz, 0);
 
   const positionen = auftrag.rapporte.flatMap((r) => r.positionen);
   const fotos = auftrag.rapporte.flatMap((r) => r.fotos);
@@ -76,6 +92,24 @@ export default async function AuftragDetail({ params }: { params: Promise<{ id: 
           </Link>
         )}
       </div>
+
+      {sp.zeiten && (
+        <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">{sp.zeiten} Zeiteintrag/-einträge als Rapport-Positionen übernommen ✓</p>
+      )}
+      {sp.fehler === "verrechnet" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Auftrag ist bereits verrechnet.</p>
+      )}
+      {offeneZeiten.length > 0 && auftrag.status !== "VERRECHNET" && (
+        <form action={zeitenInRapport} className="mt-3 flex flex-wrap items-center gap-3 rounded-tiff border border-line bg-white p-3 text-sm">
+          <input type="hidden" name="auftragId" value={auftrag.id} />
+          <span>
+            ⏱ {offeneZeiten.length} offene abrechenbare Zeit(en): <strong>{stunden(zeitMinuten)} h</strong> · CHF {chf(zeitWert)}
+          </span>
+          <button className="rounded border border-forest px-3 py-1.5 text-xs font-semibold text-forest hover:bg-surface2">
+            In Rapport übernehmen
+          </button>
+        </form>
+      )}
 
       <div className="mt-6 grid gap-6 md:grid-cols-[2fr_1fr]">
         <div>

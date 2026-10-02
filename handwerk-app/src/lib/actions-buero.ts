@@ -22,6 +22,11 @@ export async function createAusgabe(formData: FormData) {
   if (!beschreibung || !Number.isFinite(betrag) || betrag <= 0) {
     redirect("/ausgaben?fehler=eingabe");
   }
+  const projektWahl = String(formData.get("projektId") ?? "");
+  const projektId =
+    projektWahl && (await db.projekt.findFirst({ where: { id: projektWahl, betriebId: betrieb.id } }))
+      ? projektWahl
+      : null;
   const faellig = String(formData.get("faelligAm") ?? "");
   await db.ausgabe.create({
     data: {
@@ -33,6 +38,7 @@ export async function createAusgabe(formData: FormData) {
       faelligAm: faellig ? datumOderHeute(faellig) : null,
       betragBrutto: betrag,
       mwstSatz: parseFloat(String(formData.get("mwstSatz") ?? "8.1")) || 0,
+      projektId: projektId,
     },
   });
   // Nëse vjen nga Posteingang: shëno dokumentin si të përpunuar

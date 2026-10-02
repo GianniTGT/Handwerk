@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { sitzungErforderlich } from "@/lib/auth";
 import { updateBetrieb } from "@/lib/actions";
+import { saveStundensaetze } from "@/lib/actions-projekte";
+import { db } from "@/lib/db";
 
 const fehlerTexte: Record<string, string> = {
   "logo-gross": "Logo zu gross — max. 500 KB.",
@@ -15,6 +17,7 @@ export default async function EinstellungenPage({
 }) {
   const { betrieb } = await sitzungErforderlich();
   const sp = await searchParams;
+  const team = await db.mitarbeiter.findMany({ where: { betriebId: betrieb.id }, orderBy: { name: "asc" } });
 
   const feld = "rounded border border-line p-2 text-sm";
 
@@ -136,6 +139,22 @@ export default async function EinstellungenPage({
 
         <button className="rounded bg-forest p-2.5 text-sm font-semibold text-white hover:bg-forest-lift">
           Speichern
+        </button>
+      </form>
+
+      <form action={saveStundensaetze} className="mt-6 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Stundensätze (Zeiterfassung)</h2>
+        <p className="mt-1 text-xs text-muted">CHF pro Stunde je Mitarbeiter — wird beim Erfassen einer Zeit festgehalten und in die Rechnung übernommen.</p>
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {team.map((m) => (
+            <label key={m.id} className="flex items-center justify-between gap-2 text-sm">
+              <span>{m.name} <span className="text-xs text-muted">({m.rolle})</span></span>
+              <input name={`satz_${m.id}`} inputMode="decimal" defaultValue={m.stundensatz} className={`${feld} w-24 text-right`} />
+            </label>
+          ))}
+        </div>
+        <button className="mt-3 rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
+          Stundensätze speichern
         </button>
       </form>
     </div>

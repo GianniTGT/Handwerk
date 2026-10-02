@@ -18,6 +18,10 @@ export default async function AusgabenPage({
     where: { betriebId: betrieb.id },
     orderBy: { datum: "desc" },
   });
+  const projekte = await db.projekt.findMany({
+    where: { betriebId: betrieb.id, status: { not: "ARCHIVIERT" } },
+    orderBy: { nummer: "desc" },
+  });
   const beleg = sp.beleg
     ? await db.beleg.findFirst({ where: { id: sp.beleg, betriebId: betrieb.id } })
     : null;
@@ -86,6 +90,12 @@ export default async function AusgabenPage({
             <option value="0">0</option>
           </select>
         </label>
+        <select name="projektId" className={`${feld} md:col-span-4`}>
+          <option value="">Projekt (optional, für Nachkalkulation)</option>
+          {projekte.map((p) => (
+            <option key={p.id} value={p.id}>P-{p.nummer} {p.name}</option>
+          ))}
+        </select>
         <button className="rounded bg-forest p-2.5 text-sm font-semibold text-white hover:bg-forest-lift md:col-span-4">
           Ausgabe speichern
         </button>

@@ -11,6 +11,8 @@ const haupt: Eintrag[] = [
   { href: "/kunden", label: "Kontakte", icon: "👤" },
 ];
 const verkauf: Eintrag[] = [
+  { href: "/projekte", label: "Projekte", icon: "🏗️" },
+  { href: "/zeiten", label: "Zeiten", icon: "⏱️" },
   { href: "/offerten", label: "Offerten", icon: "📄" },
   { href: "/auftraege", label: "Aufträge", icon: "🔧" },
   { href: "/wartung", label: "Wartung", icon: "⏰" },
