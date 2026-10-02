@@ -51,18 +51,28 @@ export async function GET(
     .text(`${kunde.plz} ${kunde.ort}`, 350)
     .moveDown(2);
 
-  // Titel
+  // Titel + blloku informativ (standardi i faturave profesionale CH)
+  const zahlbarBis = new Date(rechnung.datum);
+  zahlbarBis.setDate(zahlbarBis.getDate() + 30);
   doc
     .fontSize(13)
     .font("Helvetica-Bold")
     .text(`Rechnung Nr. ${rechnung.nummer}`, 50)
-    .fontSize(9)
-    .font("Helvetica")
-    .text(
-      `Datum: ${rechnung.datum.toLocaleDateString("de-CH")} · Auftrag #${auftrag.nummer} — ${auftrag.titel}` +
-        (auftrag.objekt ? ` · Objekt: ${auftrag.objekt.bezeichnung}` : "")
-    )
-    .moveDown(1);
+    .moveDown(0.3);
+  doc.fontSize(9).font("Helvetica");
+  const info: [string, string][] = [
+    ["Datum:", rechnung.datum.toLocaleDateString("de-CH")],
+    ["Zahlbar bis:", zahlbarBis.toLocaleDateString("de-CH")],
+    ["Auftrag:", `#${auftrag.nummer} — ${auftrag.titel}`],
+  ];
+  if (auftrag.objekt) info.push(["Objekt:", auftrag.objekt.bezeichnung]);
+  if (betrieb.mwstNr) info.push(["MwSt. Nr.:", betrieb.mwstNr]);
+  for (const [label, wert] of info) {
+    const zeileY = doc.y;
+    doc.font("Helvetica-Bold").text(label, 50, zeileY, { width: 80 });
+    doc.font("Helvetica").text(wert, 135, zeileY);
+  }
+  doc.moveDown(1);
 
   // Tabelle e pozicioneve
   const xBez = 50, xMenge = 320, xEinheit = 370, xAnsatz = 420, xTotal = 490;
@@ -104,9 +114,14 @@ export async function GET(
   doc
     .font("Helvetica")
     .fontSize(8)
-    .text("Zahlbar innert 30 Tagen. Vielen Dank für Ihren Auftrag.", 50, y + 30);
+    .text(
+      "Zahlbar innert 30 Tagen. Vielen Dank für Ihren Auftrag.\nIhre QR-Rechnung befindet sich auf der nächsten Seite.",
+      50,
+      y + 30
+    );
 
-  // QR-Rechnung (Swiss QR-bill) në fund të faqes
+  // QR-Rechnung (Swiss QR-bill) në faqe të veçantë — si standardi i bexio-s
+  doc.addPage();
   const qrBill = new SwissQRBill({
     amount: rechnung.totalBrutto,
     currency: "CHF",

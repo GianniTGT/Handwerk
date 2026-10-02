@@ -35,6 +35,30 @@ zyre paguajnë CHF 500–950/vit për një vegël që s'e mbulon fare terenin e 
 | **Dokumenten-Designer** | Vorlage: logo, ngjyra, Druck-Layout | E thjeshtë dhe e mirë — na duhet një version minimal |
 | **bexio network** | Shkëmbim dokumentesh mes firmave bexio | Lock-in-strategji e tyre |
 
+## 2a. Fatura reale e bexio AG (referencë e analizuar, korrik 2026)
+
+Kemi në dorë një faturë reale të bexio-s drejt një firme të vogël kliente. Mësimet:
+
+**Sa paguan realisht një firmë e vogël:**
+- Package Advanced, Yearly Fee: **CHF 504.00/vit** (= 42/muaj, konfirmon çmimoren 2026)
+- Zbritje promocionale **-30% vitin e parë** (bx30, "alle Pakete") → pra bexio blen klientë
+  me zbritje agresive; viti 2 kushton plot. Kjo krijon momentin e zhgënjimit në rinovim —
+  **koha ideale për t'i ofruar alternativën tonë është para rinovimit të vitit 2**.
+- Option Lohnbuchhaltung: **CHF 300/vit** për 5 punonjës (CHF 60/punonjës/vit) — add-on.
+- Total me MwSt 8.1%: **CHF 705.70/vit** — pa asnjë funksion terreni/servisi brenda.
+
+**Standardi i layoutit që duhet ta arrijmë (dhe ta kalojmë):**
+- Logo lart djathtas; blloku i dërguesit/marrësit; tabela informative:
+  Datum, **Zahlbar bis** (afati i pagesës), MwSt-Nr (CHE-…), Ansprechpartner, **Kundennummer**
+- Pozicionet të grupuara sipas periudhës, rreshta zbritjeje të qartë
+- Total → Zzgl. MwSt. 8.1% → **Betrag inkl. MwSt.**
+- Shënimi: *"Ihre QR-Rechnung befindet sich auf der nächsten Seite"* —
+  **QR-pjesa (Empfangsschein + Zahlteil) në faqe të veçantë**, me QR-IBAN dhe
+  **QR-Referenz** 27-shifrore (për abgleich automatik të pagesave në e-banking)
+
+**Detyrë teknike për ne:** mbështetje opsionale për QR-IBAN + QR-Referenz (jo vetëm IBAN
+të thjeshtë) — kështu firmat tona i njohin pagesat automatikisht, si bexio.
+
 ## 3. Dobësitë e Bexio-s për zanatlinjtë (vërejtje nga trial-i)
 
 1. **Zero funksione terreni:** asnjë Regierapport, asnjë app montatori, asnjë nënshkrim
