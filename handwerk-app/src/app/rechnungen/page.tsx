@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { sendeRechnungEmail, setRechnungStatus } from "@/lib/actions";
+import { faelligDatum, istUeberfaellig, tageUeberfaellig } from "@/lib/faellig";
+import Link from "next/link";
 import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
 
 const chf = (n: number) =>
@@ -17,22 +19,56 @@ const statusFarben: Record<string, string> = {
 export default async function RechnungenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; filter?: string }>;
 }) {
   const { betrieb } = await sitzungErforderlich();
-  const { email } = await searchParams;
-  const rechnungen = await db.rechnung.findMany({
+  const { email, filter = "alle" } = await searchParams;
+  const alle = await db.rechnung.findMany({
     where: { betriebId: betrieb.id },
     include: { auftrag: { include: { kunde: true } } },
     orderBy: { nummer: "desc" },
   });
+  const mitFrist = alle.map((r) => {
+    const faellig = faelligDatum(r, betrieb.zahlungsfristTage);
+    return { r, faellig, ueberfaellig: istUeberfaellig(faellig, r.status) };
+  });
+  const zaehler = {
+    alle: mitFrist.length,
+    entwurf: mitFrist.filter((x) => x.r.status === "ENTWURF").length,
+    offen: mitFrist.filter((x) => x.r.status === "VERSENDET" && !x.ueberfaellig).length,
+    ueberfaellig: mitFrist.filter((x) => x.ueberfaellig).length,
+    bezahlt: mitFrist.filter((x) => x.r.status === "BEZAHLT").length,
+  };
+  const sichtbar = mitFrist.filter(({ r, ueberfaellig }) =>
+    filter === "entwurf" ? r.status === "ENTWURF"
+    : filter === "offen" ? r.status === "VERSENDET" && !ueberfaellig
+    : filter === "ueberfaellig" ? ueberfaellig
+    : filter === "bezahlt" ? r.status === "BEZAHLT"
+    : true
+  );
+  const tabs: [string, string][] = [
+    ["alle", "Alle"], ["entwurf", "Entwurf"], ["offen", "Offen"], ["ueberfaellig", "Überfällig"], ["bezahlt", "Bezahlt"],
+  ];
 
   return (
     <div>
       <h1 className="text-xl font-bold">Rechnungen</h1>
       <div className="mt-3"><EmailStatusBanner status={email} /></div>
+      <div className="mt-3 flex flex-wrap gap-1 text-sm">
+        {tabs.map(([key, label]) => (
+          <Link
+            key={key}
+            href={`/rechnungen?filter=${key}`}
+            className={`rounded-full border px-3 py-1 ${
+              filter === key ? "border-forest bg-forest text-white" : "border-line bg-white hover:bg-surface2"
+            } ${key === "ueberfaellig" && zaehler.ueberfaellig > 0 && filter !== key ? "text-red-700" : ""}`}
+          >
+            {label} ({zaehler[key as keyof typeof zaehler]})
+          </Link>
+        ))}
+      </div>
       <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
-        {rechnungen.map((r) => (
+        {sichtbar.map(({ r, faellig, ueberfaellig }) => (
           <li key={r.id} className="p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -42,11 +78,17 @@ export default async function RechnungenPage({
               <div className="text-sm text-muted">
                 Auftrag #{r.auftrag.nummer} · {r.datum.toLocaleDateString("de-CH")} · netto CHF{" "}
                 {chf(r.totalNetto)} · <strong>brutto CHF {chf(r.totalBrutto)}</strong>
+                {r.status !== "ENTWURF" && (
+                  <span className={ueberfaellig ? "font-medium text-red-700" : ""}>
+                    {" "}· fällig {faellig.toLocaleDateString("de-CH")}
+                    {ueberfaellig && ` (${tageUeberfaellig(faellig)} Tage überfällig)`}
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusFarben[r.status] ?? ""}`}>
-                {r.status}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ueberfaellig ? "bg-red-100 text-red-800" : statusFarben[r.status] ?? ""}`}>
+                {ueberfaellig ? "ÜBERFÄLLIG" : r.status}
               </span>
               <a
                 href={`/api/rechnungen/${r.id}/pdf`}
@@ -77,7 +119,7 @@ export default async function RechnungenPage({
             </div>
           </li>
         ))}
-        {rechnungen.length === 0 && (
+        {sichtbar.length === 0 && (
           <li className="p-3 text-sm text-muted">
             Noch keine Rechnungen — erstelle sie direkt aus einem Auftrag.
           </li>

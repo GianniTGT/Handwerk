@@ -4,6 +4,8 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { TIFF } from "@/lib/tiff";
+import { chf } from "@/lib/format";
+import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 
 export default async function Dashboard() {
   const { betrieb } = await sitzungErforderlich();
@@ -18,6 +20,45 @@ export default async function Dashboard() {
       where: { betriebId: betrieb.id, status: "AKTIV", naechsteWartung: { lte: in30Tagen } },
     }),
   ]);
+
+  // Widgets si te bexio: lëvizjet e parasë sipas muajit + Debitoren/Kreditoren (hapur / i vonuar)
+  const jahr = new Date().getFullYear();
+  const [zahlungen, offeneRechnungen, offeneAusgaben] = await Promise.all([
+    db.zahlung.findMany({
+      where: { betriebId: betrieb.id, datum: { gte: new Date(jahr, 0, 1), lt: new Date(jahr + 1, 0, 1) } },
+      select: { datum: true, betrag: true },
+    }),
+    db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" } }),
+    db.ausgabe.findMany({ where: { betriebId: betrieb.id, status: "OFFEN" } }),
+  ]);
+  const monate = Array.from({ length: 12 }, (_, i) => {
+    const m = zahlungen.filter((z) => z.datum.getMonth() === i);
+    return {
+      ein: m.filter((z) => z.betrag > 0).reduce((s, z) => s + z.betrag, 0),
+      aus: -m.filter((z) => z.betrag < 0).reduce((s, z) => s + z.betrag, 0),
+    };
+  });
+  const totalEin = monate.reduce((s, m) => s + m.ein, 0);
+  const totalAus = monate.reduce((s, m) => s + m.aus, 0);
+  const maxMonat = Math.max(1, ...monate.map((m) => Math.max(m.ein, m.aus)));
+
+  const teile = (posten: { betrag: number; ueberfaellig: boolean }[]) => ({
+    offen: posten.filter((p) => !p.ueberfaellig).reduce((s, p) => s + p.betrag, 0),
+    ueberfaellig: posten.filter((p) => p.ueberfaellig).reduce((s, p) => s + p.betrag, 0),
+  });
+  const debitoren = teile(
+    offeneRechnungen.map((r) => ({
+      betrag: r.totalBrutto,
+      ueberfaellig: istUeberfaellig(faelligDatum(r, betrieb.zahlungsfristTage), r.status),
+    }))
+  );
+  const kreditoren = teile(
+    offeneAusgaben.map((a) => ({
+      betrag: a.betragBrutto,
+      ueberfaellig: !!a.faelligAm && a.faelligAm.getTime() < new Date().setHours(0, 0, 0, 0),
+    }))
+  );
+  const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
   const karten = [
     { label: "Kontakte", wert: kunden, href: "/kunden" },
@@ -54,6 +95,63 @@ export default async function Dashboard() {
             <div className="mt-1 text-sm text-muted">{k.label}</div>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <section className="rounded-tiff border border-line bg-white p-4 shadow-sm lg:col-span-2">
+          <h2 className="font-semibold">Flüssige Mittel — Eingänge und Ausgänge {jahr}</h2>
+          <div className="mt-3 flex h-36 items-end gap-1" role="img" aria-label="Eingänge und Ausgänge pro Monat">
+            {monate.map((m, i) => (
+              <div key={i} className="flex h-full flex-1 items-end justify-center gap-0.5">
+                <div className="w-1/2 rounded-t bg-green-600" style={{ height: `${(m.ein / maxMonat) * 100}%` }} title={`${MONATE[i]}: Eingang CHF ${chf(m.ein)}`} />
+                <div className="w-1/2 rounded-t bg-red-500" style={{ height: `${(m.aus / maxMonat) * 100}%` }} title={`${MONATE[i]}: Ausgang CHF ${chf(m.aus)}`} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex gap-1 text-[10px] text-muted">
+            {MONATE.map((n) => (
+              <span key={n} className="flex-1 text-center">{n}</span>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-8 text-sm">
+            <div>
+              <div className="text-[10px] font-semibold uppercase text-muted">Total Einnahmen</div>
+              <div className="font-bold text-green-700">CHF {chf(totalEin)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase text-muted">Total Ausgaben</div>
+              <div className="font-bold text-red-700">CHF {chf(totalAus)}</div>
+            </div>
+          </div>
+          {totalEin + totalAus === 0 && (
+            <p className="mt-2 text-xs text-muted">
+              Noch keine Zahlungen — erfasse sie unter <Link href="/banking" className="text-forest underline">Banking</Link>.
+            </p>
+          )}
+        </section>
+
+        <div className="grid gap-4">
+          {[
+            { titel: "Offene Rechnungen (Debitoren)", t: debitoren, href: "/rechnungen?filter=ueberfaellig" },
+            { titel: "Offene Lieferantenrechnungen (Kreditoren)", t: kreditoren, href: "/ausgaben" },
+          ].map(({ titel, t, href }) => {
+            const summe = t.offen + t.ueberfaellig;
+            return (
+              <Link key={titel} href={href} className="rounded-tiff border border-line bg-white p-4 shadow-sm hover:border-forest">
+                <h2 className="text-sm font-semibold">{titel}</h2>
+                <div className="mt-1 text-xs text-muted">Total unbezahlt: CHF {chf(summe)}</div>
+                <div className="mt-2 flex h-3 overflow-hidden rounded bg-surface2">
+                  <div className="bg-sky-400" style={{ width: `${summe ? (t.offen / summe) * 100 : 0}%` }} />
+                  <div className="bg-red-500" style={{ width: `${summe ? (t.ueberfaellig / summe) * 100 : 0}%` }} />
+                </div>
+                <div className="mt-2 flex justify-between text-xs">
+                  <span><span className="font-semibold uppercase text-sky-700">Offen</span> CHF {chf(t.offen)}</span>
+                  <span><span className="font-semibold uppercase text-red-700">Überfällig</span> CHF {chf(t.ueberfaellig)}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* «Erste Schritte» — struktura e njohur nga bexio */}

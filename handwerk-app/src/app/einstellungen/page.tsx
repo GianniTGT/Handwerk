@@ -56,6 +56,10 @@ export default async function EinstellungenPage({
             <input name="iban" defaultValue={betrieb.iban} placeholder="IBAN / QR-IBAN" className={`${feld} md:col-span-2`} />
             <input name="bank" defaultValue={betrieb.bank} placeholder="Bank (z.B. UBS Switzerland AG)" className={feld} />
             <input name="bic" defaultValue={betrieb.bic} placeholder="BIC" className={feld} />
+            <label className="grid gap-0.5 text-xs text-muted">
+              Zahlungsfrist neue Rechnungen (Tage)
+              <input name="zahlungsfristTage" type="number" min={0} max={365} defaultValue={betrieb.zahlungsfristTage} className={feld} />
+            </label>
           </div>
         </section>
 

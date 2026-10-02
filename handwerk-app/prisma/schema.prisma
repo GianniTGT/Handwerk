@@ -28,6 +28,7 @@ model Betrieb {
   farbeTitel  String @default("#1C1C1E")
   farbeLinien String @default("#9AA5A0")
   farbeText   String @default("#1C1C1E")
+  zahlungsfristTage Int @default(30) // afati i pagesës për faturat e reja
   erstellt  DateTime @default(now())
 
   mitarbeiter Mitarbeiter[]
@@ -252,6 +253,7 @@ model Rechnung {
   auftrag    Auftrag  @relation(fields: [auftragId], references: [id])
   nummer     Int
   datum      DateTime @default(now())
+  faelligAm  DateTime? // afati i pagesës; null = datum + 30 ditë (faturat e vjetra)
   status     String   @default("ENTWURF") // ENTWURF | VERSENDET | BEZAHLT
   totalNetto Float    @default(0)
   mwstSatz   Float    @default(8.1) // norma standarde CH 2026

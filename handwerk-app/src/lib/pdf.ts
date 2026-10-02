@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit";
 import { SwissQRBill } from "swissqrbill/pdf";
 import { db } from "./db";
 import { chf, offerteNummer, runde5Rappen } from "./format";
+import { faelligDatum } from "./faellig";
 
 function logoBuffer(dataUrl: string): Buffer | null {
   const m = dataUrl.match(/^data:image\/(png|jpeg);base64,(.+)$/);
@@ -122,8 +123,7 @@ export async function rechnungPdf(
   doc.text(`${kunde.plz} ${kunde.ort}`, 350);
 
   // Titel + blloku informativ
-  const zahlbarBis = new Date(rechnung.datum);
-  zahlbarBis.setDate(zahlbarBis.getDate() + 30);
+  const zahlbarBis = faelligDatum(rechnung, betrieb.zahlungsfristTage);
   doc.fillColor(fTitel).fontSize(13).font("Helvetica-Bold").text(`Rechnung RE-${rechnung.nummer}`, 50, 190);
   doc.fontSize(11).text(auftrag.titel, 50).moveDown(0.5);
   doc.fillColor(fText).fontSize(9);
