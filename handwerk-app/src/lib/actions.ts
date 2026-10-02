@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { parseArtikelCsv } from "./csv";
-import { nettoPreis } from "./preise";
+import { verkaufsPreis } from "./preise";
 import { offertePdf, rechnungPdf } from "./pdf";
 import { sendeDokument } from "./email";
 import { offerteNummer } from "./format";
@@ -169,7 +169,7 @@ export async function addRapportPosition(formData: FormData) {
       const konditionen = await db.kondition.findMany({ where: { betriebId: betrieb.id } });
       bezeichnung = bezeichnung || artikel.bezeichnung;
       einheit = artikel.einheit;
-      ansatz = ansatz || nettoPreis(artikel, konditionen);
+      ansatz = ansatz || verkaufsPreis(artikel, konditionen);
     }
   }
 
@@ -454,7 +454,7 @@ export async function addOffertePosition(formData: FormData) {
       const konditionen = await db.kondition.findMany({ where: { betriebId: betrieb.id } });
       bezeichnung = bezeichnung || artikel.bezeichnung;
       einheit = artikel.einheit;
-      ansatz = ansatz || nettoPreis(artikel, konditionen);
+      ansatz = ansatz || verkaufsPreis(artikel, konditionen);
     }
   }
 
@@ -843,4 +843,46 @@ export async function setRechnungStatus(formData: FormData) {
     data: { status: String(formData.get("status")) },
   });
   revalidatePath("/rechnungen");
+}
+
+export async function saveArtikel(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const zahl = (n: string) => {
+    const v = parseFloat(String(formData.get(n) ?? "").replace(",", "."));
+    return Number.isFinite(v) && v >= 0 ? v : 0;
+  };
+  const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  if (!bezeichnung) redirect("/artikel?fehler=bezeichnung");
+
+  const ek = zahl("einkaufspreis");
+  const vkEingabe = zahl("verkaufspreis");
+  let zuschlag = zahl("zuschlagProzent");
+  // EK + VK gegeben → Zuschlag daraus ableiten (wie bei bexio: Preise stehen in Beziehung)
+  if (ek > 0 && vkEingabe > 0) zuschlag = Math.round((vkEingabe / ek - 1) * 10000) / 100;
+  const preis = ek > 0 ? ek : vkEingabe;
+
+  const lieferantId = String(formData.get("lieferantId") ?? "");
+  if (lieferantId && !(await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } }))) {
+    throw new Error("Lieferant nicht gefunden");
+  }
+  const daten = {
+    bezeichnung,
+    artikelNr: String(formData.get("artikelNr") ?? "").trim(),
+    einheit: String(formData.get("einheit") ?? "").trim() || "Stk.",
+    art: String(formData.get("art")) === "DIENSTLEISTUNG" ? "DIENSTLEISTUNG" : "WARE",
+    gruppe: String(formData.get("gruppe") ?? "").trim(),
+    einkaufspreis: ek,
+    zuschlagProzent: ek > 0 || lieferantId ? zuschlag : 0,
+    preis,
+    mwstSatz: parseFloat(String(formData.get("mwstSatz") ?? "8.1")) || 0,
+    lieferantId: lieferantId || null,
+  };
+  const id = String(formData.get("artikelId") ?? "");
+  if (id) {
+    await db.artikel.updateMany({ where: { id, betriebId: betrieb.id }, data: daten });
+  } else {
+    await db.artikel.create({ data: { ...daten, betriebId: betrieb.id } });
+  }
+  revalidatePath("/artikel");
+  redirect("/artikel?gespeichert=1");
 }

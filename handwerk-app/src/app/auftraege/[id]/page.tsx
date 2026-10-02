@@ -1,4 +1,4 @@
-import { nettoPreis } from "@/lib/preise";
+import { verkaufsPreis } from "@/lib/preise";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -183,7 +183,7 @@ export default async function AuftragDetail({
                   <option value="">Aus Katalog…</option>
                   {artikel.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.bezeichnung} ({chf(nettoPreis(a, konditionen))}/{a.einheit})
+                      {a.bezeichnung} ({chf(verkaufsPreis(a, konditionen))}/{a.einheit})
                     </option>
                   ))}
                 </select>
