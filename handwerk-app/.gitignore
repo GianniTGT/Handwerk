@@ -47,3 +47,4 @@ prisma/dev.db-journal
 
 # .env.example duhet të jetë në repo (shablloni i konfigurimit)
 !.env.example
+!.env.prod.example

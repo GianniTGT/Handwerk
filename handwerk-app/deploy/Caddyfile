@@ -1,0 +1,5 @@
+# Caddy: HTTPS automatik (Let's Encrypt) për domain-in nga .env.prod
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}
