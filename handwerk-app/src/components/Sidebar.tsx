@@ -22,6 +22,7 @@ const verkauf: Eintrag[] = [
 ];
 const weitere: Eintrag[] = [
   { href: "/ausgaben", label: "Ausgaben", icon: "🛒" },
+  { href: "/bestellungen", label: "Bestellungen", icon: "🚚" },
   { href: "/artikel", label: "Produkte", icon: "📦" },
   { href: "/banking", label: "Banking", icon: "🏦" },
   { href: "/buchhaltung", label: "Buchhaltung", icon: "📊" },
