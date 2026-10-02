@@ -218,3 +218,22 @@ Listen-Konvention (alle Verkaufslisten): Reiter-Statusfilter + «Eigene Filter»
 - Banking-Import/Abgleich/Zahlungen: Konto unvollständig.
 - Kontakt-Detailansicht (Kontaktpersonen, Gruppen), Benutzer-/Rechte-Matrix, Dokumentendesigner-Editor, Löhne: nicht geöffnet. Preislisten: nicht vorhanden.
 - Hinweis: Der Assistent «Adressen aufteilen» wurde versehentlich geöffnet, aber nicht ausgeführt (nichts geändert).
+
+---
+
+## 15. Umsetzungsstand in der Handwerk-App (Stand 2026-10-03)
+
+| Bereich | Status |
+|---|---|
+| Dashboard (Liquidität, Debitoren, Kreditoren), Betriebs-Umschalter, Support-Kontakt | umgesetzt |
+| Kontakte (Typ, Kategorie, Kontaktpersonen, Archiv, CSV-Import) | umgesetzt |
+| Offerte → Auftrag → Rechnung, Teilrechnung (Akonto) + Schlussrechnung | umgesetzt |
+| Gutschriften, Fälligkeit/Überfällig, Mahnwesen (3 Stufen, Mahnlauf, PDF, Mail) | umgesetzt |
+| Projekte (Substatus, Nachkalkulation), Zeiterfassung (Stoppuhr, Stundensätze, → Rapport) | umgesetzt |
+| Produkte (EK/Zuschlag/VK/Marge, Ware/Dienstleistung, Gruppe, MwSt) | umgesetzt |
+| Ausgaben, Bestellungen, Posteingang, Banking (Import + Abgleich), Buchhaltung (Übersicht) | umgesetzt (einfach) |
+| Nummernkreise, Kopf-/Fusstexte, Mailvorlagen, Zahlungsfrist, Mahnfristen | umgesetzt |
+| Benutzer & Rechte (Rollen, Bereichsrechte, Benutzerverwaltung) | umgesetzt |
+| Lieferscheine, wiederkehrende Rechnungen als Lauf, Aufgaben, Analyse/Excel-Export | offen |
+| Lager, Mehrwährung, Mehrsprachigkeit der Dokumente, Dokumentendesigner-Editor | offen |
+| Buchhaltung im engeren Sinn (Kontenplan, Journal, MWST-Abrechnung), Löhne, Marketplace | offen / nicht geplant |
