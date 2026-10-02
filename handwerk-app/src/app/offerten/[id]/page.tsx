@@ -6,17 +6,26 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { nettoPreis } from "@/lib/preise";
 import { chf, offerteNummer, runde5Rappen } from "@/lib/format";
+import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
 import {
   addOfferteGruppe,
   addOffertePosition,
   deleteOfferteGruppe,
   deleteOffertePosition,
   konvertiereOfferte,
+  sendeOfferteEmail,
   setOfferteStatus,
 } from "@/lib/actions";
 
-export default async function OfferteDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function OfferteDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ email?: string }>;
+}) {
   const { id } = await params;
+  const { email } = await searchParams;
   const { betrieb } = await sitzungErforderlich();
   const offerte = await db.offerte.findFirst({
     where: { id, betriebId: betrieb.id },
@@ -45,6 +54,7 @@ export default async function OfferteDetail({ params }: { params: Promise<{ id: 
 
   return (
     <div>
+      <EmailStatusBanner status={email} />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold">
@@ -204,6 +214,15 @@ export default async function OfferteDetail({ params }: { params: Promise<{ id: 
             </button>
           </form>
         )}
+
+        <EmailForm
+          action={sendeOfferteEmail}
+          hiddenName="offerteId"
+          hiddenValue={offerte.id}
+          an={offerte.kunde.email}
+          betreff={`Angebot ${offerteNummer(offerte)} — ${betrieb.name}`}
+          text={`Guten Tag ${offerte.kunde.name}\n\nVielen Dank für Ihr Interesse. Im Anhang finden Sie unser Angebot ${offerteNummer(offerte)} «${offerte.titel}».\n\nBei Fragen stehen wir Ihnen gerne zur Verfügung.\n\nFreundliche Grüsse\n${betrieb.name}`}
+        />
 
         <div className="ml-auto w-72 rounded-tiff border border-line bg-white p-4 text-sm">
           <div className="flex justify-between py-1">

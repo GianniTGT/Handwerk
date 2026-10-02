@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { setRechnungStatus } from "@/lib/actions";
+import { sendeRechnungEmail, setRechnungStatus } from "@/lib/actions";
+import EmailForm, { EmailStatusBanner } from "@/components/EmailForm";
 
 const chf = (n: number) =>
   n.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -13,8 +14,13 @@ const statusFarben: Record<string, string> = {
   BEZAHLT: "bg-green-100 text-green-800",
 };
 
-export default async function RechnungenPage() {
+export default async function RechnungenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
   const { betrieb } = await sitzungErforderlich();
+  const { email } = await searchParams;
   const rechnungen = await db.rechnung.findMany({
     where: { betriebId: betrieb.id },
     include: { auftrag: { include: { kunde: true } } },
@@ -24,9 +30,11 @@ export default async function RechnungenPage() {
   return (
     <div>
       <h1 className="text-xl font-bold">Rechnungen</h1>
+      <div className="mt-3"><EmailStatusBanner status={email} /></div>
       <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
         {rechnungen.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+          <li key={r.id} className="p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <div className="font-medium">
                 Rechnung #{r.nummer} — {r.auftrag.kunde.name}
@@ -55,6 +63,17 @@ export default async function RechnungenPage() {
                   </button>
                 </form>
               )}
+            </div>
+            </div>
+            <div className="mt-2">
+              <EmailForm
+                action={sendeRechnungEmail}
+                hiddenName="rechnungId"
+                hiddenValue={r.id}
+                an={r.auftrag.kunde.email}
+                betreff={`Rechnung RE-${r.nummer} — ${betrieb.name}`}
+                text={`Guten Tag ${r.auftrag.kunde.name}\n\nIm Anhang finden Sie unsere Rechnung RE-${r.nummer}. Die QR-Rechnung für die Zahlung befindet sich auf der letzten Seite.\n\nVielen Dank für Ihren Auftrag.\n\nFreundliche Grüsse\n${betrieb.name}`}
+              />
             </div>
           </li>
         ))}

@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { parseArtikelCsv } from "./csv";
 import { nettoPreis } from "./preise";
+import { offertePdf, rechnungPdf } from "./pdf";
+import { sendeDokument } from "./email";
+import { offerteNummer } from "./format";
 import {
   beendeSitzung,
   erstelleSitzung,
@@ -477,7 +480,7 @@ export async function konvertiereOfferte(formData: FormData) {
       objektId: offerte.objektId,
       nummer: (letzter?.nummer ?? 1000) + 1,
       titel: offerte.titel,
-      beschreibung: `Aus Offerte AN-${offerte.datum.getFullYear()}-${String(offerte.nummer).padStart(4, "0")}`,
+      beschreibung: `Aus Offerte ${offerteNummer(offerte)}`,
       status: "OFFEN",
       rapporte: {
         create: [
@@ -580,6 +583,84 @@ export async function updateBetrieb(formData: FormData) {
   });
   revalidatePath("/einstellungen");
   redirect("/einstellungen?gespeichert=1");
+}
+
+// ---------- E-Mail-Versand ----------
+
+async function sendeDokumentEmail(args: {
+  typ: "offerte" | "rechnung";
+  dokumentId: string;
+  an: string;
+  betreff: string;
+  text: string;
+  betrieb: { id: string; name: string; email: string };
+  zurueck: string;
+}) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(args.an)) {
+    redirect(`${args.zurueck}?email=ungueltig`);
+  }
+  const pdf =
+    args.typ === "offerte"
+      ? await offertePdf(args.dokumentId, args.betrieb.id)
+      : await rechnungPdf(args.dokumentId, args.betrieb.id);
+  if (!pdf) throw new Error("Dokument nicht gefunden");
+
+  const ergebnis = await sendeDokument({
+    an: args.an,
+    antwortAn: args.betrieb.email,
+    absenderName: args.betrieb.name,
+    betreff: args.betreff,
+    text: args.text,
+    anhang: { dateiname: pdf.dateiname, buffer: pdf.buffer },
+  });
+  if (!ergebnis.ok) redirect(`${args.zurueck}?email=fehler`);
+
+  if (args.typ === "offerte") {
+    await db.offerte.updateMany({
+      where: { id: args.dokumentId, betriebId: args.betrieb.id, status: "ENTWURF" },
+      data: { status: "GESENDET" },
+    });
+  } else {
+    await db.rechnung.updateMany({
+      where: { id: args.dokumentId, betriebId: args.betrieb.id, status: "ENTWURF" },
+      data: { status: "VERSENDET" },
+    });
+  }
+  revalidatePath(args.zurueck);
+  redirect(`${args.zurueck}?email=${ergebnis.simuliert ? "simuliert" : "ok"}`);
+}
+
+export async function sendeOfferteEmail(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  await eigeneOfferte(offerteId, betrieb.id);
+  await sendeDokumentEmail({
+    typ: "offerte",
+    dokumentId: offerteId,
+    an: String(formData.get("an") ?? "").trim(),
+    betreff: String(formData.get("betreff") ?? "").trim(),
+    text: String(formData.get("text") ?? "").replace(/\r/g, ""),
+    betrieb,
+    zurueck: `/offerten/${offerteId}`,
+  });
+}
+
+export async function sendeRechnungEmail(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const rechnungId = String(formData.get("rechnungId"));
+  const rechnung = await db.rechnung.findFirst({
+    where: { id: rechnungId, betriebId: betrieb.id },
+  });
+  if (!rechnung) throw new Error("Rechnung nicht gefunden");
+  await sendeDokumentEmail({
+    typ: "rechnung",
+    dokumentId: rechnungId,
+    an: String(formData.get("an") ?? "").trim(),
+    betreff: String(formData.get("betreff") ?? "").trim(),
+    text: String(formData.get("text") ?? "").replace(/\r/g, ""),
+    betrieb,
+    zurueck: "/rechnungen",
+  });
 }
 
 // ---------- Rechnungen ----------
