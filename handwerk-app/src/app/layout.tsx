@@ -3,12 +3,19 @@ import Link from "next/link";
 import { leseSitzung } from "@/lib/auth";
 import { logout } from "@/lib/actions";
 import Sidebar, { MobileNav } from "@/components/Sidebar";
+import PwaSetup from "@/components/PwaSetup";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Handwerk — Software für Haustechnik",
   description:
     "Serviceaufträge, Rapporte und QR-Rechnungen für Sanitär- und Heizungsbetriebe in der Schweiz.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Handwerk", statusBarStyle: "default" },
+};
+
+export const viewport = {
+  themeColor: "#16653C",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -61,6 +68,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ) : (
           <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
         )}
+        <PwaSetup />
       </body>
     </html>
   );

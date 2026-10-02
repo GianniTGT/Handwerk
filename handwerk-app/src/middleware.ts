@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Mbrojtje e trashë në skaj: pa cookie sesioni → /login.
 // Verifikimi i vërtetë (DB) bëhet në faqe/actions me sitzungErforderlich().
-const OEFFENTLICH = ["/login", "/registrieren"];
+const OEFFENTLICH = ["/login", "/registrieren", "/offline"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (
     OEFFENTLICH.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico"
+    pathname.includes(".") // skedarë statikë: sw.js, manifest, ikona, logo…
   ) {
     return NextResponse.next();
   }

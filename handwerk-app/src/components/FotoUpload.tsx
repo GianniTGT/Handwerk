@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { enqueue } from "@/lib/offlineQueue";
 
 // Foto-upload nga tereni: zvogëlon foton NË TELEFON (canvas, max 1600px,
 // JPEG 0.8) para dërgimit — upload i shpejtë edhe me rrjet të dobët mobil.
@@ -35,7 +36,14 @@ export default function FotoUpload({
       for (const datei of dateien.slice(0, 5)) {
         if (!datei.type.startsWith("image/")) continue;
         const dataUrl = await verkleinern(datei);
-        await onSave(auftragId, dataUrl);
+        try {
+          await onSave(auftragId, dataUrl);
+        } catch (err) {
+          // Pa rrjet: radhit — sinkronizohet vetë kur kthehet lidhja
+          if (!navigator.onLine && enqueue({ typ: "foto", auftragId, dataUrl })) {
+            setFehler("📡 Offline — Foto zwischengespeichert, wird automatisch synchronisiert.");
+          } else throw err;
+        }
       }
     } catch (err) {
       setFehler(err instanceof Error ? err.message : "Upload fehlgeschlagen");

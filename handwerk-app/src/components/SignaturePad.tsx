@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { enqueue } from "@/lib/offlineQueue";
 
 export default function SignaturePad({
   auftragId,
@@ -51,11 +52,21 @@ export default function SignaturePad({
     setLeer(true);
   }
 
+  const [hinweis, setHinweis] = useState("");
+
   async function speichern() {
     if (leer) return;
     setSpeichert(true);
-    await onSave(auftragId, canvasRef.current!.toDataURL("image/png"));
-    setSpeichert(false);
+    const dataUrl = canvasRef.current!.toDataURL("image/png");
+    try {
+      await onSave(auftragId, dataUrl);
+    } catch (err) {
+      if (!navigator.onLine && enqueue({ typ: "unterschrift", auftragId, dataUrl })) {
+        setHinweis("📡 Offline — Unterschrift zwischengespeichert, wird automatisch synchronisiert.");
+      } else throw err;
+    } finally {
+      setSpeichert(false);
+    }
   }
 
   if (vorhandeneUnterschrift) {
@@ -97,6 +108,7 @@ export default function SignaturePad({
           Löschen
         </button>
       </div>
+      {hinweis && <p className="mt-1 text-xs text-amber-700">{hinweis}</p>}
     </div>
   );
 }
