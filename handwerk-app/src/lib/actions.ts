@@ -326,6 +326,185 @@ export async function deleteArtikel(formData: FormData) {
   revalidatePath("/artikel");
 }
 
+// ---------- Offerten ----------
+
+export async function createOfferte(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const kundeId = String(formData.get("kundeId"));
+  const kunde = await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } });
+  if (!kunde) throw new Error("Kunde nicht gefunden");
+
+  const objektId = String(formData.get("objektId") ?? "");
+  if (objektId) {
+    const objekt = await db.objekt.findFirst({
+      where: { id: objektId, kunde: { betriebId: betrieb.id } },
+    });
+    if (!objekt) throw new Error("Objekt nicht gefunden");
+  }
+
+  const gueltigBisRoh = String(formData.get("gueltigBis") ?? "");
+  const gueltigBis = gueltigBisRoh
+    ? new Date(gueltigBisRoh)
+    : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  const letzte = await db.offerte.findFirst({
+    where: { betriebId: betrieb.id },
+    orderBy: { nummer: "desc" },
+  });
+  const offerte = await db.offerte.create({
+    data: {
+      betriebId: betrieb.id,
+      kundeId,
+      objektId: objektId || null,
+      nummer: (letzte?.nummer ?? 0) + 1,
+      titel: String(formData.get("titel") ?? "").trim(),
+      gueltigBis,
+      gruppen: { create: [{ titel: "Leistungen", reihenfolge: 0 }] },
+    },
+  });
+  redirect(`/offerten/${offerte.id}`);
+}
+
+async function eigeneOfferte(offerteId: string, betriebId: string) {
+  const offerte = await db.offerte.findFirst({ where: { id: offerteId, betriebId } });
+  if (!offerte) throw new Error("Offerte nicht gefunden");
+  return offerte;
+}
+
+export async function addOfferteGruppe(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  await eigeneOfferte(offerteId, betrieb.id);
+  const anzahl = await db.offerteGruppe.count({ where: { offerteId } });
+  await db.offerteGruppe.create({
+    data: {
+      offerteId,
+      titel: String(formData.get("titel") ?? "").trim() || `Gruppe ${anzahl + 1}`,
+      reihenfolge: anzahl,
+    },
+  });
+  revalidatePath(`/offerten/${offerteId}`);
+}
+
+export async function deleteOfferteGruppe(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  await eigeneOfferte(offerteId, betrieb.id);
+  await db.offerteGruppe.deleteMany({
+    where: { id: String(formData.get("gruppeId")), offerteId },
+  });
+  revalidatePath(`/offerten/${offerteId}`);
+}
+
+export async function addOffertePosition(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const gruppeId = String(formData.get("gruppeId"));
+  const gruppe = await db.offerteGruppe.findFirst({
+    where: { id: gruppeId, offerte: { betriebId: betrieb.id } },
+    include: { offerte: true },
+  });
+  if (!gruppe) throw new Error("Gruppe nicht gefunden");
+
+  const artikelId = String(formData.get("artikelId") ?? "");
+  let bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  let einheit = String(formData.get("einheit") ?? "Stk.");
+  let ansatz = Number(formData.get("ansatz") ?? 0);
+  if (artikelId) {
+    const artikel = await db.artikel.findFirst({
+      where: { id: artikelId, betriebId: betrieb.id },
+    });
+    if (artikel) {
+      const konditionen = await db.kondition.findMany({ where: { betriebId: betrieb.id } });
+      bezeichnung = bezeichnung || artikel.bezeichnung;
+      einheit = artikel.einheit;
+      ansatz = ansatz || nettoPreis(artikel, konditionen);
+    }
+  }
+
+  const anzahl = await db.offertePosition.count({ where: { gruppeId } });
+  await db.offertePosition.create({
+    data: {
+      gruppeId,
+      reihenfolge: anzahl,
+      bezeichnung,
+      menge: Number(formData.get("menge") ?? 1),
+      einheit,
+      ansatz,
+    },
+  });
+  revalidatePath(`/offerten/${gruppe.offerteId}`);
+}
+
+export async function deleteOffertePosition(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  await eigeneOfferte(offerteId, betrieb.id);
+  await db.offertePosition.deleteMany({
+    where: { id: String(formData.get("positionId")), gruppe: { offerteId } },
+  });
+  revalidatePath(`/offerten/${offerteId}`);
+}
+
+export async function setOfferteStatus(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  await eigeneOfferte(offerteId, betrieb.id);
+  const status = String(formData.get("status"));
+  if (!["ENTWURF", "GESENDET", "ANGENOMMEN", "ABGELEHNT"].includes(status)) return;
+  await db.offerte.update({ where: { id: offerteId }, data: { status } });
+  revalidatePath(`/offerten/${offerteId}`);
+}
+
+// Konvertimi Offerte → Auftrag: pozicionet e grupeve kopjohen të sheshta në rapport
+export async function konvertiereOfferte(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const offerteId = String(formData.get("offerteId"));
+  const offerte = await db.offerte.findFirst({
+    where: { id: offerteId, betriebId: betrieb.id },
+    include: { gruppen: { include: { positionen: true }, orderBy: { reihenfolge: "asc" } } },
+  });
+  if (!offerte) throw new Error("Offerte nicht gefunden");
+  if (offerte.auftragId) redirect(`/auftraege/${offerte.auftragId}`);
+
+  const letzter = await db.auftrag.findFirst({
+    where: { betriebId: betrieb.id },
+    orderBy: { nummer: "desc" },
+  });
+  const auftrag = await db.auftrag.create({
+    data: {
+      betriebId: betrieb.id,
+      kundeId: offerte.kundeId,
+      objektId: offerte.objektId,
+      nummer: (letzter?.nummer ?? 1000) + 1,
+      titel: offerte.titel,
+      beschreibung: `Aus Offerte AN-${offerte.datum.getFullYear()}-${String(offerte.nummer).padStart(4, "0")}`,
+      status: "OFFEN",
+      rapporte: {
+        create: [
+          {
+            positionen: {
+              create: offerte.gruppen.flatMap((g) =>
+                g.positionen.map((p) => ({
+                  typ: /^(h|std)/i.test(p.einheit) ? "ARBEIT" : "MATERIAL",
+                  bezeichnung: p.bezeichnung.split("\n")[0],
+                  menge: p.menge,
+                  einheit: p.einheit,
+                  ansatz: p.ansatz,
+                }))
+              ),
+            },
+          },
+        ],
+      },
+    },
+  });
+  await db.offerte.update({
+    where: { id: offerte.id },
+    data: { auftragId: auftrag.id, status: "ANGENOMMEN" },
+  });
+  redirect(`/auftraege/${auftrag.id}`);
+}
+
 // ---------- Rechnungen ----------
 
 export async function createRechnung(formData: FormData) {
