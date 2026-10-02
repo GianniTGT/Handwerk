@@ -59,6 +59,32 @@ Kemi në dorë një faturë reale të bexio-s drejt një firme të vogël klient
 **Detyrë teknike për ne:** mbështetje opsionale për QR-IBAN + QR-Referenz (jo vetëm IBAN
 të thjeshtë) — kështu firmat tona i njohin pagesat automatikisht, si bexio.
 
+## 2b. Fatura reale e AINO-s me Bexio (klienti ynë pilot nr. 1) — prova e tezës
+
+AINO Haustechnik GmbH **e përdor Bexio-n në prodhim** (jo trial). Analiza e një fature
+reale servisi (klima/kompresor, 2 faqe + QR) nxjerr gjetjet më të forta deri tani:
+
+**Prova kryesore — workaround-i "objekt:":** meqë Bexio s'ka koncept objekti/pajisjeje,
+AINO e shkruan ME DORË te pozicionet e faturës një bllok tekst të lirë:
+`objekt:`, `Rechnungsadresse:`, `Referenz: V800 Kompressor Kälte`. Çdo faturë servisi,
+çdo herë, me dorë. **Tek ne Objekt-i është fushë strukturore** — plotësohet një herë,
+shfaqet vetë në çdo dokument, dhe mban historinë e servisit. Ky është demo-momenti
+vendimtar për AINO-n: "Ju e shkruani objektin me dorë në çdo faturë — te ne ai ekziston."
+
+**Të dhëna tregu nga fatura (tarifat reale të një firme SHK në Bern):**
+- Orë pune servisi: **CHF 150/h** · Anfahrtspauschale: **CHF 50**
+- Material me **Art-Nr të furnitorit** (p.sh. Primofit-Kupplung, Art: 511740) —
+  konfirmon nevojën e katalogut të artikujve me numra artikujsh (→ IGH)
+- QR-pjesa e tyre përdor IBAN të thjeshtë me Referenz zero — pra **asnjë abgleich
+  automatik**; as këtu Bexio s'u jep avantazh. Pariteti ynë është i mjaftueshëm.
+
+**Elementet e layoutit që i morëm (implementuar në PDF-në tonë v3):**
+titull fature + emër auftragu, tekst përshëndetjeje ("Guten Tag … / Danke für Ihr
+Vertrauen…"), kolona Pos., Rundungsdifferenz si rresht i veçantë, tekst mbyllës me
+përshëndetje, footer në çdo faqe (adresa, email, telefon, Bank/BIC/IBAN, MWST-Nr),
+numërim faqesh "Seite X von Y", QR në faqe të veçantë. **E vetmja gjë që na mungon
+ende: logo e firmës në krye** (vjen me ngarkimin e logos në konfigurim — Faza 2).
+
 ## 3. Dobësitë e Bexio-s për zanatlinjtë (vërejtje nga trial-i)
 
 1. **Zero funksione terreni:** asnjë Regierapport, asnjë app montatori, asnjë nënshkrim

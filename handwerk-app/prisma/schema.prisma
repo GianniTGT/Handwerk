@@ -19,6 +19,10 @@ model Betrieb {
   ort       String   @default("")
   iban      String   @default("") // IBAN/QR-IBAN për QR-Rechnung
   mwstNr    String   @default("")
+  email     String   @default("")
+  telefon   String   @default("")
+  bank      String   @default("") // p.sh. "UBS Switzerland AG"
+  bic       String   @default("")
   erstellt  DateTime @default(now())
 
   mitarbeiter Mitarbeiter[]
