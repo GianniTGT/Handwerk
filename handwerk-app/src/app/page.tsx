@@ -6,12 +6,16 @@ import { sitzungErforderlich } from "@/lib/auth";
 
 export default async function Dashboard() {
   const { betrieb } = await sitzungErforderlich();
-  const [kunden, offerten, offene, erledigte, rechnungen] = await Promise.all([
+  const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const [kunden, offerten, offene, erledigte, rechnungen, wartungen] = await Promise.all([
     db.kunde.count({ where: { betriebId: betrieb.id } }),
     db.offerte.count({ where: { betriebId: betrieb.id, status: { in: ["ENTWURF", "GESENDET"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: { in: ["OFFEN", "IN_ARBEIT"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: "ERLEDIGT" } }),
     db.rechnung.count({ where: { betriebId: betrieb.id, status: { not: "BEZAHLT" } } }),
+    db.wartungsvertrag.count({
+      where: { betriebId: betrieb.id, status: "AKTIV", naechsteWartung: { lte: in30Tagen } },
+    }),
   ]);
 
   const karten = [
@@ -20,6 +24,7 @@ export default async function Dashboard() {
     { label: "Offene Aufträge", wert: offene, href: "/auftraege" },
     { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege" },
     { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen" },
+    { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung" },
   ];
 
   return (
@@ -27,7 +32,7 @@ export default async function Dashboard() {
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <p className="mt-1 text-sm text-muted">{betrieb.name} — vom Rapport zur QR-Rechnung in 5 Minuten.</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
         {karten.map((k) => (
           <Link
             key={k.label}

@@ -88,7 +88,7 @@ async function main() {
   });
 
   // Klientë shembull shtesë (realistë për demo)
-  await prisma.kunde.create({
+  const seeblick = await prisma.kunde.create({
     data: {
       betriebId: betrieb.id,
       name: "Immobilien AG Seeblick",
@@ -103,6 +103,23 @@ async function main() {
           { bezeichnung: "MFH Seestrasse 42 — Boileranlage 500l", strasse: "Seestrasse 42", plz: "8800", ort: "Thalwil" },
         ],
       },
+    },
+    include: { objekte: true },
+  });
+  // Kontratë mirëmbajtjeje demo — e radhës së shpejti, që dashboard-i ta tregojë
+  const bald = new Date();
+  bald.setDate(bald.getDate() + 12);
+  await prisma.wartungsvertrag.create({
+    data: {
+      betriebId: betrieb.id,
+      kundeId: seeblick.id,
+      objektId: seeblick.objekte[0].id,
+      nummer: 1,
+      titel: "Jahreswartung Heizung",
+      intervallMonate: 12,
+      naechsteWartung: bald,
+      preis: 420,
+      bemerkung: "Schlüssel beim Hauswart (Hr. Brunner, 079 111 22 33)",
     },
   });
   await prisma.kunde.create({

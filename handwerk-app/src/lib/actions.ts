@@ -663,6 +663,95 @@ export async function sendeRechnungEmail(formData: FormData) {
   });
 }
 
+// ---------- Wartungsverträge ----------
+
+export async function createWartungsvertrag(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const objektId = String(formData.get("objektId"));
+  const objekt = await db.objekt.findFirst({
+    where: { id: objektId, kunde: { betriebId: betrieb.id } },
+    include: { kunde: true },
+  });
+  if (!objekt) throw new Error("Objekt nicht gefunden");
+
+  const naechsteRoh = String(formData.get("naechsteWartung") ?? "");
+  const letzter = await db.wartungsvertrag.findFirst({
+    where: { betriebId: betrieb.id },
+    orderBy: { nummer: "desc" },
+  });
+  await db.wartungsvertrag.create({
+    data: {
+      betriebId: betrieb.id,
+      kundeId: objekt.kundeId,
+      objektId,
+      nummer: (letzter?.nummer ?? 0) + 1,
+      titel: String(formData.get("titel") ?? "").trim() || "Jahreswartung Heizung",
+      intervallMonate: Math.max(1, Number(formData.get("intervallMonate") ?? 12)),
+      naechsteWartung: naechsteRoh ? new Date(naechsteRoh) : new Date(),
+      preis: Number(formData.get("preis") ?? 0),
+      bemerkung: String(formData.get("bemerkung") ?? ""),
+    },
+  });
+  revalidatePath("/wartung");
+}
+
+export async function setWartungsvertragStatus(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const status = String(formData.get("status"));
+  if (!["AKTIV", "PAUSIERT", "GEKUENDIGT"].includes(status)) return;
+  await db.wartungsvertrag.updateMany({
+    where: { id: String(formData.get("vertragId")), betriebId: betrieb.id },
+    data: { status },
+  });
+  revalidatePath("/wartung");
+}
+
+export async function deleteWartungsvertrag(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  await db.wartungsvertrag.deleteMany({
+    where: { id: String(formData.get("vertragId")), betriebId: betrieb.id, status: "GEKUENDIGT" },
+  });
+  revalidatePath("/wartung");
+}
+
+// Një klik: nga kontrata e radhës → Auftrag-u i servisit; data e ardhshme
+// e mirëmbajtjes shtyhet automatikisht me intervalin
+export async function wartungAuftragErstellen(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich();
+  const vertrag = await db.wartungsvertrag.findFirst({
+    where: { id: String(formData.get("vertragId")), betriebId: betrieb.id },
+    include: { objekt: true },
+  });
+  if (!vertrag) throw new Error("Vertrag nicht gefunden");
+
+  const letzter = await db.auftrag.findFirst({
+    where: { betriebId: betrieb.id },
+    orderBy: { nummer: "desc" },
+  });
+  const auftrag = await db.auftrag.create({
+    data: {
+      betriebId: betrieb.id,
+      kundeId: vertrag.kundeId,
+      objektId: vertrag.objektId,
+      nummer: (letzter?.nummer ?? 1000) + 1,
+      titel: `${vertrag.titel} — ${vertrag.objekt.bezeichnung}`,
+      beschreibung:
+        `Aus Wartungsvertrag WV-${vertrag.nummer}` +
+        (vertrag.preis > 0 ? ` · vereinbarter Preis: CHF ${vertrag.preis.toFixed(2)}` : "") +
+        (vertrag.bemerkung ? ` · ${vertrag.bemerkung}` : ""),
+      status: "OFFEN",
+    },
+  });
+
+  const naechste = new Date(vertrag.naechsteWartung);
+  naechste.setMonth(naechste.getMonth() + vertrag.intervallMonate);
+  await db.wartungsvertrag.update({
+    where: { id: vertrag.id },
+    data: { naechsteWartung: naechste },
+  });
+  redirect(`/auftraege/${auftrag.id}`);
+}
+
 // ---------- Rechnungen ----------
 
 export async function createRechnung(formData: FormData) {

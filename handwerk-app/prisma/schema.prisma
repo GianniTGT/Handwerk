@@ -38,6 +38,7 @@ model Betrieb {
   lieferanten Lieferant[]
   konditionen Kondition[]
   offerten    Offerte[]
+  wartungsvertraege Wartungsvertrag[]
 }
 
 model Mitarbeiter {
@@ -75,6 +76,7 @@ model Kunde {
   objekte   Objekt[]
   auftraege Auftrag[]
   offerten  Offerte[]
+  wartungsvertraege Wartungsvertrag[]
 }
 
 // Objekti/pajisja te klienti (kaldaja, bojleri, banjoja...) — njësia qendrore në SHK
@@ -89,6 +91,7 @@ model Objekt {
   bemerkung   String  @default("")
   auftraege   Auftrag[]
   offerten    Offerte[]
+  wartungsvertraege Wartungsvertrag[]
 }
 
 model Auftrag {
@@ -224,4 +227,25 @@ model Rechnung {
   totalNetto Float    @default(0)
   mwstSatz   Float    @default(8.1) // norma standarde CH 2026
   totalBrutto Float   @default(0)
+}
+
+// Kontrata e mirëmbajtjes (Wartungsvertrag) — ari i biznesit Heizung.
+// Lidhet me OBJEKTIN (kaldajën), jo vetëm me klientin: sistemi kujton kur
+// i vjen koha servisit dhe krijon Auftrag-un me një klik.
+model Wartungsvertrag {
+  id              String   @id @default(cuid())
+  betriebId       String
+  betrieb         Betrieb  @relation(fields: [betriebId], references: [id])
+  kundeId         String
+  kunde           Kunde    @relation(fields: [kundeId], references: [id])
+  objektId        String
+  objekt          Objekt   @relation(fields: [objektId], references: [id])
+  nummer          Int
+  titel           String   @default("Jahreswartung Heizung")
+  intervallMonate Int      @default(12) // 12 = vjetore, 6 = gjysmëvjetore
+  naechsteWartung DateTime
+  preis           Float    @default(0) // çmimi i rënë dakord për servis
+  bemerkung       String   @default("")
+  status          String   @default("AKTIV") // AKTIV | PAUSIERT | GEKUENDIGT
+  erstellt        DateTime @default(now())
 }

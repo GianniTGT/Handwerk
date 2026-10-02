@@ -13,6 +13,7 @@ const haupt: Eintrag[] = [
 const verkauf: Eintrag[] = [
   { href: "/offerten", label: "Offerten", icon: "📄" },
   { href: "/auftraege", label: "Aufträge", icon: "🔧" },
+  { href: "/wartung", label: "Wartung", icon: "⏰" },
   { href: "/rechnungen", label: "Rechnungen", icon: "🧾" },
 ];
 const weitere: Eintrag[] = [
