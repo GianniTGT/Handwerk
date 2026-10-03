@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
 import { einkaufsPreis, marge, verkaufsPreis } from "@/lib/preise";
-import { deleteArtikel, importArtikelCsv } from "@/lib/actions";
+import { deleteArtikel } from "@/lib/actions";
 
 const TABS: [string, string, string | null][] = [
   ["alle", "Alle", null],
@@ -36,7 +36,7 @@ export default async function ArtikelPage({
   const filter = sp.filter ?? "alle";
   const art = TABS.find((t) => t[0] === filter)?.[2] ?? null;
 
-  const [artikel, anzahlen, lieferanten, konditionen] = await Promise.all([
+  const [artikel, anzahlen, konditionen] = await Promise.all([
     db.artikel.findMany({
       where: {
         betriebId: betrieb.id,
@@ -56,7 +56,6 @@ export default async function ArtikelPage({
       take: 300,
     }),
     db.artikel.groupBy({ by: ["art"], where: { betriebId: betrieb.id }, _count: true }),
-    db.lieferant.findMany({ where: { betriebId: betrieb.id }, orderBy: { name: "asc" } }),
     db.kondition.findMany({ where: { betriebId: betrieb.id } }),
   ]);
   const anzahl = (a: string | null) => anzahlen.filter((x) => !a || x.art === a).reduce((s, x) => s + x._count, 0);
@@ -67,32 +66,15 @@ export default async function ArtikelPage({
         <h1 className="text-xl font-bold">Produkte</h1>
         <div className="flex items-center gap-2">
           <details className="relative">
-            <summary className="cursor-pointer list-none rounded-md border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2" title="Weitere Aktionen">
+            <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-line bg-white text-lg hover:bg-surface2" title="Weitere Aktionen" aria-label="Weitere Aktionen">
               ⋮
             </summary>
-            <div className="absolute right-0 z-10 mt-1 w-80 rounded-tiff border border-line bg-white p-3 shadow-lg">
-              <form action={importArtikelCsv} className="grid gap-2 text-sm">
-                <div className="font-semibold">Artikel importieren (CSV)</div>
-                <p className="text-xs text-muted">
-                  Spalten: ArtikelNr; Bezeichnung; Einheit; Bruttopreis; Rabattgruppe. Trennzeichen ; oder , — z. B. aus dem Webshop von
-                  Debrunner oder Meier Tobler.
-                </p>
-                <select name="lieferantId" className="rounded border border-line p-1.5 text-sm">
-                  <option value="">Ohne Lieferant (manuelle Artikel)</option>
-                  {lieferanten.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name}</option>
-                  ))}
-                </select>
-                <input name="datei" type="file" accept=".csv,text/csv" required className="rounded border border-line p-1.5 text-xs" />
-                <button className="rounded-md border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
-              </form>
-              <div className="mt-3 grid gap-1 border-t border-line pt-3 text-sm">
-                <Link href="/artikel/lieferanten" className="text-forest underline">Lieferanten &amp; Konditionen verwalten</Link>
-                {/* Download-Route, kein Seitenwechsel */}
-                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-                <a href="/api/export/artikel" className="text-forest underline"><Ik name="download" />Produkte exportieren (CSV)</a>
-                <Link href="/import?typ=artikel" className="text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
-              </div>
+            <div className="absolute right-0 z-10 mt-1 min-w-56 overflow-hidden rounded-tiff border border-line bg-white py-1 shadow-lg">
+              <Link href="/import?typ=artikel" className="block px-4 py-2 text-sm hover:bg-surface2">Produkte importieren</Link>
+              <Link href="/artikel/lieferanten" className="block px-4 py-2 text-sm hover:bg-surface2">Lieferanten, Konditionen &amp; Preislisten</Link>
+              {/* Download-Route, kein Seitenwechsel */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a href="/api/export/artikel" className="block px-4 py-2 text-sm hover:bg-surface2">Produkte exportieren (CSV)</a>
             </div>
           </details>
           <Link href="/artikel/neu" className="rounded-md bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">

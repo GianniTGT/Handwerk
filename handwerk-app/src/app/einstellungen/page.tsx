@@ -30,7 +30,7 @@ const knopfRuhig = "mt-3 rounded-md border border-forest px-4 py-2 text-sm font-
 function Feld({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "sm:col-span-2" : ""}`}>
-      {label.trim().endsWith("*") ? <>{label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span></> : label}
+      {label.trim().endsWith("*") ? <span>{label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span></span> : <span>{label}</span>}
       {children}
     </label>
   );
@@ -60,7 +60,7 @@ export default async function EinstellungenPage({
           </Link>
         )}
         <Link href="/import" className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-medium hover:bg-surface2">
-          Datenübernahme (bexio, Excel)
+          Datenübernahme
         </Link>
       </div>
       {sp.gespeichert && <Hinweis>Gespeichert ✓</Hinweis>}
@@ -144,7 +144,7 @@ export default async function EinstellungenPage({
         </div>
 
         <div className="sticky bottom-0 z-10 mt-3 flex items-center gap-3 rounded-tiff border border-line bg-paper/95 px-4 py-3 shadow-sm backdrop-blur">
-          <button className="rounded-md bg-forest px-6 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
+          <button className="inline-flex h-10 items-center justify-center rounded-md bg-forest px-6 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
           <span className="text-xs text-muted">Speichert Firmendaten, Bank, Mahnwesen, Logo, Farben und Texte.</span>
         </div>
       </form>

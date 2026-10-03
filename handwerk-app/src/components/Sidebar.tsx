@@ -57,7 +57,7 @@ const MENU: Gruppe[] = [
     icon: "mehr",
     items: [
       { href: "/aufgaben", label: "Aufgaben" },
-      { href: "/import", label: "Datenübernahme (bexio, Excel)" },
+      { href: "/import", label: "Datenübernahme" },
       { href: "/export", label: "Export" },
       { href: "/hilfe", label: "Hilfe & Kurzanleitung" },
     ],

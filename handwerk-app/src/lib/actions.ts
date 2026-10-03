@@ -443,6 +443,29 @@ async function eigeneOfferte(offerteId: string, betriebId: string) {
   return offerte;
 }
 
+// Kopfdaten der Offerte ändern (Titel, Gültig bis, Objekt) — nur solange sie nicht bestätigt/abgelehnt ist
+export async function updateOfferte(formData: FormData) {
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
+  const offerteId = String(formData.get("offerteId"));
+  const offerte = await eigeneOfferte(offerteId, betrieb.id);
+  if (!["ENTWURF", "GESENDET"].includes(offerte.status)) redirect(`/offerten/${offerteId}?fehler=gesperrt`);
+  const titel = String(formData.get("titel") ?? "").trim();
+  const gueltigRoh = String(formData.get("gueltigBis") ?? "");
+  const gueltig = gueltigRoh ? new Date(gueltigRoh) : null;
+  const objektId = String(formData.get("objektId") ?? "");
+  const objekt = objektId ? await db.objekt.findFirst({ where: { id: objektId, kundeId: offerte.kundeId } }) : null;
+  await db.offerte.update({
+    where: { id: offerteId },
+    data: {
+      ...(titel ? { titel } : {}),
+      ...(gueltig && !Number.isNaN(gueltig.getTime()) ? { gueltigBis: gueltig } : {}),
+      objektId: objekt?.id ?? null,
+    },
+  });
+  revalidatePath(`/offerten/${offerteId}`);
+  redirect(`/offerten/${offerteId}?gespeichert=1`);
+}
+
 export async function addOfferteGruppe(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));

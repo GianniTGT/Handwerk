@@ -182,14 +182,14 @@ export const KARTE = "grid gap-3 rounded-tiff border border-line bg-white p-4 sh
 // Speicherleiste, die beim Scrollen am unteren Rand sichtbar bleibt
 export const SPEICHERLEISTE =
   "sticky bottom-0 z-10 -mx-4 mt-3 flex flex-wrap items-center gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-tiff md:border";
-export const KNOPF = "rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift";
-export const KNOPF_RUHIG = "rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2";
+export const KNOPF = "inline-flex h-10 items-center justify-center rounded-md bg-forest px-5 text-sm font-semibold text-white hover:bg-forest-lift";
+export const KNOPF_RUHIG = "inline-flex h-10 items-center justify-center rounded-md border border-line bg-white px-5 text-sm hover:bg-surface2";
 
 function Pflicht({ label }: { label: string }) {
   return label.trim().endsWith("*") ? (
-    <>
+    <span>
       {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
-    </>
+    </span>
   ) : (
     <>{label}</>
   );

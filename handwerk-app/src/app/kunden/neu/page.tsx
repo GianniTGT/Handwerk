@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { saveKunde } from "@/lib/actions-kontakte";
 import KundeFelder from "@/components/KundeFelder";
+import { KNOPF, KNOPF_RUHIG } from "@/components/Liste";
 
 export default async function NeuerKontakt({ searchParams }: { searchParams: Promise<{ fehler?: string }> }) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
@@ -27,8 +28,8 @@ export default async function NeuerKontakt({ searchParams }: { searchParams: Pro
       <form action={saveKunde} className="mt-4">
         <KundeFelder k={{ ansprechpartnerId: mitarbeiter.id, kontaktNr: (letzte._max.kontaktNr ?? 0) + 1 }} team={team} />
         <div className="sticky bottom-0 -mx-4 mt-4 flex gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-tiff md:border">
-          <button className="rounded bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
-          <Link href="/kunden" className="rounded border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">Abbrechen</Link>
+          <button className={KNOPF}>Speichern</button>
+          <Link href="/kunden" className={KNOPF_RUHIG}>Abbrechen</Link>
         </div>
       </form>
     </div>

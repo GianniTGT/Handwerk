@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { createLieferant, deleteKondition, setKondition } from "@/lib/actions";
+import { createLieferant, deleteKondition, importArtikelCsv, setKondition } from "@/lib/actions";
 
 export default async function LieferantenPage() {
   const { betrieb } = await sitzungErforderlich();
@@ -23,9 +23,9 @@ export default async function LieferantenPage() {
   const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/artikel" className="text-sm text-forest underline">← Produkte</Link>
-      <h1 className="mt-1 text-xl font-bold">Lieferanten &amp; Konditionen</h1>
+      <h1 className="mt-1 text-xl font-bold">Lieferanten, Konditionen &amp; Preislisten</h1>
       <p className="mt-1 text-sm text-muted">
         Der Einkaufspreis eines Katalogartikels ergibt sich aus Bruttopreis − Rabatt der Rabattgruppe beim Lieferanten.
       </p>
@@ -78,6 +78,24 @@ export default async function LieferantenPage() {
           </form>
         </section>
       </div>
+
+      <section className="mt-4 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Preisliste eines Lieferanten importieren</h2>
+        <p className="mt-1 text-sm text-muted">
+          CSV aus dem Webshop oder Katalog des Lieferanten mit den Spalten ArtikelNr; Bezeichnung; Einheit; Bruttopreis; Rabattgruppe. Der Einkaufspreis
+          ergibt sich dann aus Bruttopreis minus Rabatt der Konditionen oben. Vorhandene Artikel (gleiche Artikel-Nr.) werden aktualisiert.
+        </p>
+        <form action={importArtikelCsv} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+          <select name="lieferantId" className={feld}>
+            <option value="">Ohne Lieferant (manuelle Artikel)</option>
+            {lieferanten.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
+          <input name="datei" type="file" accept=".csv,text/csv" required className={feld} />
+          <button className="inline-flex h-10 items-center justify-center rounded-md border border-forest px-4 text-sm font-semibold text-forest hover:bg-surface2">Importieren</button>
+        </form>
+      </section>
     </div>
   );
 }

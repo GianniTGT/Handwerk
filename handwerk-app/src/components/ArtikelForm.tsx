@@ -20,9 +20,9 @@ const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
 function Pflicht({ label }: { label: string }) {
   return label.trim().endsWith("*") ? (
-    <>
+    <span>
       {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
-    </>
+    </span>
   ) : (
     <>{label}</>
   );
@@ -125,8 +125,8 @@ export default function ArtikelForm({
       </section>
 
       <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-tiff md:border">
-        <button className="rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
-        <a href={abbrechenHref} className="rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">
+        <button className="inline-flex h-10 items-center justify-center rounded-md bg-forest px-5 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
+        <a href={abbrechenHref} className="inline-flex h-10 items-center justify-center rounded-md border border-line bg-white px-5 text-sm hover:bg-surface2">
           Abbrechen
         </a>
       </div>

@@ -48,11 +48,11 @@ function Zeile({ label, children, voll }: { label: string; children: React.React
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
       {label.trim().endsWith("*") ? (
-        <>
+        <span>
           {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
-        </>
+        </span>
       ) : (
-        label
+        <span>{label}</span>
       )}
       {children}
     </label>

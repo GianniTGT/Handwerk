@@ -24,7 +24,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     <div>
       <ListenKopf
         titel="Datenübernahme"
-        untertitel="Kontakte und Produkte aus bexio, Excel oder einem anderen Programm übernehmen. Die Spalten werden automatisch erkannt und können vor dem Import geprüft werden."
+        untertitel="Kontakte und Produkte aus Ihrer bisherigen Software oder aus Excel übernehmen. Die Spalten werden automatisch erkannt und können vor dem Import geprüft werden."
       />
       <div className="mt-3 flex flex-wrap gap-1 text-sm">
         {reiter.map((r) => (
@@ -50,18 +50,18 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
             zielLabel={typ === "kontakte" ? "den Kontakten" : "den Produkten"}
           />
           <aside className="rounded-tiff border border-line bg-white p-4 text-sm shadow-sm xl:order-first xl:row-span-2">
-            <h2 className="font-semibold">So exportieren Sie aus bexio</h2>
+            <h2 className="font-semibold">So geht die Übernahme</h2>
             {typ === "kontakte" ? (
               <ol className="mt-2 list-inside list-decimal space-y-1.5 text-muted">
-                <li>In bexio <b>Einstellungen → Export</b> öffnen.</li>
-                <li>Unter «Kontakte» <b>Kontaktliste (.csv)</b> oder <b>Serienbrief (.xlsx)</b> herunterladen.</li>
-                <li>Datei hier hochladen. Die bexio-Spalten («Nr.», «Kontaktart», «Name 1», «Name 2», «Adresse», «Telefon», «Ansprechpartner», «MWST-Nummer» …) werden automatisch erkannt.</li>
+                <li>In der bisherigen Software die <b>Kontaktliste</b> als CSV oder Excel exportieren (meist unter Einstellungen → Export oder in der Kontaktliste).</li>
+                <li>Datei hier hochladen. Die üblichen Spalten («Nr.», «Kontaktart», «Name 1», «Name 2», «Adresse», «Telefon», «Ansprechpartner», «MWST-Nummer» …) werden automatisch erkannt.</li>
+                <li>Zuordnung prüfen und importieren.</li>
               </ol>
             ) : (
               <ol className="mt-2 list-inside list-decimal space-y-1.5 text-muted">
-                <li>In bexio <b>Produkte</b> öffnen, oben rechts <b>Aktuelle Liste exportieren</b> (Excel oder CSV).</li>
-                <li>Alternativ unter <b>Einstellungen → Export</b> die «Lagerprodukte (.csv)» — sie enthalten nur Produkt, Code und Einkaufswert.</li>
+                <li>In der bisherigen Software die <b>Produktliste</b> als CSV oder Excel exportieren (am besten die vollständige Liste mit Verkaufspreisen).</li>
                 <li>Datei hier hochladen. Art-Nr., Bezeichnung, Einheit, Einkaufs- und Verkaufspreis werden erkannt.</li>
+                <li>Zuordnung prüfen und importieren. Lieferanten-Preislisten mit Rabattgruppen importieren Sie unter Produkte → Lieferanten.</li>
               </ol>
             )}
             <h3 className="mt-4 font-semibold">Aus Excel</h3>
@@ -71,8 +71,8 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
             <h3 className="mt-4 font-semibold">Gut zu wissen</h3>
             <ul className="mt-1 list-inside list-disc space-y-1 text-muted">
               <li>Mehrfaches Hochladen ist unproblematisch: Vorhandenes wird erkannt und übersprungen oder auf Wunsch aktualisiert.</li>
-              <li>Kontakt-Nummern aus bexio bleiben erhalten, sofern frei.</li>
-              <li>Offerten und Rechnungen aus bexio behalten Sie als PDF-Archiv; offene Posten erfassen Sie neu.</li>
+              <li>Bestehende Kontakt-Nummern bleiben erhalten, sofern frei.</li>
+              <li>Alte Offerten und Rechnungen behalten Sie als PDF-Archiv; offene Posten erfassen Sie neu.</li>
             </ul>
           </aside>
         </div>

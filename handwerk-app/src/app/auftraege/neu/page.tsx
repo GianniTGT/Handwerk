@@ -6,7 +6,7 @@ import { sitzungErforderlich } from "@/lib/auth";
 import { createAuftrag } from "@/lib/actions";
 import { projektNr } from "@/lib/nrtext";
 import KundeObjektWahl from "@/components/KundeObjektWahl";
-import { SPEICHERLEISTE } from "@/components/Liste";
+import { KNOPF, KNOPF_RUHIG, SPEICHERLEISTE } from "@/components/Liste";
 
 export default async function NeuerAuftrag({ searchParams }: { searchParams: Promise<{ kunde?: string }> }) {
   const { betrieb } = await sitzungErforderlich();
@@ -29,7 +29,7 @@ export default async function NeuerAuftrag({ searchParams }: { searchParams: Pro
         <div className="grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <KundeObjektWahl kunden={kunden} startKundeId={kunden.some((k) => k.id === kunde) ? kunde : ""} />
         <label className="grid gap-0.5 text-xs text-muted">
-          Titel <span className="text-red-600">*</span>
+          <span>Titel <span className="text-red-600">*</span></span>
           <input name="titel" required placeholder="z.B. Boiler entkalken" className={feld} />
         </label>
         <label className="col-span-full grid gap-0.5 text-xs text-muted">
@@ -49,8 +49,8 @@ export default async function NeuerAuftrag({ searchParams }: { searchParams: Pro
         )}
         </div>
         <div className={SPEICHERLEISTE}>
-          <button className="rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Auftrag erstellen</button>
-          <Link href="/auftraege" className="rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">Abbrechen</Link>
+          <button className={KNOPF}>Auftrag erstellen</button>
+          <Link href="/auftraege" className={KNOPF_RUHIG}>Abbrechen</Link>
           <Link href="/kunden/neu" className="ml-auto text-xs text-forest underline">Kontakt fehlt? Neu anlegen</Link>
         </div>
       </form>

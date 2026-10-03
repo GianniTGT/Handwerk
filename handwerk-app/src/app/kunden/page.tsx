@@ -5,7 +5,6 @@ import { Leer } from "@/components/Liste";
 import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { importKundenCsv } from "@/lib/actions-kontakte";
 
 const importFehler: Record<string, string> = {
   datei: "keine Datei gewählt",
@@ -65,23 +64,14 @@ export default async function KundenPage({
         <h1 className="text-xl font-bold">Kontakte</h1>
         <div className="flex items-center gap-2">
           <details className="relative">
-            <summary className="cursor-pointer list-none rounded border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2" title="Weitere Aktionen">
+            <summary className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-line bg-white text-lg hover:bg-surface2" title="Weitere Aktionen" aria-label="Weitere Aktionen">
               ⋮
             </summary>
-            <div className="absolute right-0 z-10 mt-1 w-72 rounded-tiff border border-line bg-white p-3 shadow-lg">
-              <form action={importKundenCsv} className="grid gap-2 text-sm">
-                <div className="font-semibold">Kontakte importieren (CSV)</div>
-                <p className="text-xs text-muted">
-                  Kopfzeile mit Name/Firma, Strasse, PLZ, Ort, Telefon, Mobile, E-Mail, Website, Kategorie, Typ. Trennzeichen ; oder ,
-                  Duplikate (Name + PLZ) werden übersprungen.
-                </p>
-                <input name="datei" type="file" accept=".csv,text/csv" required className="rounded border border-line p-1.5 text-xs" />
-                <button className="rounded border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
-              </form>
+            <div className="absolute right-0 z-10 mt-1 min-w-56 overflow-hidden rounded-tiff border border-line bg-white py-1 shadow-lg">
+              <Link href="/import?typ=kontakte" className="block px-4 py-2 text-sm hover:bg-surface2">Kontakte importieren</Link>
               {/* Download-Route, kein Seitenwechsel */}
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline"><Ik name="download" />Kontakte exportieren (CSV)</a>
-              <Link href="/import?typ=kontakte" className="mt-2 block text-sm text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
+              <a href="/api/export/kontakte" className="block px-4 py-2 text-sm hover:bg-surface2">Kontakte exportieren (CSV)</a>
             </div>
           </details>
           <Link href="/kunden/neu" className="rounded bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">
