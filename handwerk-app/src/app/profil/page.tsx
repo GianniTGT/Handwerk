@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { sitzungErforderlich } from "@/lib/auth";
-import { aendereEigenesPasswort } from "@/lib/actions-profil";
+import { aendereEigenesPasswort, aendereProfil } from "@/lib/actions-profil";
 import { ROLLEN } from "@/lib/rechte";
 
 const fehlerTexte: Record<string, string> = {
@@ -10,12 +10,13 @@ const fehlerTexte: Record<string, string> = {
   wiederholung: "Die beiden neuen Passwörter stimmen nicht überein.",
   gleich: "Das neue Passwort muss sich vom aktuellen unterscheiden.",
   email: "Das Passwort darf nicht Ihre E-Mail-Adresse sein.",
+  name: "Bitte einen Namen angeben.",
 };
 
 export default async function ProfilPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gespeichert?: string; fehler?: string; pflicht?: string; min?: string }>;
+  searchParams: Promise<{ gespeichert?: string; fehler?: string; pflicht?: string; min?: string; profil?: string }>;
 }) {
   const { mitarbeiter } = await sitzungErforderlich();
   const sp = await searchParams;
@@ -46,7 +47,23 @@ export default async function ProfilPage({
         </p>
       )}
 
-      <form action={aendereEigenesPasswort} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
+      {sp.profil && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Profil gespeichert ✓</p>}
+
+      <form action={aendereProfil} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Profil</h2>
+        <label className="grid gap-0.5 text-xs text-muted">
+          Name
+          <input name="name" required defaultValue={mitarbeiter.name} maxLength={80} className={feld} />
+        </label>
+        <label className="grid gap-0.5 text-xs text-muted">
+          E-Mail (Login)
+          <input value={mitarbeiter.email ?? ""} disabled className={`${feld} bg-surface2 text-muted`} readOnly />
+          <span>Die E-Mail-Adresse ändert Ihr Administrator.</span>
+        </label>
+        <button className="w-fit rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Profil speichern</button>
+      </form>
+
+      <form id="passwort" action={aendereEigenesPasswort} className="mt-4 grid scroll-mt-20 gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Passwort ändern</h2>
         <input name="aktuell" type="password" required placeholder="Aktuelles Passwort" autoComplete="current-password" className={feld} />
         <input name="neu" type="password" required minLength={8} placeholder="Neues Passwort (mind. 8 Zeichen)" autoComplete="new-password" className={feld} />

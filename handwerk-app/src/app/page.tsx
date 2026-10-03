@@ -11,6 +11,7 @@ import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 import { WIDGETS, WIDGET_BEREICH, parseLayout, type WidgetId } from "@/lib/dashboard";
 import DashboardEditor from "@/components/DashboardEditor";
+import { BetriebLogo } from "@/components/Topbar";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
@@ -25,7 +26,7 @@ export default async function Dashboard({
   const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const jahr = new Date().getFullYear();
 
-  const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben, aufgabenListe] = await Promise.all([
+  const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben, aufgabenListe, versendete] = await Promise.all([
     db.kunde.count({ where: { betriebId: betrieb.id, archiviert: false } }),
     db.offerte.count({ where: { betriebId: betrieb.id, status: { in: ["ENTWURF", "GESENDET"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: { in: ["OFFEN", "IN_ARBEIT"] } } }),
@@ -40,7 +41,9 @@ export default async function Dashboard({
       orderBy: [{ faelligAm: { sort: "asc", nulls: "last" } }, { erstellt: "desc" }],
       take: 5,
     }),
+    db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" }, select: { datum: true, faelligAm: true, status: true } }),
   ]);
+  const ueberfaelligAnzahl = versendete.filter((r) => istUeberfaellig(faelligDatum(r, betrieb.zahlungsfristTage), r.status)).length;
 
   // Finanz-Widgets nur laden, wenn der Benutzer sie sehen darf
   const finanz = sieht("FINANZEN");
@@ -83,16 +86,20 @@ export default async function Dashboard({
     }))
   );
 
-  const alleKarten: { label: string; wert: number; href: string; bereich?: Bereich }[] = [
+  const alleKarten: { label: string; wert: number; href: string; bereich?: Bereich; warnung?: boolean }[] = [
     { label: "Kontakte", wert: kunden, href: "/kunden", bereich: "KONTAKTE" },
     { label: "Offene Offerten", wert: offerten, href: "/offerten", bereich: "VERKAUF" },
     { label: "Offene Aufträge", wert: offene, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen", bereich: "VERKAUF" },
+    { label: "Überfällige Rechnungen", wert: ueberfaelligAnzahl, href: "/rechnungen?filter=ueberfaellig", bereich: "VERKAUF", warnung: true },
     { label: "Meine Aufgaben", wert: meineAufgaben, href: "/aufgaben?filter=meine" },
     { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung", bereich: "AUFTRAEGE" },
   ];
   const karten = alleKarten.filter((k) => !k.bereich || sieht(k.bereich));
+  // Gleichmässiges Raster: Spaltenzahl so wählen, dass die Reihen voll sind (8 → 4×2, 6 → 3×2 …)
+  const spalten =
+    karten.length % 4 === 0 ? "lg:grid-cols-4" : karten.length % 3 === 0 ? "lg:grid-cols-3" : karten.length === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4";
 
   const Posten = ({ titel, t, href }: { titel: string; t: { offen: number; ueberfaellig: number }; href: string }) => {
     const summe = t.offen + t.ueberfaellig;
@@ -117,14 +124,14 @@ export default async function Dashboard({
       ohneRahmen: true,
       titel: "Kennzahlen",
       node: (
-        <div className="flex flex-wrap justify-center gap-4">
+        <div className={`grid grid-cols-2 gap-4 ${spalten}`}>
           {karten.map((k) => (
             <Link
               key={k.label}
               href={k.href}
-              className="flex min-h-32 w-[calc(50%-0.5rem)] flex-col items-center justify-center rounded-tiff border border-line bg-white p-6 text-center shadow-sm transition hover:border-forest hover:shadow sm:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)]"
+              className="flex h-32 flex-col items-center justify-center rounded-tiff border border-line bg-white px-3 text-center shadow-sm transition hover:border-forest hover:shadow"
             >
-              <div className="text-5xl font-bold leading-none text-forest">{k.wert}</div>
+              <div className={`text-4xl font-bold leading-none ${k.warnung && k.wert > 0 ? "text-red-600" : "text-forest"}`}>{k.wert}</div>
               <div className="mt-3 text-sm text-muted">{k.label}</div>
             </Link>
           ))}
@@ -229,17 +236,6 @@ export default async function Dashboard({
         </div>
       ),
     },
-    hilfe: {
-      titel: "Hilfe & Support",
-      node: (
-        <div className="grid gap-2 text-sm">
-          <Link href="/hilfe" className="font-medium text-forest underline">📖 Kurzanleitung (Monteure &amp; Büro)</Link>
-          <div className="text-muted">Support · {TIFF.name}</div>
-          <a href={`mailto:${TIFF.supportEmail}`} className="font-medium text-forest underline">✉ {TIFF.supportEmail}</a>
-          <a href={`tel:${TIFF.supportTelefon.replace(/\s/g, "")}`} className="font-medium text-forest underline">☎ {TIFF.supportTelefon}</a>
-        </div>
-      ),
-    },
   };
 
   const layout = parseLayout(mitarbeiter.dashboard);
@@ -257,19 +253,22 @@ export default async function Dashboard({
   const nichtsDa = spaltenInhalt[0].length + spaltenInhalt[1].length === 0 && layout.hidden.includes("kennzahlen");
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">{betrieb.name}</p>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <BetriebLogo b={{ id: betrieb.id, name: betrieb.name, logoV: betrieb.logo.length }} gross />
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">Dashboard</h1>
+            <p className="text-sm text-muted">{betrieb.name}</p>
+          </div>
         </div>
         {bearbeiten ? (
-          <Link href="/" className="rounded bg-green-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-green-700">
+          <Link href="/" className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-green-700">
             Fertig
           </Link>
         ) : (
-          <Link href="/?bearbeiten=1" className="rounded border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2">
-            ✎ Dashboard bearbeiten
+          <Link href="/?bearbeiten=1" className="rounded-md border border-line bg-white px-4 py-2 text-sm shadow-sm hover:bg-surface2">
+            Dashboard bearbeiten
           </Link>
         )}
       </div>

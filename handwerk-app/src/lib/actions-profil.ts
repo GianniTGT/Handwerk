@@ -2,6 +2,7 @@
 
 // Eigenes Passwort ändern (jeder angemeldete Benutzer)
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
 import { beendeAndereSitzungen, hashPasswort, pruefePasswort, sitzungErforderlich } from "./auth";
@@ -36,4 +37,14 @@ export async function aendereEigenesPasswort(formData: FormData) {
   await loescheFehlversuche(email);
   await beendeAndereSitzungen(mitarbeiter.id);
   redirect("/profil?gespeichert=1");
+}
+
+// Eigenen Anzeigenamen ändern (E-Mail/Login ändert der Administrator, damit Konten nicht übernommen werden können)
+export async function aendereProfil(formData: FormData) {
+  const { mitarbeiter } = await sitzungErforderlich();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
+  if (!name) redirect("/profil?fehler=name");
+  await db.mitarbeiter.update({ where: { id: mitarbeiter.id }, data: { name } });
+  revalidatePath("/", "layout");
+  redirect("/profil?profil=1");
 }

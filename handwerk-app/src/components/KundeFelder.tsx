@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { SearchChTreffer } from "@/lib/searchch";
 
 // Formularfelder für Kontakt anlegen/bearbeiten — gegliedert wie bei bexio
 // (Stammdaten, Kommunikation, Zusatzinformationen, Weitere Kontaktinformationen)
 export type KundeWerte = {
+  kontaktNr?: number | null;
   typ?: string;
   name?: string;
   anrede?: string;
@@ -66,10 +68,84 @@ export default function KundeFelder({
 }) {
   const [typ, setTyp] = useState(k.typ === "PRIVAT" ? "PRIVAT" : "FIRMA");
   const privat = typ === "PRIVAT";
+  const wurzel = useRef<HTMLDivElement>(null);
+
+  // Import von Search.ch: Dialog mit Name/Firma + Ort, Treffer übernehmen die Adressdaten ins Formular
+  const [dialog, setDialog] = useState(false);
+  const [was, setWas] = useState("");
+  const [wo, setWo] = useState("");
+  const [laedt, setLaedt] = useState(false);
+  const [treffer, setTreffer] = useState<SearchChTreffer[] | null>(null);
+  const [fehlerText, setFehlerText] = useState("");
+
+  const suche = async () => {
+    if (was.trim().length < 2) return;
+    setLaedt(true);
+    setFehlerText("");
+    setTreffer(null);
+    try {
+      const r = await fetch(`/api/searchch?was=${encodeURIComponent(was.trim())}&wo=${encodeURIComponent(wo.trim())}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.fehler ?? "fehler");
+      setTreffer(d.treffer as SearchChTreffer[]);
+    } catch {
+      setFehlerText("Search.ch ist gerade nicht erreichbar. Bitte später erneut versuchen oder von Hand erfassen.");
+    } finally {
+      setLaedt(false);
+    }
+  };
+
+  const setzeWert = (name: string, wert: string) => {
+    const el = wurzel.current?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(`[name="${name}"]`);
+    if (!el || !wert) return;
+    const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(el, wert);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  const uebernehmen = (t: SearchChTreffer) => {
+    setTyp(t.typ);
+    setDialog(false);
+    // Felder erscheinen erst nach dem Umschalten Firma/Privat — danach befüllen
+    setTimeout(() => {
+      if (t.typ === "PRIVAT") {
+        setzeWert("vorname", t.vorname);
+        setzeWert("nachname", t.nachname);
+      } else {
+        setzeWert("name", t.name);
+        setzeWert("zusatz", t.zusatz);
+      }
+      setzeWert("strasse", t.strasse);
+      setzeWert("plz", t.plz);
+      setzeWert("ort", t.ort);
+      setzeWert("telefon", t.telefon);
+      setzeWert("email", t.email);
+      setzeWert("website", t.website);
+      setzeWert("branche", t.branche);
+    }, 60);
+  };
 
   return (
-    <div className="grid gap-4">
+    <div ref={wurzel} className="grid gap-4">
       <Abschnitt titel="Stammdaten">
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <button
+            type="button"
+            onClick={() => {
+              setDialog(true);
+              setTreffer(null);
+              setFehlerText("");
+            }}
+            className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-surface2"
+          >
+            🔍 Import von Search.ch
+          </button>
+          <span className="text-xs text-muted">Adresse und Telefon aus dem Schweizer Telefonbuch übernehmen</span>
+        </div>
+        <Zeile label="Kontakt-Nr. *">
+          <input name="kontaktNr" required inputMode="numeric" defaultValue={k.kontaktNr ?? ""} className={feld} />
+        </Zeile>
+        <span className="hidden sm:block" />
         <Zeile label="Kontakttyp" voll>
           <div className="flex gap-4 py-1 text-sm text-ink">
             <label className="flex items-center gap-1.5">
@@ -205,6 +281,62 @@ export default function KundeFelder({
           <input name="uid" defaultValue={k.uid} placeholder="CHE-123.456.789" className={feld} />
         </Zeile>
       </Abschnitt>
+
+      {dialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-16"
+          onMouseDown={(e) => e.target === e.currentTarget && setDialog(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Import von Search.ch"
+        >
+          <div className="w-full max-w-xl rounded-tiff bg-white shadow-2xl">
+            <h2 className="border-b border-line px-6 py-4 text-lg">Import von Search.ch</h2>
+            <div className="grid gap-4 p-6" onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), void suche())}>
+              <label className="grid gap-1 text-sm font-semibold">
+                Name / Firma
+                <input autoFocus value={was} onChange={(e) => setWas(e.target.value)} className={`${feld} font-normal`} />
+              </label>
+              <label className="grid gap-1 text-sm font-semibold">
+                Ort
+                <input value={wo} onChange={(e) => setWo(e.target.value)} className={`${feld} font-normal`} />
+              </label>
+
+              {fehlerText && <p className="rounded bg-red-100 p-2 text-sm text-red-700">{fehlerText}</p>}
+              {treffer && treffer.length === 0 && <p className="rounded bg-amber-50 p-2 text-sm text-amber-900">Keine Treffer. Name oder Ort anpassen.</p>}
+              {treffer && treffer.length > 0 && (
+                <ul className="max-h-72 divide-y divide-line overflow-y-auto rounded border border-line">
+                  {treffer.map((t, i) => (
+                    <li key={i}>
+                      <button type="button" onClick={() => uebernehmen(t)} className="block w-full px-3 py-2 text-left text-sm hover:bg-surface2">
+                        <span className="font-semibold">{t.name}</span>
+                        {t.zusatz && <span className="text-muted"> · {t.zusatz}</span>}
+                        <span className="block text-xs text-muted">
+                          {[t.strasse, `${t.plz} ${t.ort}`.trim(), t.telefon].filter(Boolean).join(" · ")}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={was.trim().length < 2 || laedt}
+                  onClick={() => void suche()}
+                  className="rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift disabled:bg-gray-200 disabled:text-gray-500"
+                >
+                  {laedt ? "Suche …" : "Suchen"}
+                </button>
+                <button type="button" onClick={() => setDialog(false)} className="rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

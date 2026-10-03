@@ -31,7 +31,7 @@ export default async function KontaktBearbeiten({
     <div className="mx-auto max-w-3xl">
       <Link href={`/kunden/${kunde.id}`} className="text-sm text-forest underline">← {kunde.name}</Link>
       <h1 className="mt-1 text-xl font-bold">Kontakt bearbeiten</h1>
-      {fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte Firma bzw. Nachname angeben.</p>}
+      {fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">{fehler === "nr" ? "Diese Kontakt-Nr. ist bereits vergeben." : "Bitte Firma bzw. Nachname angeben."}</p>}
       <form action={saveKunde} className="mt-4">
         <input type="hidden" name="kundeId" value={kunde.id} />
         <KundeFelder k={kunde} team={team} />

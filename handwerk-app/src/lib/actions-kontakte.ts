@@ -55,9 +55,20 @@ export async function saveKunde(formData: FormData) {
   if (!daten.name) redirect(`${zurueck}?fehler=name`);
 
   // Interner Ansprechpartner muss zum eigenen Betrieb gehören
+  // Kontakt-Nr.: frei wählbar, aber pro Betrieb eindeutig
+  const nrRoh = parseInt(s(formData, "kontaktNr"));
+  const wunschNr = Number.isFinite(nrRoh) && nrRoh > 0 ? nrRoh : null;
+  if (wunschNr !== null) {
+    const doppelt = await db.kunde.findFirst({
+      where: { betriebId: betrieb.id, kontaktNr: wunschNr, ...(id ? { id: { not: id } } : {}) },
+      select: { id: true },
+    });
+    if (doppelt) redirect(`${zurueck}?fehler=nr`);
+  }
+
   const apId = s(formData, "ansprechpartnerId");
   const ap = apId ? await db.mitarbeiter.findFirst({ where: { id: apId, betriebId: betrieb.id, aktiv: true } }) : null;
-  const mitAp = { ...daten, ansprechpartnerId: ap?.id ?? null };
+  const mitAp = { ...daten, ansprechpartnerId: ap?.id ?? null, ...(wunschNr !== null ? { kontaktNr: wunschNr } : {}) };
 
   if (id) {
     await db.kunde.updateMany({ where: { id, betriebId: betrieb.id }, data: mitAp });
@@ -67,7 +78,7 @@ export async function saveKunde(formData: FormData) {
   }
   const letzte = await db.kunde.aggregate({ where: { betriebId: betrieb.id }, _max: { kontaktNr: true } });
   const k = await db.kunde.create({
-    data: { ...mitAp, betriebId: betrieb.id, kontaktNr: (letzte._max.kontaktNr ?? 0) + 1 },
+    data: { ...mitAp, betriebId: betrieb.id, kontaktNr: wunschNr ?? (letzte._max.kontaktNr ?? 0) + 1 },
   });
   revalidatePath("/kunden");
   redirect(`/kunden/${k.id}`);

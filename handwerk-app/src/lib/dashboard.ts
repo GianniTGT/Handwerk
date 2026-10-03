@@ -7,7 +7,6 @@ export const WIDGETS = [
   { id: "ersteSchritte", titel: "Erste Schritte" },
   { id: "schnell", titel: "Schnelleinstellungen" },
   { id: "aufgaben", titel: "Meine Aufgaben" },
-  { id: "hilfe", titel: "Hilfe & Support" },
   { id: "liquiditaet", titel: "Flüssige Mittel Eingänge und Ausgänge" },
   { id: "debitoren", titel: "Offene Rechnungen (Debitoren)" },
   { id: "kreditoren", titel: "Offene Lieferantenrechnungen (Kreditoren)" },
@@ -22,7 +21,7 @@ export const SPALTEN_WIDGETS = WIDGET_IDS.filter((id) => id !== "kennzahlen");
 export type DashboardLayout = { left: WidgetId[]; right: WidgetId[]; hidden: WidgetId[] };
 
 export const STANDARD_LAYOUT: DashboardLayout = {
-  left: ["ersteSchritte", "schnell", "aufgaben", "hilfe"],
+  left: ["ersteSchritte", "schnell", "aufgaben"],
   right: ["liquiditaet", "debitoren", "kreditoren"],
   hidden: [],
 };
@@ -36,7 +35,6 @@ export const WIDGET_BEREICH: Record<WidgetId, Bereich | null> = {
   kreditoren: "FINANZEN",
   ersteSchritte: "VERKAUF",
   schnell: "EINSTELLUNGEN",
-  hilfe: null,
 };
 
 const gueltig = (x: unknown): x is WidgetId => WIDGET_IDS.includes(x as WidgetId);

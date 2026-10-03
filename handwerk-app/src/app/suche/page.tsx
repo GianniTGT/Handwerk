@@ -28,7 +28,10 @@ export default async function SuchePage({
     return (
       <div>
         <h1 className="text-xl font-bold">Suche</h1>
-        <p className="mt-2 text-sm text-muted">Suchbegriff oben eingeben.</p>
+        <form className="mt-3 flex gap-2">
+          <input name="q" autoFocus placeholder="Kontakte, Offerten, Aufträge, Rechnungen, Artikel …" className="w-full rounded border border-line p-2 text-sm" />
+          <button className="rounded bg-forest px-4 text-sm font-semibold text-white">Suchen</button>
+        </form>
       </div>
     );
   }

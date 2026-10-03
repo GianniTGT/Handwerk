@@ -39,6 +39,7 @@ export default async function AuftragDetail({
     include: {
       kunde: true,
       objekt: true,
+      projekt: true,
       rechnungen: { orderBy: { nummer: "asc" } },
       lieferscheine: { orderBy: { nummer: "asc" } },
       offerte: { include: { gruppen: { include: { positionen: true } } } },
@@ -75,37 +76,64 @@ export default async function AuftragDetail({
   const auftragswert = offertenWert > 0 ? offertenWert : totalNetto;
 
   return (
-    <div>
-      <div className="flex items-start justify-between">
+    <div className="mx-auto max-w-5xl">
+      <Link href="/auftraege" className="text-sm text-forest underline">← Aufträge</Link>
+      <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold">
-            Auftrag #{auftrag.nummer} — {auftrag.titel}
-          </h1>
-          <p className="text-sm text-muted">
-            <Link href={`/kunden/${auftrag.kundeId}`} className="underline">
-              {auftrag.kunde.name}
-            </Link>
-            {auftrag.objekt && ` · ${auftrag.objekt.bezeichnung}`} · Status: {auftrag.status}
-          </p>
-          {auftrag.beschreibung && <p className="mt-2 text-sm">{auftrag.beschreibung}</p>}
+          <h1 className="text-xl font-bold">Auftrag #{auftrag.nummer}</h1>
+          <p className="mt-1 text-sm text-muted">{auftrag.titel}</p>
         </div>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            { OFFEN: "bg-amber-100 text-amber-800", IN_ARBEIT: "bg-blue-100 text-blue-800", ERLEDIGT: "bg-green-100 text-green-800", VERRECHNET: "bg-surface2 text-muted" }[auftrag.status] ?? ""
+          }`}
+        >
+          {{ OFFEN: "Offen", IN_ARBEIT: "In Arbeit", ERLEDIGT: "Erledigt", VERRECHNET: "Verrechnet" }[auftrag.status] ?? auftrag.status}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
         {darfVerkauf && !schluss && positionen.length > 0 && (
           <form action={createRechnung}>
             <input type="hidden" name="auftragId" value={auftrag.id} />
-            <button className="rounded bg-gold px-4 py-2 text-sm font-semibold text-white hover:bg-gold-soft">
+            <button className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-soft">
               ⚡ {teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
             </button>
           </form>
         )}
-        {darfVerkauf && schluss && (
-          <Link
-            href="/rechnungen"
-            className="rounded bg-surface2 px-4 py-2 text-sm font-medium text-ink"
-          >
-            Rechnung {rechnungNr(schluss)} ansehen
+        {darfVerkauf &&
+          auftrag.rechnungen.map((r) => (
+            <Link key={r.id} href={`/rechnungen/${r.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
+              {r.art === "TEIL" ? "Akonto" : "Rechnung"} {rechnungNr(r)} ansehen
+            </Link>
+          ))}
+        {auftrag.projekt && (
+          <Link href={`/projekte/${auftrag.projekt.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
+            Projekt {auftrag.projekt.name}
           </Link>
         )}
       </div>
+
+      <dl className="mt-4 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-muted">Kontakt</dt>
+          <dd><Link href={`/kunden/${auftrag.kundeId}`} className="underline">{auftrag.kunde.name}</Link></dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-muted">Objekt</dt>
+          <dd>{auftrag.objekt?.bezeichnung ?? "—"}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="w-28 shrink-0 text-muted">Datum</dt>
+          <dd>{auftrag.datum.toLocaleDateString("de-CH")}</dd>
+        </div>
+        {auftrag.beschreibung && (
+          <div className="flex gap-2 sm:col-span-2">
+            <dt className="w-28 shrink-0 text-muted">Beschreibung</dt>
+            <dd className="whitespace-pre-wrap">{auftrag.beschreibung}</dd>
+          </div>
+        )}
+      </dl>
 
       {sp.zeiten && (
         <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">{sp.zeiten} Zeiteintrag/-einträge als Rapport-Positionen übernommen ✓</p>
@@ -134,19 +162,6 @@ export default async function AuftragDetail({
         </form>
       )}
 
-      {darfVerkauf && auftrag.rechnungen.length > 0 && (
-        <ul className="mt-3 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
-          {auftrag.rechnungen.map((r) => (
-            <li key={r.id} className="flex flex-wrap justify-between gap-2 p-2">
-              <span>
-                {r.art === "TEIL" ? "Teilrechnung" : "Schlussrechnung"} {rechnungNr(r)}
-                {r.bezeichnung && ` — ${r.bezeichnung}`}
-              </span>
-              <span className="text-muted">netto CHF {chf(r.totalNetto)} · {r.status}</span>
-            </li>
-          ))}
-        </ul>
-      )}
       {darfVerkauf && !schluss && positionen.length > 0 && (
         <details className="mt-3 rounded-tiff border border-line bg-white">
           <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
