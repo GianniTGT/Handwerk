@@ -110,7 +110,7 @@ export async function createZahlung(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("FINANZEN");
   const vorzeichen = String(formData.get("art")) === "aus" ? -1 : 1;
   const betrag = parseFloat(String(formData.get("betrag") ?? "").replace(",", "."));
-  if (!Number.isFinite(betrag) || betrag <= 0) redirect("/banking?fehler=eingabe");
+  if (!Number.isFinite(betrag) || betrag <= 0) redirect("/banking/neu?fehler=eingabe");
   const z = await db.zahlung.create({
     data: {
       betriebId: betrieb.id,
