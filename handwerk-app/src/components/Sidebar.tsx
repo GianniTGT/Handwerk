@@ -29,12 +29,13 @@ const MENU: Gruppe[] = [
     ],
   },
   {
-    id: "ausgaben",
-    label: "Ausgaben",
+    id: "einkauf",
+    label: "Einkauf",
     icon: "ausgaben",
     items: [
       { href: "/bestellungen", label: "Bestellungen" },
-      { href: "/ausgaben", label: "Lieferantenrechnungen" },
+      { href: "/ausgaben", label: "Ausgaben" },
+      { href: "/posteingang", label: "Posteingang" },
     ],
   },
   {
@@ -50,7 +51,6 @@ const MENU: Gruppe[] = [
   { id: "produkte", label: "Produkte", icon: "produkte", href: "/artikel" },
   { id: "banking", label: "Banking", icon: "banking", href: "/banking" },
   { id: "buchhaltung", label: "Buchhaltung", icon: "buchhaltung", href: "/buchhaltung" },
-  { id: "posteingang", label: "Posteingang", icon: "posteingang", href: "/posteingang" },
   {
     id: "mehr",
     label: "Mehr",
