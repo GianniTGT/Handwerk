@@ -32,6 +32,7 @@ export const EXPORT_TYPEN: Record<string, { label: string; bereich: Bereich | nu
   auftraege: { label: "Aufträge", bereich: "AUFTRAEGE", mitZeitraum: true },
   lieferscheine: { label: "Lieferscheine", bereich: "AUFTRAEGE", mitZeitraum: true },
   rechnungen: { label: "Rechnungen", bereich: "VERKAUF", mitZeitraum: true },
+  verkaufspositionen: { label: "Verkaufsanalyse: Positionsdaten (für Pivot)", bereich: "VERKAUF", mitZeitraum: true },
   gutschriften: { label: "Gutschriften", bereich: "VERKAUF", mitZeitraum: true },
   projekte: { label: "Projekte", bereich: "PROJEKTE", mitZeitraum: false },
   zeiten: { label: "Zeiterfassung", bereich: "PROJEKTE", mitZeitraum: true },
@@ -133,6 +134,38 @@ export async function exportiere(
             x.status === "BEZAHLT" ? 0 : offenerBetrag(x),
             String(x.mahnstufe),
           ])
+        ),
+      };
+    }
+    case "verkaufspositionen": {
+      // Një rresht për pozicion të Schlussrechnung-eve (rapportet e Auftrag-ut) — bazë për tabela pivot
+      const r = await db.rechnung.findMany({
+        where: { betriebId, art: "SCHLUSS", status: { not: "ENTWURF" }, ...zeitraum("datum") },
+        include: { auftrag: { include: { kunde: true, rapporte: { include: { positionen: true } } } } },
+        orderBy: { datum: "desc" },
+      });
+      return {
+        dateiname: datei("Verkaufspositionen"),
+        csv: alsCsv(
+          ["Rechnung", "Datum", "Jahr", "Monat", "Kunde", "Kategorie", "Typ", "Bezeichnung", "Menge", "Einheit", "Ansatz", "Total netto"],
+          r.flatMap((x) =>
+            x.auftrag.rapporte.flatMap((rp) =>
+              rp.positionen.map((p) => [
+                rechnungNr(x),
+                x.datum,
+                String(x.datum.getFullYear()),
+                String(x.datum.getMonth() + 1),
+                x.auftrag.kunde.name,
+                x.auftrag.kunde.kategorie,
+                p.typ === "ARBEIT" ? "Arbeit" : "Material",
+                p.bezeichnung,
+                p.menge,
+                p.einheit,
+                p.ansatz,
+                p.menge * p.ansatz,
+              ])
+            )
+          )
         ),
       };
     }

@@ -238,6 +238,6 @@ Listen-Konvention (alle Verkaufslisten): Reiter-Statusfilter + «Eigene Filter»
 | Aufgaben (Team-To-dos, Zuweisung, Fälligkeit, Dashboard-Kachel) | umgesetzt |
 | CSV-Export aller Listen mit Zeitraum (Seite «Export») | umgesetzt |
 | Wiederkehrende Rechnungen (Rechnungslauf für Wartungsverträge mit Pauschale, Journal) | umgesetzt |
-| Analyse mit Pivot | offen |
+| Verkaufsanalyse (Kennzahlen, Monat, Kunden, Kategorien, Arbeit/Material, Offertenquote, Positionsdaten-Export für Pivot) | umgesetzt |
 | Lager, Mehrwährung, Mehrsprachigkeit der Dokumente, Dokumentendesigner-Editor | offen |
 | Buchhaltung im engeren Sinn (Kontenplan, Journal, MWST-Abrechnung), Löhne, Marketplace | offen / nicht geplant |

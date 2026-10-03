@@ -51,7 +51,7 @@ export function bereichFuerPfad(pfad: string): Bereich | null {
   if (ist("/einstellungen")) return "EINSTELLUNGEN";
   if (ist("/kunden")) return "KONTAKTE";
   if (ist("/auftraege", "/wartung", "/lieferscheine", "/api/fotos", "/api/lieferscheine")) return "AUFTRAEGE";
-  if (ist("/offerten", "/rechnungen", "/gutschriften", "/mahnwesen", "/wiederkehrend", "/api/offerten", "/api/rechnungen", "/api/mahnungen", "/api/gutschriften")) {
+  if (ist("/offerten", "/rechnungen", "/gutschriften", "/mahnwesen", "/wiederkehrend", "/analyse", "/api/offerten", "/api/rechnungen", "/api/mahnungen", "/api/gutschriften")) {
     return "VERKAUF";
   }
   if (ist("/projekte", "/zeiten")) return "PROJEKTE";
