@@ -76,6 +76,8 @@ export default async function KundenPage({
                 <input name="datei" type="file" accept=".csv,text/csv" required className="rounded border border-line p-1.5 text-xs" />
                 <button className="rounded border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
               </form>
+              {/* Download-Route, kein Seitenwechsel */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline">⬇ Kontakte exportieren (CSV)</a>
             </div>
           </details>

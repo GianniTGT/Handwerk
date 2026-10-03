@@ -19,7 +19,7 @@ export async function createBestellung(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("EINKAUF");
   const lieferantId = String(formData.get("lieferantId") ?? "");
   const lieferant = await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } });
-  if (!lieferant) redirect("/bestellungen?fehler=lieferant");
+  if (!lieferant) redirect("/bestellungen/neu?fehler=lieferant");
   const nr = await vergibNummer(betrieb.id, "BESTELLUNG");
   const b = await db.bestellung.create({
     data: {

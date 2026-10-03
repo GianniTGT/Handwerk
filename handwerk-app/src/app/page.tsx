@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { TIFF } from "@/lib/tiff";
 import { darf, type Bereich } from "@/lib/rechte";
 import { chf } from "@/lib/format";
 import { offenerBetrag } from "@/lib/mahnwesen";
@@ -15,6 +14,24 @@ import { BetriebLogo } from "@/components/Topbar";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
+// Balken «offen / überfällig» für Debitoren und Kreditoren (ausserhalb der Seite, damit React die Komponente nicht bei jedem Render neu anlegt)
+function Posten({ titel, t, href }: { titel: string; t: { offen: number; ueberfaellig: number }; href: string }) {
+  const summe = t.offen + t.ueberfaellig;
+  return (
+    <Link href={href} className="block">
+      <div className="text-xs text-muted">Total unbezahlt: CHF {chf(summe)}</div>
+      <div className="mt-3 flex h-3 overflow-hidden rounded bg-surface2" aria-label={titel}>
+        <div className="bg-sky-400" style={{ width: `${summe ? (t.offen / summe) * 100 : 0}%` }} />
+        <div className="bg-red-500" style={{ width: `${summe ? (t.ueberfaellig / summe) * 100 : 0}%` }} />
+      </div>
+      <div className="mt-3 flex justify-between text-sm">
+        <span><span className="text-xs font-semibold uppercase text-sky-700">Offen</span> CHF {chf(t.offen)}</span>
+        <span><span className="text-xs font-semibold uppercase text-red-700">Überfällig</span> CHF {chf(t.ueberfaellig)}</span>
+      </div>
+    </Link>
+  );
+}
+
 export default async function Dashboard({
   searchParams,
 }: {
@@ -23,7 +40,8 @@ export default async function Dashboard({
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const bearbeiten = (await searchParams).bearbeiten === "1";
   const sieht = (b: Bereich) => darf(mitarbeiter, b);
-  const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const in30Tagen = new Date();
+  in30Tagen.setDate(in30Tagen.getDate() + 30);
   const jahr = new Date().getFullYear();
 
   const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben, aufgabenListe, versendete] = await Promise.all([
@@ -100,23 +118,6 @@ export default async function Dashboard({
   // Gleichmässiges Raster: Spaltenzahl so wählen, dass die Reihen voll sind (8 → 4×2, 6 → 3×2 …)
   const spalten =
     karten.length % 4 === 0 ? "lg:grid-cols-4" : karten.length % 3 === 0 ? "lg:grid-cols-3" : karten.length === 5 ? "lg:grid-cols-5" : "lg:grid-cols-4";
-
-  const Posten = ({ titel, t, href }: { titel: string; t: { offen: number; ueberfaellig: number }; href: string }) => {
-    const summe = t.offen + t.ueberfaellig;
-    return (
-      <Link href={href} className="block">
-        <div className="text-xs text-muted">Total unbezahlt: CHF {chf(summe)}</div>
-        <div className="mt-3 flex h-3 overflow-hidden rounded bg-surface2" aria-label={titel}>
-          <div className="bg-sky-400" style={{ width: `${summe ? (t.offen / summe) * 100 : 0}%` }} />
-          <div className="bg-red-500" style={{ width: `${summe ? (t.ueberfaellig / summe) * 100 : 0}%` }} />
-        </div>
-        <div className="mt-3 flex justify-between text-sm">
-          <span><span className="text-xs font-semibold uppercase text-sky-700">Offen</span> CHF {chf(t.offen)}</span>
-          <span><span className="text-xs font-semibold uppercase text-red-700">Überfällig</span> CHF {chf(t.ueberfaellig)}</span>
-        </div>
-      </Link>
-    );
-  };
 
   const inhalt: Record<WidgetId, { breit?: boolean; ohneRahmen?: boolean; titel: string; node: ReactNode }> = {
     kennzahlen: {

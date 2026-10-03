@@ -1,16 +1,16 @@
 export const dynamic = "force-dynamic";
 
-import Neu from "@/components/Neu";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { aufgabenBulk, createAufgabe, deleteAufgabe, setAufgabeStatus } from "@/lib/actions-aufgaben";
+import { aufgabenBulk, deleteAufgabe, setAufgabeStatus } from "@/lib/actions-aufgaben";
 import { projektNr } from "@/lib/nrtext";
+import { Hinweis, KOPF, Leer, ListenKopf, Pille, ReiterUndSuche, Tabelle, ZEILEN } from "@/components/Liste";
 
-const KATEGORIEN = ["Anruf", "Termin", "Material", "Offerte nachfassen", "Administration"];
 const TABS: [string, string][] = [
   ["offen", "Offen"],
   ["meine", "Meine"],
+  ["ueberfaellig", "Überfällig"],
   ["erledigt", "Erledigt"],
   ["alle", "Alle"],
 ];
@@ -18,130 +18,132 @@ const TABS: [string, string][] = [
 export default async function AufgabenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; gespeichert?: string; fehler?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string; gespeichert?: string }>;
 }) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
-  const { filter = "offen", gespeichert, fehler } = await searchParams;
+  const { filter = "offen", q: qRoh = "", gespeichert } = await searchParams;
+  const q = qRoh.trim().toLowerCase();
 
-  const [aufgaben, team, kunden, projekte] = await Promise.all([
+  const [alle, kunden, projekte] = await Promise.all([
     db.aufgabe.findMany({
-      where: {
-        betriebId: betrieb.id,
-        ...(filter === "offen" ? { status: "OFFEN" } : {}),
-        ...(filter === "meine" ? { status: "OFFEN", zugewiesenAnId: mitarbeiter.id } : {}),
-        ...(filter === "erledigt" ? { status: "ERLEDIGT" } : {}),
-      },
+      where: { betriebId: betrieb.id },
       include: { zugewiesenAn: true },
       orderBy: [{ status: "asc" }, { faelligAm: { sort: "asc", nulls: "last" } }, { erstellt: "desc" }],
-      take: 300,
+      take: 500,
     }),
-    db.mitarbeiter.findMany({ where: { betriebId: betrieb.id, aktiv: true }, orderBy: { name: "asc" } }),
-    db.kunde.findMany({ where: { betriebId: betrieb.id, archiviert: false }, orderBy: { name: "asc" } }),
-    db.projekt.findMany({ where: { betriebId: betrieb.id, status: { not: "ARCHIVIERT" } }, orderBy: { nummer: "desc" } }),
+    db.kunde.findMany({ where: { betriebId: betrieb.id }, select: { id: true, name: true } }),
+    db.projekt.findMany({ where: { betriebId: betrieb.id }, select: { id: true, nummer: true, nummerText: true, name: true } }),
   ]);
   const kundeName = new Map(kunden.map((k) => [k.id, k.name]));
   const projektMap = new Map(projekte.map((p) => [p.id, p]));
   const heute = new Date().setHours(0, 0, 0, 0);
-  const feld = "rounded border border-line p-2 text-sm";
+  const zeilen = alle.map((a) => ({ a, ueberfaellig: a.status === "OFFEN" && !!a.faelligAm && a.faelligAm.getTime() < heute }));
+  const passt = (z: (typeof zeilen)[number], key: string) =>
+    key === "offen"
+      ? z.a.status === "OFFEN"
+      : key === "meine"
+        ? z.a.status === "OFFEN" && z.a.zugewiesenAnId === mitarbeiter.id
+        : key === "ueberfaellig"
+          ? z.ueberfaellig
+          : key === "erledigt"
+            ? z.a.status === "ERLEDIGT"
+            : true;
+  const sichtbar = zeilen.filter(
+    (z) =>
+      passt(z, filter) &&
+      (!q ||
+        `${z.a.titel} ${z.a.beschreibung} ${z.a.kategorie} ${z.a.zugewiesenAn?.name ?? ""} ${(z.a.kundeId && kundeName.get(z.a.kundeId)) || ""}`
+          .toLowerCase()
+          .includes(q))
+  );
 
   return (
     <div>
-      <h1 className="text-xl font-bold">Aufgaben</h1>
-      <p className="mt-1 text-sm text-muted">To-dos für das Team: Anrufe, Termine, Material, Nachfassen von Offerten.</p>
-      {gespeichert && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
-      {fehler && (
-        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">
-          {fehler === "titel" ? "Bitte einen Titel angeben." : "Ungültige Zuordnung."}
-        </p>
-      )}
-
-      <Neu label="Neue Aufgabe">
-<form action={createAufgabe} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
-        <h2 className="font-semibold md:col-span-4">Neue Aufgabe</h2>
-        <input name="titel" required placeholder="Titel (z.B. Familie Muster zurückrufen)" className={`${feld} md:col-span-2`} />
-        <select name="zugewiesenAnId" defaultValue={mitarbeiter.id} className={feld}>
-          {team.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-        <input name="faelligAm" type="date" className={feld} />
-        <input name="kategorie" list="aufgaben-kat" placeholder="Kategorie" className={feld} />
-        <datalist id="aufgaben-kat">
-          {KATEGORIEN.map((k) => (
-            <option key={k} value={k} />
-          ))}
-        </datalist>
-        <select name="kundeId" className={feld}>
-          <option value="">Kontakt (optional)</option>
-          {kunden.map((k) => (
-            <option key={k.id} value={k.id}>{k.name}</option>
-          ))}
-        </select>
-        <select name="projektId" className={feld}>
-          <option value="">Projekt (optional)</option>
-          {projekte.map((p) => (
-            <option key={p.id} value={p.id}>{projektNr(p)} {p.name}</option>
-          ))}
-        </select>
-        <input name="beschreibung" placeholder="Notiz" className={feld} />
-        <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift md:col-span-4">Aufgabe speichern</button>
-      </form>
-</Neu>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1 text-sm">
-          {TABS.map(([key, label]) => (
-            <Link key={key} href={`/aufgaben?filter=${key}`} className={`rounded-full border px-3 py-1 ${filter === key ? "border-forest bg-forest text-white" : "border-line bg-white hover:bg-surface2"}`}>
-              {label}
-            </Link>
-          ))}
-        </div>
-        <form id="bulk" action={aufgabenBulk} className="flex gap-2 text-xs">
-          <button name="aktion" value="erledigen" className="rounded border border-line px-2 py-1 hover:bg-surface2">Auswahl erledigen</button>
-          <button name="aktion" value="loeschen" className="rounded border border-line px-2 py-1 text-red-700 hover:bg-red-50">Auswahl löschen</button>
-        </form>
-      </div>
-
-      <ul className="mt-3 divide-y divide-line rounded-tiff border border-line bg-white">
-        {aufgaben.length === 0 && <li className="p-4 text-sm text-muted">Keine Aufgaben.</li>}
-        {aufgaben.map((a) => {
-          const ueberfaellig = a.status === "OFFEN" && a.faelligAm && a.faelligAm.getTime() < heute;
-          const p = a.projektId ? projektMap.get(a.projektId) : undefined;
-          return (
-            <li key={a.id} className="flex flex-wrap items-center gap-3 p-3">
-              <input type="checkbox" name="id" value={a.id} form="bulk" aria-label="Auswählen" />
-              <div className={`min-w-0 flex-1 ${a.status === "ERLEDIGT" ? "opacity-60" : ""}`}>
-                <div className={`font-medium ${a.status === "ERLEDIGT" ? "line-through" : ""}`}>
-                  {a.titel}
-                  {a.kategorie && <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 text-[11px] font-normal text-muted">{a.kategorie}</span>}
-                </div>
-                <div className="text-sm text-muted">
-                  {a.zugewiesenAn?.name ?? "—"}
-                  {a.faelligAm && (
-                    <span className={ueberfaellig ? "font-medium text-red-700" : ""}> · fällig {a.faelligAm.toLocaleDateString("de-CH")}{ueberfaellig && " (überfällig)"}</span>
+      <ListenKopf titel="Aufgaben" untertitel="To-dos für das Team: Anrufe, Termine, Material, Nachfassen von Offerten." neuHref="/aufgaben/neu" neuLabel="Neue Aufgabe" />
+      {gespeichert && <Hinweis>Gespeichert ✓</Hinweis>}
+      <ReiterUndSuche
+        basis="/aufgaben"
+        aktiv={filter}
+        q={qRoh}
+        suchePlatzhalter="Suche: Titel, Kategorie, Person, Kontakt …"
+        reiter={TABS.map(([key, label]) => ({ key, label, anzahl: zeilen.filter((z) => passt(z, key)).length, warn: key === "ueberfaellig" }))}
+        rechts={
+          <form id="bulk" action={aufgabenBulk} className="flex gap-1 text-xs">
+            <button name="aktion" value="erledigen" className="rounded-md border border-line bg-white px-2 py-1.5 hover:bg-surface2">Auswahl erledigen</button>
+            <button name="aktion" value="loeschen" className="rounded-md border border-line bg-white px-2 py-1.5 text-red-700 hover:bg-red-50">Auswahl löschen</button>
+          </form>
+        }
+      />
+      <Tabelle>
+        <thead className={KOPF}>
+          <tr>
+            <th className="w-8 p-2" />
+            <th className="p-2">Aufgabe</th>
+            <th className="hidden p-2 sm:table-cell">Zugewiesen</th>
+            <th className="p-2">Fällig</th>
+            <th className="hidden p-2 md:table-cell">Bezug</th>
+            <th className="hidden p-2 lg:table-cell">Kategorie</th>
+            <th className="p-2 text-right">Aktion</th>
+          </tr>
+        </thead>
+        <tbody className={ZEILEN}>
+          {sichtbar.map(({ a, ueberfaellig }) => {
+            const p = a.projektId ? projektMap.get(a.projektId) : undefined;
+            const erledigt = a.status === "ERLEDIGT";
+            return (
+              <tr key={a.id} className={`hover:bg-surface2 ${erledigt ? "opacity-60" : ""}`}>
+                <td className="p-2 text-center">
+                  <input type="checkbox" name="id" value={a.id} form="bulk" aria-label="Auswählen" />
+                </td>
+                <td className="p-2">
+                  <span className={`font-medium ${erledigt ? "line-through" : ""}`}>{a.titel}</span>
+                  {a.beschreibung && <span className="block max-w-md truncate text-xs text-muted">{a.beschreibung}</span>}
+                </td>
+                <td className="hidden p-2 text-muted sm:table-cell">{a.zugewiesenAn?.name ?? "—"}</td>
+                <td className="whitespace-nowrap p-2">
+                  {a.faelligAm ? (
+                    ueberfaellig ? (
+                      <Pille farbe="bg-red-100 text-red-700">{a.faelligAm.toLocaleDateString("de-CH")} · überfällig</Pille>
+                    ) : (
+                      <span className="text-muted">{a.faelligAm.toLocaleDateString("de-CH")}</span>
+                    )
+                  ) : (
+                    <span className="text-muted">—</span>
                   )}
+                </td>
+                <td className="hidden p-2 text-muted md:table-cell">
                   {a.kundeId && kundeName.get(a.kundeId) && (
-                    <> · <Link href={`/kunden/${a.kundeId}`} className="underline">{kundeName.get(a.kundeId)}</Link></>
+                    <Link href={`/kunden/${a.kundeId}`} className="block hover:underline">{kundeName.get(a.kundeId)}</Link>
                   )}
-                  {p && <> · <Link href={`/projekte/${p.id}`} className="underline">{projektNr(p)}</Link></>}
-                  {a.beschreibung && ` · ${a.beschreibung}`}
-                </div>
-              </div>
-              <form action={setAufgabeStatus}>
-                <input type="hidden" name="id" value={a.id} />
-                <input type="hidden" name="status" value={a.status === "OFFEN" ? "ERLEDIGT" : "OFFEN"} />
-                <button className="rounded border border-forest px-2 py-1 text-xs font-medium text-forest hover:bg-surface2">
-                  {a.status === "OFFEN" ? "✓ Erledigt" : "Wieder öffnen"}
-                </button>
-              </form>
-              <form action={deleteAufgabe}>
-                <input type="hidden" name="id" value={a.id} />
-                <button className="text-muted hover:text-red-600" aria-label="Löschen">✕</button>
-              </form>
-            </li>
-          );
-        })}
-      </ul>
+                  {p && <Link href={`/projekte/${p.id}`} className="block hover:underline">{projektNr(p)} {p.name}</Link>}
+                  {!a.kundeId && !p && "—"}
+                </td>
+                <td className="hidden p-2 lg:table-cell">{a.kategorie ? <Pille>{a.kategorie}</Pille> : <span className="text-muted">—</span>}</td>
+                <td className="p-2 text-right">
+                  <span className="inline-flex items-center gap-1">
+                    <form action={setAufgabeStatus}>
+                      <input type="hidden" name="id" value={a.id} />
+                      <input type="hidden" name="status" value={erledigt ? "OFFEN" : "ERLEDIGT"} />
+                      <button className="whitespace-nowrap rounded-md border border-forest px-2 py-1 text-xs font-medium text-forest hover:bg-surface2">
+                        {erledigt ? "Wieder öffnen" : "✓ Erledigt"}
+                      </button>
+                    </form>
+                    <form action={deleteAufgabe}>
+                      <input type="hidden" name="id" value={a.id} />
+                      <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                    </form>
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+          {sichtbar.length === 0 && (
+            <Leer colSpan={7}>
+              Keine Aufgaben. <Link href="/aufgaben/neu" className="text-forest underline">Neue Aufgabe erstellen</Link>
+            </Leer>
+          )}
+        </tbody>
+      </Tabelle>
     </div>
   );
 }

@@ -12,7 +12,7 @@ const leer = (v: FormDataEntryValue | null) => String(v ?? "").trim() || null;
 export async function createAufgabe(formData: FormData) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const titel = String(formData.get("titel") ?? "").trim();
-  if (!titel) redirect("/aufgaben?fehler=titel");
+  if (!titel) redirect("/aufgaben/neu?fehler=titel");
 
   // Lidhjet dhe i caktuari duhet të jenë të firmës aktive
   const zuId = leer(formData.get("zugewiesenAnId")) ?? mitarbeiter.id;
@@ -23,7 +23,7 @@ export async function createAufgabe(formData: FormData) {
     kundeId ? db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } }) : null,
     projektId ? db.projekt.findFirst({ where: { id: projektId, betriebId: betrieb.id } }) : null,
   ]);
-  if (!ma || (kundeId && !kunde) || (projektId && !projekt)) redirect("/aufgaben?fehler=zuordnung");
+  if (!ma || (kundeId && !kunde) || (projektId && !projekt)) redirect("/aufgaben/neu?fehler=zuordnung");
 
   const faellig = leer(formData.get("faelligAm"));
   const faelligDatum = faellig ? new Date(faellig) : null;

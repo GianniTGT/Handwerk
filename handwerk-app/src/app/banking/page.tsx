@@ -1,133 +1,152 @@
 export const dynamic = "force-dynamic";
 
-import { lokalIso } from "@/lib/datum";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
-import { createZahlung, deleteZahlung, importZahlungenCsv } from "@/lib/actions-buero";
+import { deleteZahlung, importZahlungenCsv } from "@/lib/actions-buero";
+import { FUSS, Hinweis, KOPF, Leer, ListenKopf, Pille, ReiterUndSuche, Tabelle, ZEILEN } from "@/components/Liste";
 
 const fehlerTexte: Record<string, string> = {
   eingabe: "Bitte einen Betrag grösser als 0 angeben.",
   datei: "Bitte eine CSV-Datei auswählen.",
   gross: "Datei zu gross — max. 2 MB.",
 };
+const TABS: [string, string][] = [
+  ["alle", "Alle"],
+  ["eingang", "Eingänge"],
+  ["ausgang", "Ausgänge"],
+  ["offen", "Nicht zugeordnet"],
+];
 
 export default async function BankingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gespeichert?: string; fehler?: string; importiert?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string; gespeichert?: string; fehler?: string; importiert?: string }>;
 }) {
   const { betrieb } = await sitzungErforderlich();
   const sp = await searchParams;
-  const zahlungen = await db.zahlung.findMany({
+  const filter = sp.filter ?? "alle";
+  const q = (sp.q ?? "").trim().toLowerCase();
+  const alle = await db.zahlung.findMany({
     where: { betriebId: betrieb.id },
     orderBy: [{ datum: "desc" }, { erstellt: "desc" }],
-    take: 200,
+    take: 500,
   });
-  const eingang = zahlungen.filter((z) => z.betrag > 0).reduce((s, z) => s + z.betrag, 0);
-  const ausgang = zahlungen.filter((z) => z.betrag < 0).reduce((s, z) => s + z.betrag, 0);
-  const feld = "rounded border border-line p-2 text-sm";
+  const passt = (z: (typeof alle)[number], key: string) =>
+    key === "eingang" ? z.betrag > 0 : key === "ausgang" ? z.betrag < 0 : key === "offen" ? z.betrag > 0 && !z.rechnungId : true;
+  const sichtbar = alle.filter((z) => passt(z, filter) && (!q || `${z.text} ${z.referenz}`.toLowerCase().includes(q)));
+  const eingang = alle.filter((z) => z.betrag > 0).reduce((s, z) => s + z.betrag, 0);
+  const ausgang = alle.filter((z) => z.betrag < 0).reduce((s, z) => s + z.betrag, 0);
+  const summe = sichtbar.reduce((s, z) => s + z.betrag, 0);
 
   return (
     <div>
-      <h1 className="text-xl font-bold">Banking</h1>
-      <p className="mt-1 text-sm text-muted">
-        Zahlungen erfassen oder per CSV importieren. Passende Beträge markieren offene Rechnungen
-        bzw. Ausgaben automatisch als bezahlt.
-      </p>
+      <ListenKopf
+        titel="Banking"
+        untertitel="Zahlungen erfassen oder als CSV der Bank importieren. Passende Beträge markieren offene Rechnungen bzw. Ausgaben automatisch als bezahlt."
+        neuHref="/banking/neu"
+        neuLabel="Zahlung erfassen"
+        menue={
+          <>
+            <form action={importZahlungenCsv} className="grid gap-2 text-sm">
+              <div className="font-semibold">Bank-CSV importieren</div>
+              <p className="text-xs text-muted">
+                Spalten: <code>Datum;Text;Betrag;Referenz</code> — Datum als TT.MM.JJJJ oder JJJJ-MM-TT, Ausgänge mit negativem Betrag. Max. 2 MB.
+              </p>
+              <input name="datei" type="file" accept=".csv,text/csv,text/plain" required className="rounded border border-line p-1.5 text-xs" />
+              <button className="rounded-md border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
+            </form>
+            <div className="mt-3 grid gap-1 border-t border-line pt-3 text-sm">
+              {/* Download-Route, kein Seitenwechsel */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a href="/api/export/zahlungen" className="text-forest underline">⬇ Zahlungen exportieren (CSV)</a>
+            </div>
+          </>
+        }
+      />
 
-      {sp.gespeichert && (
-        <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>
-      )}
-      {sp.importiert && (
-        <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">
-          {sp.importiert} Zahlung(en) importiert ✓
-        </p>
-      )}
-      {sp.fehler && (
-        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">
-          {fehlerTexte[sp.fehler] ?? "Aktion fehlgeschlagen."}
-        </p>
-      )}
+      {sp.gespeichert && <Hinweis>Gespeichert ✓</Hinweis>}
+      {sp.importiert && <Hinweis>{sp.importiert} Zahlung(en) importiert ✓</Hinweis>}
+      {sp.fehler && <Hinweis art="fehler">{fehlerTexte[sp.fehler] ?? "Aktion fehlgeschlagen."}</Hinweis>}
 
-      <div className="mt-4 grid grid-cols-3 gap-4">
-        <div className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-          <div className="text-xl font-bold text-green-700">CHF {chf(eingang)}</div>
-          <div className="text-sm text-muted">Eingänge</div>
-        </div>
-        <div className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-          <div className="text-xl font-bold text-red-700">CHF {chf(ausgang)}</div>
-          <div className="text-sm text-muted">Ausgänge</div>
-        </div>
-        <div className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-          <div className="text-xl font-bold">CHF {chf(eingang + ausgang)}</div>
-          <div className="text-sm text-muted">Saldo</div>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <form
-          action={createZahlung}
-          className="grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm"
-        >
-          <h2 className="font-semibold">Zahlung erfassen</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <select name="art" className={feld}>
-              <option value="ein">Eingang</option>
-              <option value="aus">Ausgang</option>
-            </select>
-            <input name="datum" type="date" defaultValue={lokalIso(new Date())} className={feld} />
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        {[
+          { label: "Eingänge", wert: eingang, farbe: "text-green-700" },
+          { label: "Ausgänge", wert: ausgang, farbe: "text-red-700" },
+          { label: "Saldo", wert: eingang + ausgang, farbe: "" },
+        ].map((k) => (
+          <div key={k.label} className="rounded-tiff border border-line bg-white p-3 shadow-sm">
+            <div className={`text-lg font-bold tabular-nums ${k.farbe}`}>CHF {chf(k.wert)}</div>
+            <div className="text-xs text-muted">{k.label}</div>
           </div>
-          <input name="betrag" required inputMode="decimal" placeholder="Betrag CHF" className={feld} />
-          <input name="text" placeholder="Text / Auftraggeber" className={feld} />
-          <input name="referenz" placeholder="Referenz (optional)" className={feld} />
-          <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift">
-            Speichern
-          </button>
-        </form>
-
-        <form
-          action={importZahlungenCsv}
-          className="grid content-start gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm"
-        >
-          <h2 className="font-semibold">CSV-Import</h2>
-          <p className="text-xs text-muted">
-            Spalten: <code>Datum;Text;Betrag;Referenz</code> — Datum als TT.MM.JJJJ oder JJJJ-MM-TT, Ausgänge mit
-            negativem Betrag.
-          </p>
-          <input name="datei" type="file" accept=".csv,text/csv,text/plain" className="text-sm" />
-          <button className="rounded border border-forest p-2 text-sm font-semibold text-forest hover:bg-surface2">
-            Importieren
-          </button>
-        </form>
+        ))}
       </div>
 
-      <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
-        {zahlungen.length === 0 && <li className="p-4 text-sm text-muted">Noch keine Zahlungen.</li>}
-        {zahlungen.map((z) => (
-          <li key={z.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-            <div>
-              <div className="font-medium">{z.text || "—"}</div>
-              <div className="text-sm text-muted">
-                {z.datum.toLocaleDateString("de-CH")}
-                {z.referenz && ` · Ref. ${z.referenz}`}
-                {z.rechnungId && " · Rechnung zugeordnet ✓"}
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <strong className={z.betrag >= 0 ? "text-green-700" : "text-red-700"}>
-                {z.betrag >= 0 ? "+" : "−"} CHF {chf(Math.abs(z.betrag))}
-              </strong>
-              <form action={deleteZahlung}>
-                <input type="hidden" name="id" value={z.id} />
-                <button className="rounded border border-line px-2 py-1 text-xs text-red-700 hover:bg-red-50">
-                  Löschen
-                </button>
-              </form>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <ReiterUndSuche
+        basis="/banking"
+        aktiv={filter}
+        q={sp.q ?? ""}
+        suchePlatzhalter="Suche: Text, Referenz …"
+        reiter={TABS.map(([key, label]) => ({ key, label, anzahl: alle.filter((z) => passt(z, key)).length }))}
+      />
+      <Tabelle>
+        <thead className={KOPF}>
+          <tr>
+            <th className="p-2">Datum</th>
+            <th className="p-2">Text</th>
+            <th className="hidden p-2 md:table-cell">Referenz</th>
+            <th className="p-2 text-right">Betrag CHF</th>
+            <th className="hidden p-2 sm:table-cell">Zuordnung</th>
+            <th className="w-10 p-2" />
+          </tr>
+        </thead>
+        <tbody className={ZEILEN}>
+          {sichtbar.map((z) => (
+            <tr key={z.id} className="hover:bg-surface2">
+              <td className="whitespace-nowrap p-2 text-muted">{z.datum.toLocaleDateString("de-CH")}</td>
+              <td className="p-2 font-medium">{z.text || "—"}</td>
+              <td className="hidden p-2 text-muted md:table-cell">{z.referenz || "—"}</td>
+              <td className={`whitespace-nowrap p-2 text-right font-medium tabular-nums ${z.betrag >= 0 ? "text-green-700" : "text-red-700"}`}>
+                {z.betrag >= 0 ? "+" : "−"} {chf(Math.abs(z.betrag))}
+              </td>
+              <td className="hidden p-2 sm:table-cell">
+                {z.rechnungId ? (
+                  <Link href={`/rechnungen/${z.rechnungId}`} className="hover:underline">
+                    <Pille farbe="bg-green-100 text-green-800">Rechnung ✓</Pille>
+                  </Link>
+                ) : z.betrag > 0 ? (
+                  <Pille>offen</Pille>
+                ) : (
+                  <span className="text-muted">—</span>
+                )}
+              </td>
+              <td className="p-2 text-right">
+                <form action={deleteZahlung}>
+                  <input type="hidden" name="id" value={z.id} />
+                  <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+          {sichtbar.length === 0 && (
+            <Leer colSpan={6}>
+              Keine Zahlungen. <Link href="/banking/neu" className="text-forest underline">Zahlung erfassen</Link> oder über «⋮» eine CSV importieren.
+            </Leer>
+          )}
+        </tbody>
+        {sichtbar.length > 0 && (
+          <tfoot className={FUSS}>
+            <tr>
+              <td className="p-2" colSpan={2}>Total ({sichtbar.length})</td>
+              <td className="hidden md:table-cell" />
+              <td className="p-2 text-right tabular-nums">{chf(summe)}</td>
+              <td className="hidden sm:table-cell" />
+              <td />
+            </tr>
+          </tfoot>
+        )}
+      </Tabelle>
     </div>
   );
 }

@@ -111,7 +111,7 @@ export default async function SuchePage({
           <Block titel="Rechnungen">
             {rechnungen.map((r) => (
               <li key={r.id}>
-                <Link href="/rechnungen" className="block px-3 py-2 text-sm hover:bg-surface2">
+                <Link href={`/rechnungen/${r.id}`} className="block px-3 py-2 text-sm hover:bg-surface2">
                   {rechnungNr(r)} — {r.auftrag.kunde.name}{" "}
                   <span className="text-muted">· CHF {chf(r.totalBrutto)} · {r.status}</span>
                 </Link>
@@ -123,7 +123,7 @@ export default async function SuchePage({
           <Block titel="Produkte / Artikel">
             {artikel.map((a) => (
               <li key={a.id}>
-                <Link href={`/artikel?q=${encodeURIComponent(a.bezeichnung)}`} className="block px-3 py-2 text-sm hover:bg-surface2">
+                <Link href={`/artikel/${a.id}`} className="block px-3 py-2 text-sm hover:bg-surface2">
                   {a.artikelNr && <span className="text-muted">{a.artikelNr} · </span>}
                   {a.bezeichnung}
                 </Link>

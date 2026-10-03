@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { createObjekt, deleteKunde, deleteObjekt } from "@/lib/actions";
 import { archiviereKunde, createKontaktperson, deleteKontaktperson } from "@/lib/actions-kontakte";
+import { chf, offerteNummer } from "@/lib/format";
+import { projektNr, rechnungNr } from "@/lib/nrtext";
+import { offenerBetrag } from "@/lib/mahnwesen";
 
 export default async function KundeDetail({
   params,
@@ -20,10 +23,25 @@ export default async function KundeDetail({
     include: {
       objekte: true,
       kontaktpersonen: { orderBy: { name: "asc" } },
-      auftraege: { orderBy: { datum: "desc" } },
+      auftraege: { orderBy: { datum: "desc" }, include: { rechnungen: { orderBy: { datum: "desc" }, include: { gutschriften: true } } } },
+      offerten: { orderBy: { datum: "desc" } },
+      projekte: { orderBy: { nummer: "desc" } },
+      wartungsvertraege: { orderBy: { naechsteWartung: "asc" }, include: { objekt: true } },
     },
   });
   if (!kunde) notFound();
+  // Rechnungen hängen am Auftrag — für die Kontaktübersicht zusammenziehen
+  const rechnungen = kunde.auftraege.flatMap((a) => a.rechnungen.map((r) => ({ ...r, auftragTitel: a.titel })));
+  rechnungen.sort((a, b) => b.datum.getTime() - a.datum.getTime());
+  const offenCHF = rechnungen.filter((r) => r.status === "VERSENDET").reduce((s, r) => s + offenerBetrag(r), 0);
+  // Schnellaktionen wie bei bexio: neues Dokument direkt für diesen Kontakt
+  const schnell: [string, string][] = [
+    ["Offerte", `/offerten/neu?kunde=${kunde.id}`],
+    ["Auftrag", `/auftraege/neu?kunde=${kunde.id}`],
+    ["Projekt", `/projekte/neu?kunde=${kunde.id}`],
+    ["Aufgabe", `/aufgaben/neu?kunde=${kunde.id}`],
+    ["Wartungsvertrag", kunde.objekte.length === 1 ? `/wartung/neu?objekt=${kunde.objekte[0].id}` : "/wartung/neu"],
+  ];
   const ansprechpartner = kunde.ansprechpartnerId
     ? await db.mitarbeiter.findFirst({ where: { id: kunde.ansprechpartnerId, betriebId: betrieb.id }, select: { name: true } })
     : null;
@@ -78,6 +96,16 @@ export default async function KundeDetail({
         </form>
         </div>
       </div>
+      {!kunde.archiviert && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="mr-1 text-muted">Neu für diesen Kontakt:</span>
+          {schnell.map(([label, href]) => (
+            <Link key={label} href={href} className="rounded-full border border-line bg-white px-3 py-1 hover:bg-surface2">
+              ＋ {label}
+            </Link>
+          ))}
+        </div>
+      )}
       <dl className="mt-3 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
         {zeilen.filter(([, w]) => w).map(([l, w]) => (
           <div key={l} className="flex gap-2">
@@ -159,27 +187,80 @@ export default async function KundeDetail({
           </form>
         </div>
 
-        <div>
-          <h2 className="font-semibold">Aufträge</h2>
-          <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white">
-            {kunde.auftraege.map((a) => (
-              <li key={a.id}>
-                <Link href={`/auftraege/${a.id}`} className="block p-3 hover:bg-surface2">
-                  <div className="font-medium">
-                    #{a.nummer} — {a.titel}
-                  </div>
-                  <div className="text-sm text-muted">
-                    {a.status} · {a.datum.toLocaleDateString("de-CH")}
-                  </div>
-                </Link>
-              </li>
-            ))}
-            {kunde.auftraege.length === 0 && (
-              <li className="p-3 text-sm text-muted">Noch keine Aufträge.</li>
-            )}
-          </ul>
+        <div className="grid content-start gap-6">
+          <div>
+            <h2 className="font-semibold">Offerten ({kunde.offerten.length})</h2>
+            <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
+              {kunde.offerten.slice(0, 8).map((o) => (
+                <li key={o.id}>
+                  <Link href={`/offerten/${o.id}`} className="flex items-center justify-between gap-2 p-3 hover:bg-surface2">
+                    <span className="min-w-0 truncate"><span className="font-medium">{offerteNummer(o)}</span> — {o.titel}</span>
+                    <span className="shrink-0 text-xs text-muted">{offerteStatus[o.status] ?? o.status} · {o.datum.toLocaleDateString("de-CH")}</span>
+                  </Link>
+                </li>
+              ))}
+              {kunde.offerten.length === 0 && <li className="p-3 text-muted">Noch keine Offerten.</li>}
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-semibold">Aufträge ({kunde.auftraege.length})</h2>
+            <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
+              {kunde.auftraege.slice(0, 8).map((a) => (
+                <li key={a.id}>
+                  <Link href={`/auftraege/${a.id}`} className="flex items-center justify-between gap-2 p-3 hover:bg-surface2">
+                    <span className="min-w-0 truncate"><span className="font-medium">#{a.nummer}</span> — {a.titel}</span>
+                    <span className="shrink-0 text-xs text-muted">{a.status} · {a.datum.toLocaleDateString("de-CH")}</span>
+                  </Link>
+                </li>
+              ))}
+              {kunde.auftraege.length === 0 && <li className="p-3 text-muted">Noch keine Aufträge.</li>}
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-semibold">
+              Rechnungen ({rechnungen.length})
+              {offenCHF > 0 && <span className="ml-2 text-sm font-normal text-red-700">offen CHF {chf(offenCHF)}</span>}
+            </h2>
+            <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
+              {rechnungen.slice(0, 8).map((r) => (
+                <li key={r.id}>
+                  <Link href={`/rechnungen/${r.id}`} className="flex items-center justify-between gap-2 p-3 hover:bg-surface2">
+                    <span className="min-w-0 truncate"><span className="font-medium">{rechnungNr(r)}</span> — {r.auftragTitel}</span>
+                    <span className="shrink-0 text-xs text-muted">CHF {chf(r.totalBrutto)} · {rechnungStatus[r.status] ?? r.status}</span>
+                  </Link>
+                </li>
+              ))}
+              {rechnungen.length === 0 && <li className="p-3 text-muted">Noch keine Rechnungen.</li>}
+            </ul>
+          </div>
+          {(kunde.projekte.length > 0 || kunde.wartungsvertraege.length > 0) && (
+            <div>
+              <h2 className="font-semibold">Projekte &amp; Wartungsverträge</h2>
+              <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
+                {kunde.projekte.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/projekte/${p.id}`} className="flex items-center justify-between gap-2 p-3 hover:bg-surface2">
+                      <span className="min-w-0 truncate"><span className="font-medium">{projektNr(p)}</span> — {p.name}</span>
+                      <span className="shrink-0 text-xs text-muted">{p.status}</span>
+                    </Link>
+                  </li>
+                ))}
+                {kunde.wartungsvertraege.map((v) => (
+                  <li key={v.id}>
+                    <Link href={`/wartung?q=WV-${v.nummer}&filter=alle`} className="flex items-center justify-between gap-2 p-3 hover:bg-surface2">
+                      <span className="min-w-0 truncate"><span className="font-medium">WV-{v.nummer}</span> — {v.titel} · {v.objekt.bezeichnung}</span>
+                      <span className="shrink-0 text-xs text-muted">{v.status} · nächste {v.naechsteWartung.toLocaleDateString("de-CH")}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+const offerteStatus: Record<string, string> = { ENTWURF: "Entwurf", GESENDET: "Offen", ANGENOMMEN: "Bestätigt", ABGELEHNT: "Abgelehnt" };
+const rechnungStatus: Record<string, string> = { ENTWURF: "Entwurf", VERSENDET: "Offen", BEZAHLT: "Bezahlt" };

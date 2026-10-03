@@ -85,9 +85,9 @@ const buero: Schritt[] = [
   {
     titel: "Einkauf",
     punkte: [
-      <><b>Ausgaben → Bestellungen:</b> Material beim Lieferanten bestellen (PDF).</>,
-      <><b>Ausgaben → Lieferantenrechnungen:</b> eingehende Rechnungen erfassen und als bezahlt markieren.</>,
-      <><b>Posteingang:</b> PDF/Foto der Lieferantenrechnung hochladen → «Als Ausgabe erfassen».</>,
+      <><b>Einkauf → Bestellungen:</b> Material beim Lieferanten bestellen (PDF).</>,
+      <><b>Einkauf → Ausgaben → ＋ Neue Ausgabe:</b> Lieferantenrechnungen und Betriebskosten erfassen und als bezahlt markieren.</>,
+      <><b>Einkauf → Posteingang → Beleg hochladen:</b> PDF/Foto der Lieferantenrechnung hochladen → «Als Ausgabe erfassen».</>,
     ],
   },
   {

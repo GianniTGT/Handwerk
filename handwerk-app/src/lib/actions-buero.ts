@@ -20,7 +20,8 @@ export async function createAusgabe(formData: FormData) {
   const beschreibung = String(formData.get("beschreibung") ?? "").trim();
   const betrag = parseFloat(String(formData.get("betragBrutto") ?? "").replace(",", "."));
   if (!beschreibung || !Number.isFinite(betrag) || betrag <= 0) {
-    redirect("/ausgaben?fehler=eingabe");
+    const belegRef = String(formData.get("belegId") ?? "");
+    redirect(`/ausgaben/neu?fehler=eingabe${belegRef ? `&beleg=${belegRef}` : ""}`);
   }
   const projektWahl = String(formData.get("projektId") ?? "");
   const projektId =
@@ -109,7 +110,7 @@ export async function createZahlung(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("FINANZEN");
   const vorzeichen = String(formData.get("art")) === "aus" ? -1 : 1;
   const betrag = parseFloat(String(formData.get("betrag") ?? "").replace(",", "."));
-  if (!Number.isFinite(betrag) || betrag <= 0) redirect("/banking?fehler=eingabe");
+  if (!Number.isFinite(betrag) || betrag <= 0) redirect("/banking/neu?fehler=eingabe");
   const z = await db.zahlung.create({
     data: {
       betriebId: betrieb.id,
@@ -164,10 +165,10 @@ export async function deleteZahlung(formData: FormData) {
 export async function uploadBeleg(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("EINKAUF");
   const datei = formData.get("datei");
-  if (!(datei instanceof File) || datei.size === 0) redirect("/posteingang?fehler=datei");
-  if (datei.size > 3 * 1024 * 1024) redirect("/posteingang?fehler=gross");
+  if (!(datei instanceof File) || datei.size === 0) redirect("/posteingang/neu?fehler=datei");
+  if (datei.size > 3 * 1024 * 1024) redirect("/posteingang/neu?fehler=gross");
   if (!["application/pdf", "image/jpeg", "image/png"].includes(datei.type)) {
-    redirect("/posteingang?fehler=format");
+    redirect("/posteingang/neu?fehler=format");
   }
   const bytes = Buffer.from(await datei.arrayBuffer());
   await db.beleg.create({

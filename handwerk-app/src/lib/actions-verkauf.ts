@@ -98,6 +98,9 @@ export async function mahnlauf() {
 export async function createGutschrift(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("VERKAUF");
   const rechnungId = String(formData.get("rechnungId"));
+  // Rücksprungziel bei Fehlern: eigene Erfassungsseite oder Rechnungsliste
+  const zurueck = String(formData.get("zurueck") ?? "") === "/gutschriften/neu" ? "/gutschriften/neu" : "/rechnungen";
+  if (!rechnungId) redirect(`${zurueck}?fehler=rechnung`);
   const rechnung = await db.rechnung.findFirst({
     where: { id: rechnungId, betriebId: betrieb.id },
     include: { gutschriften: true },
@@ -108,11 +111,11 @@ export async function createGutschrift(formData: FormData) {
   const offen = offenerBetrag(rechnung);
   const eingabe = parseFloat(String(formData.get("betragBrutto") ?? "").replace(",", "."));
   const brutto = Number.isFinite(eingabe) && eingabe > 0 ? eingabe : offen;
-  if (rechnung.status === "ENTWURF") redirect(`/rechnungen?fehler=gutschrift-entwurf`);
+  if (rechnung.status === "ENTWURF") redirect(`${zurueck}?fehler=gutschrift-entwurf&rechnung=${rechnungId}`);
   // Gjithsej kreditnotat nuk mund ta kalojnë shumën e faturës (tolerancë 5 Rp.)
   const bereitsGutgeschrieben = rechnung.gutschriften.reduce((s, g) => s + g.totalBrutto, 0);
   if (brutto <= 0 || bereitsGutgeschrieben + brutto > rechnung.totalBrutto + 0.05) {
-    redirect(`/rechnungen?fehler=gutschrift-betrag`);
+    redirect(`${zurueck}?fehler=gutschrift-betrag&rechnung=${rechnungId}`);
   }
   const netto = Math.round((brutto / (1 + rechnung.mwstSatz / 100)) * 100) / 100;
 
