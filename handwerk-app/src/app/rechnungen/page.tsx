@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Leer } from "@/components/Liste";
 import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -159,11 +160,14 @@ export default async function RechnungenPage({
               </tr>
             ))}
             {sichtbar.length === 0 && (
-              <tr>
-                <td colSpan={8} className="p-4 text-center text-muted">
-                  Keine Rechnungen. <Link href="/rechnungen/neu" className="text-forest underline">Neue Rechnung erstellen</Link>
-                </td>
-              </tr>
+              q || filter !== "alle" ? (
+                <Leer colSpan={8}>Keine Rechnungen zu dieser Auswahl.</Leer>
+              ) : (
+                <Leer colSpan={8} icon="verkauf" titel="Sie haben noch keine Rechnungen erstellt.">
+                  Rechnungen entstehen aus Aufträgen: <Link href="/rechnungen/neu">Auftrag wählen und Rechnung erstellen</Link>. Die QR-Rechnung als PDF ist
+                  sofort bereit.
+                </Leer>
+              )
             )}
           </tbody>
           {sichtbar.length > 0 && (

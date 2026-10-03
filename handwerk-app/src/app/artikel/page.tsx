@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Leer } from "@/components/Liste";
 import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -179,11 +180,16 @@ export default async function ArtikelPage({
               );
             })}
             {artikel.length === 0 && (
-              <tr>
-                <td colSpan={8} className="p-4 text-center text-muted">
-                  Keine Produkte. <Link href="/artikel/neu" className="text-forest underline">Neues Produkt erstellen</Link> oder über «⋮» eine CSV importieren.
-                </td>
-              </tr>
+              q || filter !== "alle" ? (
+                <Leer colSpan={8}>Keine Produkte zu dieser Auswahl.</Leer>
+              ) : (
+                <Leer colSpan={8} icon="produkte" titel="Sie haben noch keine Produkte erfasst.">
+                  Erfassen Sie jetzt <Link href="/artikel/neu">ein Produkt oder eine Dienstleistung</Link> oder{" "}
+                  <Link href="/import?typ=artikel">importieren Sie Ihre Produkte</Link> aus bexio, Excel oder einer Lieferanten-Preisliste.
+                  <br />
+                  Anschliessend wählen Sie Ihren Katalog in Offerten, Aufträgen und Rechnungen einfach aus.
+                </Leer>
+              )
             )}
           </tbody>
         </table>

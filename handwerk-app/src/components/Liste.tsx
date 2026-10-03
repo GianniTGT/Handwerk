@@ -2,6 +2,7 @@
 // Suchfeld, Tabelle mit Fusszeile, Statuspillen und Hinweise. Reine Server-Komponenten.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import Icon from "./Icons";
 
 export function ListenKopf({
   titel,
@@ -107,11 +108,28 @@ export const KOPF = "bg-surface2 text-left text-xs uppercase text-muted";
 export const ZEILEN = "divide-y divide-line";
 export const FUSS = "bg-surface2 text-sm font-semibold";
 
-export function Leer({ colSpan, children }: { colSpan: number; children: ReactNode }) {
+// Leere Liste: mit «titel» und «icon» als freundlicher Einstieg wie bei bexio (Bild, Erklärung, Links),
+// ohne «titel» als schlichte Zeile (z.B. «Keine Treffer» bei aktiver Suche)
+export function Leer({ colSpan, children, icon, titel }: { colSpan: number; children: ReactNode; icon?: string; titel?: string }) {
+  if (!titel) {
+    return (
+      <tr>
+        <td colSpan={colSpan} className="p-4 text-center text-muted">
+          {children}
+        </td>
+      </tr>
+    );
+  }
   return (
     <tr>
-      <td colSpan={colSpan} className="p-4 text-center text-muted">
-        {children}
+      <td colSpan={colSpan} className="px-6 py-14">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+          <Icon name={icon ?? "mehr"} className="h-24 w-24 shrink-0 text-line" />
+          <div>
+            <p className="text-xl font-medium text-ink">{titel}</p>
+            <div className="mt-2 text-base leading-relaxed text-muted [&_a]:text-forest [&_a]:underline">{children}</div>
+          </div>
+        </div>
       </td>
     </tr>
   );

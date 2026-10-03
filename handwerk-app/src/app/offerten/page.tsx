@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Leer } from "@/components/Liste";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf, offerteNummer } from "@/lib/format";
@@ -114,11 +115,14 @@ export default async function OffertenPage({
               </tr>
             ))}
             {sichtbar.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted">
-                  Keine Offerten. <Link href="/offerten/neu" className="text-forest underline">Neue Offerte erstellen</Link>
-                </td>
-              </tr>
+              q || filter !== "alle" ? (
+                <Leer colSpan={7}>Keine Offerten zu dieser Auswahl.</Leer>
+              ) : (
+                <Leer colSpan={7} icon="verkauf" titel="Sie haben noch keine Offerten erstellt.">
+                  <Link href="/offerten/neu">Erstellen Sie jetzt eine Offerte</Link> für einen Kontakt. Angenommene Offerten wandeln Sie mit einem Klick in einen
+                  Auftrag um.
+                </Leer>
+              )
             )}
           </tbody>
           {sichtbar.length > 0 && (

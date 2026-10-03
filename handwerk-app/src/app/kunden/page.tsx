@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Leer } from "@/components/Liste";
 import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -154,11 +155,16 @@ export default async function KundenPage({
               </tr>
             ))}
             {kunden.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-center text-muted">
-                  Keine Kontakte. <Link href="/kunden/neu" className="text-forest underline">Ersten Kontakt erstellen</Link>
-                </td>
-              </tr>
+              q || sp.kategorie ? (
+                <Leer colSpan={7}>Keine Kontakte zu dieser Suche.</Leer>
+              ) : archiv ? (
+                <Leer colSpan={7}>Keine archivierten Kontakte.</Leer>
+              ) : (
+                <Leer colSpan={7} icon="kontakte" titel="Sie haben noch keine Kontakte erfasst.">
+                  <Link href="/kunden/neu">Erstellen Sie jetzt einen Kontakt</Link> — Adresse, Telefon und UID lassen sich von der Webseite oder aus Search.ch
+                  übernehmen — oder <Link href="/import?typ=kontakte">importieren Sie Ihre Kontakte</Link> aus bexio oder Excel.
+                </Leer>
+              )
             )}
           </tbody>
         </table>

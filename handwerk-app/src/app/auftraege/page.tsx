@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Leer } from "@/components/Liste";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 
@@ -104,11 +105,14 @@ export default async function AuftraegePage({
               </tr>
             ))}
             {sichtbar.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-4 text-center text-muted">
-                  Keine Aufträge. <Link href="/auftraege/neu" className="text-forest underline">Neuen Auftrag erstellen</Link>
-                </td>
-              </tr>
+              q || filter !== "alle" ? (
+                <Leer colSpan={6}>Keine Aufträge zu dieser Auswahl.</Leer>
+              ) : (
+                <Leer colSpan={6} icon="projekte" titel="Sie haben noch keine Aufträge erfasst.">
+                  <Link href="/auftraege/neu">Erstellen Sie jetzt einen Auftrag</Link> — mit Rapport, Fotos und Unterschrift vor Ort. Daraus entstehen
+                  Lieferschein und Rechnung.
+                </Leer>
+              )
             )}
           </tbody>
         </table>
