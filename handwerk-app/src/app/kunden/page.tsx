@@ -79,6 +79,7 @@ export default async function KundenPage({
               {/* Download-Route, kein Seitenwechsel */}
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline">⬇ Kontakte exportieren (CSV)</a>
+              <Link href="/import?typ=kontakte" className="mt-2 block text-sm text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
             </div>
           </details>
           <Link href="/kunden/neu" className="rounded bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">

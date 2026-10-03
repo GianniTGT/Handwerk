@@ -89,6 +89,7 @@ export default async function ArtikelPage({
                 {/* Download-Route, kein Seitenwechsel */}
                 {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                 <a href="/api/export/artikel" className="text-forest underline">⬇ Produkte exportieren (CSV)</a>
+                <Link href="/import?typ=artikel" className="text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
               </div>
             </div>
           </details>

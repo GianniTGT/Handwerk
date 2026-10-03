@@ -59,6 +59,9 @@ export default async function EinstellungenPage({
             Benutzer &amp; Rechte verwalten
           </Link>
         )}
+        <Link href="/import" className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-medium hover:bg-surface2">
+          Datenübernahme (bexio, Excel)
+        </Link>
       </div>
       {sp.gespeichert && <Hinweis>Gespeichert ✓</Hinweis>}
       {sp.fehler && <Hinweis art="fehler">{fehlerTexte[sp.fehler] ?? "Speichern fehlgeschlagen."}</Hinweis>}
