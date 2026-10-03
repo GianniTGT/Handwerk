@@ -28,7 +28,7 @@ export default async function AuftragDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ zeiten?: string; fehler?: string }>;
+  searchParams: Promise<{ zeiten?: string; fehler?: string; lieferschein?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -182,7 +182,7 @@ export default async function AuftragDetail({
       )}
 
       {positionen.length > 0 && (
-        <details className="mt-3 rounded-tiff border border-line bg-white">
+        <details id="lieferschein" open={sp.lieferschein === "1"} className="mt-3 rounded-tiff border border-line bg-white">
           <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
             🚛 Lieferschein erstellen{auftrag.lieferscheine.length > 0 && ` (${auftrag.lieferscheine.map((l) => lieferscheinNr(l)).join(", ")} bereits vorhanden)`}
           </summary>
