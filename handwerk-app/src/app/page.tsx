@@ -13,7 +13,7 @@ export default async function Dashboard() {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const sieht = (b: Bereich) => darf(mitarbeiter, b);
   const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const [kunden, offerten, offene, erledigte, rechnungen, wartungen] = await Promise.all([
+  const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben] = await Promise.all([
     db.kunde.count({ where: { betriebId: betrieb.id } }),
     db.offerte.count({ where: { betriebId: betrieb.id, status: { in: ["ENTWURF", "GESENDET"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: { in: ["OFFEN", "IN_ARBEIT"] } } }),
@@ -22,6 +22,7 @@ export default async function Dashboard() {
     db.wartungsvertrag.count({
       where: { betriebId: betrieb.id, status: "AKTIV", naechsteWartung: { lte: in30Tagen } },
     }),
+    db.aufgabe.count({ where: { betriebId: betrieb.id, status: "OFFEN", zugewiesenAnId: mitarbeiter.id } }),
   ]);
 
   // Widgets si te bexio: lëvizjet e parasë sipas muajit + Debitoren/Kreditoren (hapur / i vonuar)
@@ -63,15 +64,16 @@ export default async function Dashboard() {
   );
   const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
-  const alleKarten: { label: string; wert: number; href: string; bereich: Bereich }[] = [
+  const alleKarten: { label: string; wert: number; href: string; bereich?: Bereich }[] = [
     { label: "Kontakte", wert: kunden, href: "/kunden", bereich: "KONTAKTE" },
     { label: "Offene Offerten", wert: offerten, href: "/offerten", bereich: "VERKAUF" },
     { label: "Offene Aufträge", wert: offene, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen", bereich: "VERKAUF" },
+    { label: "Meine offenen Aufgaben", wert: meineAufgaben, href: "/aufgaben?filter=meine" },
     { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung", bereich: "AUFTRAEGE" },
   ];
-  const karten = alleKarten.filter((k) => sieht(k.bereich));
+  const karten = alleKarten.filter((k) => !k.bereich || sieht(k.bereich));
 
 
   return (

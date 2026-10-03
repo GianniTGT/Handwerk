@@ -59,6 +59,7 @@ model Betrieb {
   zeiten      Zeiteintrag[]
   bestellungen Bestellung[]
   zugaenge    BetriebZugang[]
+  aufgaben    Aufgabe[]
 }
 
 model Mitarbeiter {
@@ -73,6 +74,7 @@ model Mitarbeiter {
   aktiv        Boolean @default(true) // false = nuk mund të hyjë më (historia mbetet)
   rechte       String  @default("") // lista e zonave me presje; bosh = standard sipas rolles
   zeiten       Zeiteintrag[]
+  aufgaben     Aufgabe[]
   rapporte     Rapport[]
   sitzungen    Sitzung[]
   zugaenge     BetriebZugang[] // firma-klientë shtesë që mund t'i ndërrojë (TIFF-Support)
@@ -518,4 +520,23 @@ model LieferscheinPosition {
   bezeichnung    String
   menge          Float        @default(1)
   einheit        String       @default("Stk.")
+}
+
+// Detyrë (To-do) për ekipin: e caktuar te një Mitarbeiter, opsionalisht e lidhur me klient/projekt/auftrag
+model Aufgabe {
+  id            String       @id @default(cuid())
+  betriebId     String
+  betrieb       Betrieb      @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  titel         String
+  beschreibung  String       @default("")
+  kategorie     String       @default("")
+  faelligAm     DateTime?
+  status        String       @default("OFFEN") // OFFEN | ERLEDIGT
+  zugewiesenAnId String?
+  zugewiesenAn  Mitarbeiter? @relation(fields: [zugewiesenAnId], references: [id])
+  kundeId       String?
+  projektId     String?
+  auftragId     String?
+  erstellt      DateTime     @default(now())
+  erledigtAm    DateTime?
 }

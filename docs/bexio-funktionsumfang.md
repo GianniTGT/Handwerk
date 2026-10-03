@@ -235,6 +235,7 @@ Listen-Konvention (alle Verkaufslisten): Reiter-Statusfilter + «Eigene Filter»
 | Nummernkreise, Kopf-/Fusstexte, Mailvorlagen, Zahlungsfrist, Mahnfristen | umgesetzt |
 | Benutzer & Rechte (Rollen, Bereichsrechte, Benutzerverwaltung) | umgesetzt |
 | Lieferscheine | umgesetzt |
-| Wiederkehrende Rechnungen als Lauf, Aufgaben, Analyse/Excel-Export | offen |
+| Aufgaben (Team-To-dos, Zuweisung, Fälligkeit, Dashboard-Kachel) | umgesetzt |
+| Wiederkehrende Rechnungen als Lauf, Analyse/Excel-Export | offen |
 | Lager, Mehrwährung, Mehrsprachigkeit der Dokumente, Dokumentendesigner-Editor | offen |
 | Buchhaltung im engeren Sinn (Kontenplan, Journal, MWST-Abrechnung), Löhne, Marketplace | offen / nicht geplant |

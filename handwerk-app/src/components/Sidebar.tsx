@@ -17,6 +17,7 @@ type Eintrag = { href: string; label: string; icon: string };
 const haupt: Eintrag[] = [
   { href: "/", label: "Dashboard", icon: "🏠" },
   { href: "/kunden", label: "Kontakte", icon: "👤" },
+  { href: "/aufgaben", label: "Aufgaben", icon: "✅" },
 ];
 const verkauf: Eintrag[] = [
   { href: "/projekte", label: "Projekte", icon: "🏗️" },
