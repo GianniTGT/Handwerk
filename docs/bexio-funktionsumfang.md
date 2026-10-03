@@ -237,6 +237,7 @@ Listen-Konvention (alle Verkaufslisten): Reiter-Statusfilter + «Eigene Filter»
 | Lieferscheine | umgesetzt |
 | Aufgaben (Team-To-dos, Zuweisung, Fälligkeit, Dashboard-Kachel) | umgesetzt |
 | CSV-Export aller Listen mit Zeitraum (Seite «Export») | umgesetzt |
-| Wiederkehrende Rechnungen als Lauf, Analyse mit Pivot | offen |
+| Wiederkehrende Rechnungen (Rechnungslauf für Wartungsverträge mit Pauschale, Journal) | umgesetzt |
+| Analyse mit Pivot | offen |
 | Lager, Mehrwährung, Mehrsprachigkeit der Dokumente, Dokumentendesigner-Editor | offen |
 | Buchhaltung im engeren Sinn (Kontenplan, Journal, MWST-Abrechnung), Löhne, Marketplace | offen / nicht geplant |

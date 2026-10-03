@@ -60,6 +60,7 @@ model Betrieb {
   bestellungen Bestellung[]
   zugaenge    BetriebZugang[]
   aufgaben    Aufgabe[]
+  rechnungslaeufe Rechnungslauf[]
 }
 
 model Mitarbeiter {
@@ -338,6 +339,8 @@ model Wartungsvertrag {
   preis           Float    @default(0) // çmimi i rënë dakord për servis
   bemerkung       String   @default("")
   status          String   @default("AKTIV") // AKTIV | PAUSIERT | GEKUENDIGT
+  pauschalAbrechnung Boolean @default(false) // pauschala verrechnohet automatikisht në Rechnungslauf
+  naechsteRechnung DateTime? // data e faturimit të radhës (null = naechsteWartung)
   erstellt        DateTime @default(now())
 }
 
@@ -539,4 +542,15 @@ model Aufgabe {
   auftragId     String?
   erstellt      DateTime     @default(now())
   erledigtAm    DateTime?
+}
+
+// Ditar i ekzekutimeve të Rechnungslauf (faturim periodik i kontratave të mirëmbajtjes)
+model Rechnungslauf {
+  id          String   @id @default(cuid())
+  betriebId   String
+  betrieb     Betrieb  @relation(fields: [betriebId], references: [id], onDelete: Cascade)
+  datum       DateTime @default(now())
+  anzahl      Int
+  summeBrutto Float
+  details     String   @default("") // lista e fatura të krijuara
 }
