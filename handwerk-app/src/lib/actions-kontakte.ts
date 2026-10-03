@@ -10,32 +10,65 @@ import { sitzungErforderlich } from "./auth";
 const s = (formData: FormData, name: string) => String(formData.get(name) ?? "").trim();
 
 function kundeDaten(formData: FormData) {
+  const typ = s(formData, "typ") === "PRIVAT" ? "PRIVAT" : "FIRMA";
+  const vorname = typ === "PRIVAT" ? s(formData, "vorname") : "";
+  const nachname = typ === "PRIVAT" ? s(formData, "nachname") : "";
+  const rabatt = parseFloat(s(formData, "rabatt").replace(",", "."));
+  const anzahl = parseInt(s(formData, "anzahlMitarbeiter"));
   return {
-    name: s(formData, "name"),
-    typ: s(formData, "typ") === "PRIVAT" ? "PRIVAT" : "FIRMA",
+    typ,
+    // Anzeigename: Firma bzw. «Vorname Nachname»; wird überall in der App (Dokumente, Listen) verwendet
+    name: typ === "PRIVAT" ? `${vorname} ${nachname}`.trim() : s(formData, "name"),
+    anrede: typ === "PRIVAT" ? s(formData, "anrede") : "",
+    vorname,
+    nachname,
+    zusatz: typ === "FIRMA" ? s(formData, "zusatz") : "",
     kategorie: s(formData, "kategorie"),
     strasse: s(formData, "strasse"),
+    adresszusatz: s(formData, "adresszusatz"),
     plz: s(formData, "plz"),
     ort: s(formData, "ort"),
+    land: s(formData, "land") || "Schweiz",
     telefon: s(formData, "telefon"),
+    telefon2: s(formData, "telefon2"),
     mobile: s(formData, "mobile"),
     email: s(formData, "email"),
+    email2: s(formData, "email2"),
     website: s(formData, "website"),
+    korrespondenzweg: s(formData, "korrespondenzweg") === "POST" ? "POST" : "MAIL",
+    sprache: ["DE", "FR", "IT", "EN"].includes(s(formData, "sprache")) ? s(formData, "sprache") : "DE",
+    branche: s(formData, "branche"),
+    rabatt: Number.isFinite(rabatt) ? Math.min(100, Math.max(0, rabatt)) : 0,
+    anzahlMitarbeiter: Number.isFinite(anzahl) && anzahl >= 0 ? anzahl : null,
+    handelsregisterNr: s(formData, "handelsregisterNr"),
+    mwstNr: s(formData, "mwstNr"),
+    uid: s(formData, "uid"),
     bemerkung: s(formData, "bemerkung"),
   };
 }
 
 export async function saveKunde(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("KONTAKTE");
-  const daten = kundeDaten(formData);
-  if (!daten.name) redirect("/kunden?fehler=name");
   const id = s(formData, "kundeId");
+  const zurueck = id ? `/kunden/${id}/bearbeiten` : "/kunden/neu";
+  const daten = kundeDaten(formData);
+  if (!daten.name) redirect(`${zurueck}?fehler=name`);
+
+  // Interner Ansprechpartner muss zum eigenen Betrieb gehören
+  const apId = s(formData, "ansprechpartnerId");
+  const ap = apId ? await db.mitarbeiter.findFirst({ where: { id: apId, betriebId: betrieb.id, aktiv: true } }) : null;
+  const mitAp = { ...daten, ansprechpartnerId: ap?.id ?? null };
+
   if (id) {
-    await db.kunde.updateMany({ where: { id, betriebId: betrieb.id }, data: daten });
+    await db.kunde.updateMany({ where: { id, betriebId: betrieb.id }, data: mitAp });
     revalidatePath(`/kunden/${id}`);
+    revalidatePath("/kunden");
     redirect(`/kunden/${id}?gespeichert=1`);
   }
-  const k = await db.kunde.create({ data: { ...daten, betriebId: betrieb.id } });
+  const letzte = await db.kunde.aggregate({ where: { betriebId: betrieb.id }, _max: { kontaktNr: true } });
+  const k = await db.kunde.create({
+    data: { ...mitAp, betriebId: betrieb.id, kontaktNr: (letzte._max.kontaktNr ?? 0) + 1 },
+  });
   revalidatePath("/kunden");
   redirect(`/kunden/${k.id}`);
 }

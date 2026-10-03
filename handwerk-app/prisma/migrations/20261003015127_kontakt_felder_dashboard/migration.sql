@@ -1,0 +1,22 @@
+-- AlterTable
+ALTER TABLE "Kunde" ADD COLUMN     "adresszusatz" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "anrede" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "ansprechpartnerId" TEXT,
+ADD COLUMN     "anzahlMitarbeiter" INTEGER,
+ADD COLUMN     "branche" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "email2" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "handelsregisterNr" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "kontaktNr" INTEGER,
+ADD COLUMN     "korrespondenzweg" TEXT NOT NULL DEFAULT 'MAIL',
+ADD COLUMN     "land" TEXT NOT NULL DEFAULT 'Schweiz',
+ADD COLUMN     "mwstNr" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "nachname" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "rabatt" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "sprache" TEXT NOT NULL DEFAULT 'DE',
+ADD COLUMN     "telefon2" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "uid" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "vorname" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "zusatz" TEXT NOT NULL DEFAULT '';
+
+-- AlterTable
+ALTER TABLE "Mitarbeiter" ADD COLUMN     "dashboard" TEXT NOT NULL DEFAULT '';

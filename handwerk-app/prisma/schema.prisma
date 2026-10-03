@@ -73,6 +73,7 @@ model Mitarbeiter {
   passwortHash String  @default("")
   stundensatz  Float   @default(0) // CHF/h për zeitërfassung → faturim
   aktiv        Boolean @default(true) // false = nuk mund të hyjë më (historia mbetet)
+  dashboard    String  @default("") // JSON {order:[...], hidden:[...]} — rendi/dukshmëria e widget-eve
   passwortAendern Boolean @default(false) // true = duhet të ndryshojë fjalëkalimin para se të vazhdojë (llogari e re / e rivendosur nga admini)
   rechte       String  @default("") // lista e zonave me presje; bosh = standard sipas rolles
   zeiten       Zeiteintrag[]
@@ -120,6 +121,25 @@ model Kunde {
   website   String  @default("")
   bemerkung String  @default("")
   archiviert Boolean @default(false)
+  // Fusha shtesë si te bexio
+  kontaktNr Int?  // numri automatik i kontaktit
+  anrede    String @default("")
+  vorname   String @default("") // vetëm Privat
+  nachname  String @default("") // vetëm Privat
+  zusatz    String @default("") // Firmennamen-Zusatz
+  adresszusatz String @default("")
+  land      String @default("Schweiz")
+  email2    String @default("")
+  telefon2  String @default("")
+  ansprechpartnerId String? // Mitarbeiter i brendshëm përgjegjës
+  korrespondenzweg String @default("MAIL") // MAIL | POST
+  sprache   String @default("DE")
+  branche   String @default("")
+  rabatt    Float  @default(0)
+  anzahlMitarbeiter Int?
+  handelsregisterNr String @default("")
+  mwstNr    String @default("")
+  uid       String @default("")
   kontaktpersonen Kontaktperson[]
   projekte  Projekt[]
   zeiten    Zeiteintrag[]

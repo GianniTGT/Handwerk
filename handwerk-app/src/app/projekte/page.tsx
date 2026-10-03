@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Neu from "@/components/Neu";
 import { projektNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -43,7 +44,8 @@ export default async function ProjektePage({
       <p className="mt-1 text-sm text-muted">Baustellen und Objekte: Aufträge, Zeiten und Material an einem Ort, mit Nachkalkulation.</p>
       {fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte einen Projektnamen angeben.</p>}
 
-      <form action={createProjekt} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
+      <Neu label="Neues Projekt">
+<form action={createProjekt} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
         <h2 className="font-semibold md:col-span-4">Neues Projekt</h2>
         <input name="name" required placeholder="Projektname (z.B. Heizungssanierung Seeblick)" className={`${feld} md:col-span-2`} />
         <select name="kundeId" className={feld}>
@@ -63,6 +65,7 @@ export default async function ProjektePage({
         <input name="beschreibung" placeholder="Beschreibung" className={`${feld} md:col-span-2 md:self-end`} />
         <button className="rounded bg-forest p-2.5 text-sm font-semibold text-white hover:bg-forest-lift md:col-span-4">Projekt erstellen</button>
       </form>
+</Neu>
 
       <div className="mt-4 flex gap-1 text-sm">
         {TABS.map(([key, label]) => (

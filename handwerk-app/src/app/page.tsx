@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -8,13 +9,24 @@ import { darf, type Bereich } from "@/lib/rechte";
 import { chf } from "@/lib/format";
 import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
+import { WIDGETS, WIDGET_BEREICH, parseLayout, type WidgetId } from "@/lib/dashboard";
+import { dashboardAktion } from "@/lib/actions-dashboard";
 
-export default async function Dashboard() {
+const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ bearbeiten?: string }>;
+}) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const bearbeiten = (await searchParams).bearbeiten === "1";
   const sieht = (b: Bereich) => darf(mitarbeiter, b);
   const in30Tagen = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben] = await Promise.all([
-    db.kunde.count({ where: { betriebId: betrieb.id } }),
+  const jahr = new Date().getFullYear();
+
+  const [kunden, offerten, offene, erledigte, rechnungen, wartungen, meineAufgaben, aufgabenListe] = await Promise.all([
+    db.kunde.count({ where: { betriebId: betrieb.id, archiviert: false } }),
     db.offerte.count({ where: { betriebId: betrieb.id, status: { in: ["ENTWURF", "GESENDET"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: { in: ["OFFEN", "IN_ARBEIT"] } } }),
     db.auftrag.count({ where: { betriebId: betrieb.id, status: "ERLEDIGT" } }),
@@ -23,18 +35,26 @@ export default async function Dashboard() {
       where: { betriebId: betrieb.id, status: "AKTIV", naechsteWartung: { lte: in30Tagen } },
     }),
     db.aufgabe.count({ where: { betriebId: betrieb.id, status: "OFFEN", zugewiesenAnId: mitarbeiter.id } }),
+    db.aufgabe.findMany({
+      where: { betriebId: betrieb.id, status: "OFFEN", zugewiesenAnId: mitarbeiter.id },
+      orderBy: [{ faelligAm: { sort: "asc", nulls: "last" } }, { erstellt: "desc" }],
+      take: 5,
+    }),
   ]);
 
-  // Widgets si te bexio: lëvizjet e parasë sipas muajit + Debitoren/Kreditoren (hapur / i vonuar)
-  const jahr = new Date().getFullYear();
-  const [zahlungen, offeneRechnungen, offeneAusgaben] = await Promise.all([
-    db.zahlung.findMany({
-      where: { betriebId: betrieb.id, datum: { gte: new Date(jahr, 0, 1), lt: new Date(jahr + 1, 0, 1) } },
-      select: { datum: true, betrag: true },
-    }),
-    db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" }, include: { gutschriften: true } }),
-    db.ausgabe.findMany({ where: { betriebId: betrieb.id, status: "OFFEN" } }),
-  ]);
+  // Finanz-Widgets nur laden, wenn der Benutzer sie sehen darf
+  const finanz = sieht("FINANZEN");
+  const [zahlungen, offeneRechnungen, offeneAusgaben] = finanz
+    ? await Promise.all([
+        db.zahlung.findMany({
+          where: { betriebId: betrieb.id, datum: { gte: new Date(jahr, 0, 1), lt: new Date(jahr + 1, 0, 1) } },
+          select: { datum: true, betrag: true },
+        }),
+        db.rechnung.findMany({ where: { betriebId: betrieb.id, status: "VERSENDET" }, include: { gutschriften: true } }),
+        db.ausgabe.findMany({ where: { betriebId: betrieb.id, status: "OFFEN" } }),
+      ])
+    : [[], [], []];
+
   const monate = Array.from({ length: 12 }, (_, i) => {
     const m = zahlungen.filter((z) => z.datum.getMonth() === i);
     return {
@@ -62,7 +82,6 @@ export default async function Dashboard() {
       ueberfaellig: !!a.faelligAm && a.faelligAm.getTime() < new Date().setHours(0, 0, 0, 0),
     }))
   );
-  const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
   const alleKarten: { label: string; wert: number; href: string; bereich?: Bereich }[] = [
     { label: "Kontakte", wert: kunden, href: "/kunden", bereich: "KONTAKTE" },
@@ -70,45 +89,78 @@ export default async function Dashboard() {
     { label: "Offene Aufträge", wert: offene, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Bereit zum Verrechnen", wert: erledigte, href: "/auftraege", bereich: "AUFTRAEGE" },
     { label: "Offene Rechnungen", wert: rechnungen, href: "/rechnungen", bereich: "VERKAUF" },
-    { label: "Meine offenen Aufgaben", wert: meineAufgaben, href: "/aufgaben?filter=meine" },
+    { label: "Meine Aufgaben", wert: meineAufgaben, href: "/aufgaben?filter=meine" },
     { label: "Fällige Wartungen (30 Tage)", wert: wartungen, href: "/wartung", bereich: "AUFTRAEGE" },
   ];
   const karten = alleKarten.filter((k) => !k.bereich || sieht(k.bereich));
 
+  const Posten = ({ titel, t, href }: { titel: string; t: { offen: number; ueberfaellig: number }; href: string }) => {
+    const summe = t.offen + t.ueberfaellig;
+    return (
+      <Link href={href} className="block">
+        <div className="text-xs text-muted">Total unbezahlt: CHF {chf(summe)}</div>
+        <div className="mt-3 flex h-3 overflow-hidden rounded bg-surface2" aria-label={titel}>
+          <div className="bg-sky-400" style={{ width: `${summe ? (t.offen / summe) * 100 : 0}%` }} />
+          <div className="bg-red-500" style={{ width: `${summe ? (t.ueberfaellig / summe) * 100 : 0}%` }} />
+        </div>
+        <div className="mt-3 flex justify-between text-sm">
+          <span><span className="text-xs font-semibold uppercase text-sky-700">Offen</span> CHF {chf(t.offen)}</span>
+          <span><span className="text-xs font-semibold uppercase text-red-700">Überfällig</span> CHF {chf(t.ueberfaellig)}</span>
+        </div>
+      </Link>
+    );
+  };
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="mt-1 text-sm text-muted">{betrieb.name} — vom Rapport zur QR-Rechnung in 5 Minuten.</p>
-
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-tiff border border-line bg-white px-4 py-2 text-sm shadow-sm">
-        <span className="font-semibold">Support · {TIFF.name}</span>
-        <a href={`mailto:${TIFF.supportEmail}`} className="text-forest underline">
-          ✉ {TIFF.supportEmail}
-        </a>
-        <a href={`tel:${TIFF.supportTelefon.replace(/\s/g, "")}`} className="text-forest underline">
-          ☎ {TIFF.supportTelefon}
-        </a>
-      </div>
-
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {karten.map((k) => (
-          <Link
-            key={k.label}
-            href={k.href}
-            className="rounded-tiff border border-line bg-white p-4 shadow-sm hover:border-forest"
-          >
-            <div className="text-3xl font-bold">{k.wert}</div>
-            <div className="mt-1 text-sm text-muted">{k.label}</div>
-          </Link>
-        ))}
-      </div>
-
-      {sieht("FINANZEN") && (
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <section className="rounded-tiff border border-line bg-white p-4 shadow-sm lg:col-span-2">
-          <h2 className="font-semibold">Flüssige Mittel — Eingänge und Ausgänge {jahr}</h2>
-          <div className="mt-3 flex h-36 items-end gap-1" role="img" aria-label="Eingänge und Ausgänge pro Monat">
+  const inhalt: Record<WidgetId, { breit?: boolean; ohneRahmen?: boolean; titel: string; node: ReactNode }> = {
+    kennzahlen: {
+      breit: true,
+      ohneRahmen: true,
+      titel: "Kennzahlen",
+      node: (
+        <div className="flex flex-wrap justify-center gap-4">
+          {karten.map((k) => (
+            <Link
+              key={k.label}
+              href={k.href}
+              className="flex min-h-32 w-[calc(50%-0.5rem)] flex-col items-center justify-center rounded-tiff border border-line bg-white p-6 text-center shadow-sm transition hover:border-forest hover:shadow sm:w-[calc(33.333%-0.75rem)] lg:w-[calc(25%-0.75rem)]"
+            >
+              <div className="text-5xl font-bold leading-none text-forest">{k.wert}</div>
+              <div className="mt-3 text-sm text-muted">{k.label}</div>
+            </Link>
+          ))}
+        </div>
+      ),
+    },
+    aufgaben: {
+      titel: "Meine Aufgaben",
+      node: (
+        <ul className="grid gap-2 text-sm">
+          {aufgabenListe.length === 0 && <li className="text-muted">Keine offenen Aufgaben. 🎉</li>}
+          {aufgabenListe.map((a) => {
+            const ueberfaellig = a.faelligAm && a.faelligAm.getTime() < new Date().setHours(0, 0, 0, 0);
+            return (
+              <li key={a.id} className="flex items-baseline justify-between gap-2">
+                <span className="truncate">{a.titel}</span>
+                {a.faelligAm && (
+                  <span className={`shrink-0 text-xs ${ueberfaellig ? "font-medium text-red-700" : "text-muted"}`}>
+                    {a.faelligAm.toLocaleDateString("de-CH")}
+                  </span>
+                )}
+              </li>
+            );
+          })}
+          <li>
+            <Link href="/aufgaben" className="text-xs font-medium text-forest underline">Alle Aufgaben →</Link>
+          </li>
+        </ul>
+      ),
+    },
+    liquiditaet: {
+      breit: true,
+      titel: `Flüssige Mittel — Eingänge und Ausgänge ${jahr}`,
+      node: (
+        <>
+          <div className="flex h-36 items-end gap-1" role="img" aria-label="Eingänge und Ausgänge pro Monat">
             {monate.map((m, i) => (
               <div key={i} className="flex h-full flex-1 items-end justify-center gap-0.5">
                 <div className="w-1/2 rounded-t bg-green-600" style={{ height: `${(m.ein / maxMonat) * 100}%` }} title={`${MONATE[i]}: Eingang CHF ${chf(m.ein)}`} />
@@ -136,79 +188,138 @@ export default async function Dashboard() {
               Noch keine Zahlungen — erfasse sie unter <Link href="/banking" className="text-forest underline">Banking</Link>.
             </p>
           )}
-        </section>
-
-        <div className="grid gap-4">
-          {[
-            { titel: "Offene Rechnungen (Debitoren)", t: debitoren, href: "/rechnungen?filter=ueberfaellig" },
-            { titel: "Offene Lieferantenrechnungen (Kreditoren)", t: kreditoren, href: "/ausgaben" },
-          ].map(({ titel, t, href }) => {
-            const summe = t.offen + t.ueberfaellig;
-            return (
-              <Link key={titel} href={href} className="rounded-tiff border border-line bg-white p-4 shadow-sm hover:border-forest">
-                <h2 className="text-sm font-semibold">{titel}</h2>
-                <div className="mt-1 text-xs text-muted">Total unbezahlt: CHF {chf(summe)}</div>
-                <div className="mt-2 flex h-3 overflow-hidden rounded bg-surface2">
-                  <div className="bg-sky-400" style={{ width: `${summe ? (t.offen / summe) * 100 : 0}%` }} />
-                  <div className="bg-red-500" style={{ width: `${summe ? (t.ueberfaellig / summe) * 100 : 0}%` }} />
-                </div>
-                <div className="mt-2 flex justify-between text-xs">
-                  <span><span className="font-semibold uppercase text-sky-700">Offen</span> CHF {chf(t.offen)}</span>
-                  <span><span className="font-semibold uppercase text-red-700">Überfällig</span> CHF {chf(t.ueberfaellig)}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-      )}
-
-      {/* «Erste Schritte» — struktura e njohur nga bexio */}
-      <section className="mt-8 rounded-tiff border border-line bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">Erste Schritte</h2>
-        <ol className="mt-3 grid gap-3 text-sm">
+        </>
+      ),
+    },
+    debitoren: {
+      titel: "Offene Rechnungen (Debitoren)",
+      node: <Posten titel="Debitoren" t={debitoren} href="/rechnungen?filter=ueberfaellig" />,
+    },
+    kreditoren: {
+      titel: "Offene Lieferantenrechnungen (Kreditoren)",
+      node: <Posten titel="Kreditoren" t={kreditoren} href="/ausgaben" />,
+    },
+    ersteSchritte: {
+      titel: "Erste Schritte",
+      node: (
+        <ol className="grid gap-3 text-sm">
           <li>
-            1.{" "}
-            <Link href="/kunden" className="font-medium text-forest underline">
-              Kontakt erstellen
-            </Link>
-            <span className="text-muted"> — Dies kann ein Kunde mit seinen Objekten/Anlagen sein</span>
+            1. <Link href="/kunden/neu" className="font-medium text-forest underline">Kontakt erstellen</Link>
+            <span className="text-muted"> — Kunde mit seinen Objekten/Anlagen</span>
           </li>
           <li>
-            2.{" "}
-            <Link href="/artikel" className="font-medium text-forest underline">
-              Produkte & Artikel importieren
-            </Link>
-            <span className="text-muted"> — CSV vom Lieferanten (Debrunner, Meier Tobler…) mit Ihren Rabatten</span>
+            2. <Link href="/artikel" className="font-medium text-forest underline">Produkte &amp; Artikel importieren</Link>
+            <span className="text-muted"> — CSV vom Lieferanten mit Ihren Rabatten</span>
           </li>
           <li>
-            3. Schreiben Sie{" "}
-            <Link href="/offerten" className="font-medium text-forest underline">
-              eine Offerte
-            </Link>{" "}
-            <span className="text-muted">oder direkt</span>{" "}
-            <Link href="/auftraege" className="font-medium text-forest underline">
-              einen Auftrag mit Rapport & Rechnung
-            </Link>
+            3. <Link href="/offerten" className="font-medium text-forest underline">Offerte schreiben</Link>
+            <span className="text-muted"> oder direkt </span>
+            <Link href="/auftraege" className="font-medium text-forest underline">Auftrag mit Rapport &amp; Rechnung</Link>
           </li>
         </ol>
-      </section>
-
-      {/* «Schnelleinstellungen» — si te bexio */}
-      <section className="mt-4 rounded-tiff border border-line bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold">Schnelleinstellungen</h2>
-        <div className="mt-3 grid gap-2 text-sm">
-          <Link href="/einstellungen" className="font-medium text-forest underline">
-            Firmenprofil &amp; Logo
-          </Link>
-          <Link href="/einstellungen" className="font-medium text-forest underline">
-            Druck-Layout (Farben der Dokumente)
-          </Link>
-          <Link href="/artikel" className="font-medium text-forest underline">
-            Datenimport (Artikel-CSV)
-          </Link>
+      ),
+    },
+    schnell: {
+      titel: "Schnelleinstellungen",
+      node: (
+        <div className="grid gap-2 text-sm">
+          <Link href="/einstellungen" className="font-medium text-forest underline">Firmenprofil &amp; Logo</Link>
+          <Link href="/einstellungen" className="font-medium text-forest underline">Druck-Layout (Farben der Dokumente)</Link>
+          <Link href="/artikel" className="font-medium text-forest underline">Datenimport (Artikel-CSV)</Link>
         </div>
-      </section>
+      ),
+    },
+    hilfe: {
+      titel: "Hilfe & Support",
+      node: (
+        <div className="grid gap-2 text-sm">
+          <Link href="/hilfe" className="font-medium text-forest underline">📖 Kurzanleitung (Monteure &amp; Büro)</Link>
+          <div className="text-muted">Support · {TIFF.name}</div>
+          <a href={`mailto:${TIFF.supportEmail}`} className="font-medium text-forest underline">✉ {TIFF.supportEmail}</a>
+          <a href={`tel:${TIFF.supportTelefon.replace(/\s/g, "")}`} className="font-medium text-forest underline">☎ {TIFF.supportTelefon}</a>
+        </div>
+      ),
+    },
+  };
+
+  const layout = parseLayout(mitarbeiter.dashboard);
+  const darfWidget = (id: WidgetId) => !WIDGET_BEREICH[id] || sieht(WIDGET_BEREICH[id]!);
+  const sichtbarListe = layout.order.filter((id) => darfWidget(id) && (bearbeiten || !layout.hidden.includes(id)));
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="mt-1 text-sm text-muted">{betrieb.name}</p>
+        </div>
+        {bearbeiten ? (
+          <div className="flex gap-2 text-sm">
+            <form action={dashboardAktion}>
+              <input type="hidden" name="aktion" value="zuruecksetzen" />
+              <button className="rounded border border-line bg-white px-3 py-1.5 hover:bg-surface2">Zurücksetzen</button>
+            </form>
+            <Link href="/" className="rounded bg-forest px-3 py-1.5 font-medium text-white hover:bg-forest-lift">Fertig</Link>
+          </div>
+        ) : (
+          <Link href="/?bearbeiten=1" className="rounded border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2">
+            ✎ Dashboard bearbeiten
+          </Link>
+        )}
+      </div>
+      {bearbeiten && (
+        <p className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-900">
+          Bearbeiten: Mit ▲ ▼ verschieben, mit «Ausblenden» entfernen Sie Widgets von Ihrem Dashboard. Gilt nur für Sie.
+        </p>
+      )}
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {sichtbarListe.map((id) => {
+          const w = inhalt[id];
+          const versteckt = layout.hidden.includes(id);
+          const steuerung = bearbeiten && (
+            <div className="flex items-center gap-1 text-xs">
+              {(["hoch", "runter"] as const).map((r) => (
+                <form key={r} action={dashboardAktion}>
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="aktion" value={r} />
+                  <button className="rounded border border-line bg-white px-2 py-1 hover:bg-surface2" aria-label={r === "hoch" ? "Nach oben" : "Nach unten"}>
+                    {r === "hoch" ? "▲" : "▼"}
+                  </button>
+                </form>
+              ))}
+              <form action={dashboardAktion}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="aktion" value={versteckt ? "einblenden" : "ausblenden"} />
+                <button className="rounded border border-line bg-white px-2 py-1 hover:bg-surface2">
+                  {versteckt ? "Einblenden" : "Ausblenden"}
+                </button>
+              </form>
+            </div>
+          );
+          return (
+            <section
+              key={id}
+              className={`${w.breit ? "lg:col-span-2" : ""} ${versteckt ? "opacity-50" : ""} ${
+                w.ohneRahmen && !bearbeiten ? "" : "rounded-tiff border border-line bg-white p-5 shadow-sm"
+              }`}
+            >
+              {(!w.ohneRahmen || bearbeiten) && (
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="font-semibold">{w.titel}</h2>
+                  {steuerung}
+                </div>
+              )}
+              {w.node}
+            </section>
+          );
+        })}
+      </div>
+      {sichtbarListe.length === 0 && (
+        <p className="mt-6 text-center text-sm text-muted">
+          Alle Widgets sind ausgeblendet. <Link href="/?bearbeiten=1" className="text-forest underline">Dashboard bearbeiten</Link>
+        </p>
+      )}
     </div>
   );
 }

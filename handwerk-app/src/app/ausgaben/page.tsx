@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Neu from "@/components/Neu";
 import { lokalIso } from "@/lib/datum";
 import { projektNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
@@ -49,7 +50,8 @@ export default async function AusgabenPage({
         </p>
       )}
 
-      <form
+      <Neu label="Neue Ausgabe" offen={!!beleg || !!sp.fehler}>
+<form
         action={createAusgabe}
         className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4"
       >
@@ -102,6 +104,7 @@ export default async function AusgabenPage({
           Ausgabe speichern
         </button>
       </form>
+</Neu>
 
       <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
         {ausgaben.length === 0 && <li className="p-4 text-sm text-muted">Noch keine Ausgaben erfasst.</li>}

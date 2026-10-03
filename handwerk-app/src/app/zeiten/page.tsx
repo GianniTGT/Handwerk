@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Neu from "@/components/Neu";
 import { lokalIso } from "@/lib/datum";
 import { projektNr } from "@/lib/nrtext";
 import Link from "next/link";
@@ -78,7 +79,8 @@ export default async function ZeitenPage({
       {gespeichert && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       {fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">{fehlerTexte[fehler] ?? "Fehler."}</p>}
 
-      <form action={createZeit} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
+      <Neu label="Neuer Eintrag" offen>
+<form action={createZeit} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
         <h2 className="font-semibold md:col-span-4">Neuer Eintrag</h2>
         <select name="mitarbeiterId" defaultValue={mitarbeiter.id} className={feld}>
           {team.map((m) => (
@@ -111,6 +113,7 @@ export default async function ZeitenPage({
         <input name="bemerkung" placeholder="Bemerkung" className={`${feld} md:col-span-3`} />
         <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift">Speichern</button>
       </form>
+</Neu>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1 text-sm">

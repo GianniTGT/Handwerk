@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { createObjekt, deleteKunde, deleteObjekt } from "@/lib/actions";
-import { archiviereKunde, createKontaktperson, deleteKontaktperson, saveKunde } from "@/lib/actions-kontakte";
-import KundeFelder from "@/components/KundeFelder";
+import { archiviereKunde, createKontaktperson, deleteKontaktperson } from "@/lib/actions-kontakte";
 
 export default async function KundeDetail({
   params,
@@ -25,6 +24,22 @@ export default async function KundeDetail({
     },
   });
   if (!kunde) notFound();
+  const ansprechpartner = kunde.ansprechpartnerId
+    ? await db.mitarbeiter.findFirst({ where: { id: kunde.ansprechpartnerId, betriebId: betrieb.id }, select: { name: true } })
+    : null;
+  const zeilen: [string, string][] = [
+    ["Adresse", [kunde.strasse, kunde.adresszusatz, `${kunde.plz} ${kunde.ort}`.trim(), kunde.land !== "Schweiz" ? kunde.land : ""].filter(Boolean).join(", ")],
+    ["E-Mail", [kunde.email, kunde.email2].filter(Boolean).join(" · ")],
+    ["Telefon", [kunde.telefon, kunde.telefon2, kunde.mobile].filter(Boolean).join(" · ")],
+    ["Website", kunde.website],
+    ["Ansprechpartner (intern)", ansprechpartner?.name ?? ""],
+    ["Kategorie / Branche", [kunde.kategorie, kunde.branche].filter(Boolean).join(" · ")],
+    ["Korrespondenz", `${kunde.korrespondenzweg === "POST" ? "Post" : "E-Mail"} · ${kunde.sprache}`],
+    ["Rabatt", kunde.rabatt > 0 ? `${kunde.rabatt} %` : ""],
+    ["MWST-Nr. / UID", [kunde.mwstNr, kunde.uid].filter(Boolean).join(" · ")],
+    ["Handelsregister", kunde.handelsregisterNr],
+    ["Mitarbeitende", kunde.anzahlMitarbeiter != null ? String(kunde.anzahlMitarbeiter) : ""],
+  ];
 
   return (
     <div>
@@ -42,10 +57,12 @@ export default async function KundeDetail({
       {gespeichert && <p className="mb-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       <div className="flex items-start justify-between">
         <h1 className="text-xl font-bold">
-          {kunde.name}
+          {kunde.typ === "PRIVAT" ? "👤" : "🏢"} {kunde.name}
+          {kunde.kontaktNr ? <span className="ml-2 text-sm font-normal text-muted">#{kunde.kontaktNr}</span> : null}
           {kunde.archiviert && <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 text-xs font-normal text-muted">archiviert</span>}
         </h1>
         <div className="flex gap-2">
+        <Link href={`/kunden/${kunde.id}/bearbeiten`} className="rounded bg-forest px-3 py-1 text-xs font-semibold text-white hover:bg-forest-lift">✎ Bearbeiten</Link>
         <form action={archiviereKunde}>
           <input type="hidden" name="kundeId" value={kunde.id} />
           <input type="hidden" name="archiviert" value={kunde.archiviert ? "0" : "1"} />
@@ -61,21 +78,20 @@ export default async function KundeDetail({
         </form>
         </div>
       </div>
-      <p className="text-sm text-muted">
-        {kunde.kategorie && `${kunde.kategorie} · `}
-        {kunde.strasse}, {kunde.plz} {kunde.ort} · {kunde.telefon} {kunde.mobile && `· ${kunde.mobile}`} {kunde.email && `· ${kunde.email}`}
-        {kunde.website && ` · ${kunde.website}`}
-      </p>
-      {kunde.bemerkung && <p className="mt-1 text-sm">{kunde.bemerkung}</p>}
-
-      <details className="mt-4 rounded-tiff border border-line bg-white">
-        <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">✎ Kontakt bearbeiten</summary>
-        <form action={saveKunde} className="border-t border-line p-3">
-          <input type="hidden" name="kundeId" value={kunde.id} />
-          <KundeFelder k={kunde} />
-          <button className="mt-3 rounded bg-forest px-4 py-2 text-sm font-medium text-white hover:bg-forest-lift">Speichern</button>
-        </form>
-      </details>
+      <dl className="mt-3 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
+        {zeilen.filter(([, w]) => w).map(([l, w]) => (
+          <div key={l} className="flex gap-2">
+            <dt className="w-40 shrink-0 text-muted">{l}</dt>
+            <dd className="min-w-0 break-words">{w}</dd>
+          </div>
+        ))}
+        {kunde.bemerkung && (
+          <div className="flex gap-2 sm:col-span-2">
+            <dt className="w-40 shrink-0 text-muted">Bemerkungen</dt>
+            <dd className="min-w-0 whitespace-pre-wrap break-words">{kunde.bemerkung}</dd>
+          </div>
+        )}
+      </dl>
 
       <h2 className="mt-6 font-semibold">Kontaktpersonen</h2>
       <ul className="mt-2 divide-y divide-line rounded-tiff border border-line bg-white">

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { leseSitzung } from "@/lib/auth";
 import { logout, wechselBetrieb } from "@/lib/actions";
 import Sidebar, { MobileNav } from "@/components/Sidebar";
-import { TIFF } from "@/lib/tiff";
 import { wirksameRechte } from "@/lib/rechte";
 import { istTiffAdmin } from "@/lib/registrierung";
 import PwaSetup from "@/components/PwaSetup";
@@ -28,7 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="de">
       <body className="min-h-screen bg-paper text-ink antialiased">
         {/* Topbar në strukturën e njohur bexio: logo majtas, kërkimi në qendër, përdoruesi djathtas */}
-        <header className="sticky top-0 z-10 border-b border-line bg-white">
+        <header className="sticky top-0 z-10 border-b border-line bg-white print:hidden">
           <div className="flex h-14 items-center gap-4 px-4">
             <Link href="/" className="flex shrink-0 items-center gap-2 font-bold tracking-tight">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -66,6 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               betriebe={sitzung.betriebe.map((b) => ({ id: b.id, name: b.name }))}
               aktivId={sitzung.aktiverBetrieb.id}
               wechseln={wechselBetrieb}
+              tiffAdmin={istTiffAdmin(sitzung.mitarbeiter.email)}
             />
           )}
         </header>
@@ -78,9 +78,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               wechseln={wechselBetrieb}
               erlaubt={wirksameRechte(sitzung.mitarbeiter)}
               tiffAdmin={istTiffAdmin(sitzung.mitarbeiter.email)}
-              support={{ email: TIFF.supportEmail, telefon: TIFF.supportTelefon }}
             />
-            <main className="w-full min-w-0 max-w-6xl px-4 py-6 md:px-8">{children}</main>
+            <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 md:px-8">{children}</main>
           </div>
         ) : (
           <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>

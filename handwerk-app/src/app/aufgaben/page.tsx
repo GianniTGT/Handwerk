@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Neu from "@/components/Neu";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -54,7 +55,8 @@ export default async function AufgabenPage({
         </p>
       )}
 
-      <form action={createAufgabe} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
+      <Neu label="Neue Aufgabe">
+<form action={createAufgabe} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-4">
         <h2 className="font-semibold md:col-span-4">Neue Aufgabe</h2>
         <input name="titel" required placeholder="Titel (z.B. Familie Muster zurückrufen)" className={`${feld} md:col-span-2`} />
         <select name="zugewiesenAnId" defaultValue={mitarbeiter.id} className={feld}>
@@ -84,6 +86,7 @@ export default async function AufgabenPage({
         <input name="beschreibung" placeholder="Notiz" className={feld} />
         <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift md:col-span-4">Aufgabe speichern</button>
       </form>
+</Neu>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1 text-sm">

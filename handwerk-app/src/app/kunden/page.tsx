@@ -3,8 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { importKundenCsv, saveKunde } from "@/lib/actions-kontakte";
-import KundeFelder from "@/components/KundeFelder";
+import { importKundenCsv } from "@/lib/actions-kontakte";
 
 const importFehler: Record<string, string> = {
   datei: "keine Datei gewählt",
@@ -20,7 +19,6 @@ export default async function KundenPage({
     q?: string;
     filter?: string;
     kategorie?: string;
-    fehler?: string;
     import?: string;
     neu?: string;
     uebersprungen?: string;
@@ -49,7 +47,6 @@ export default async function KundenPage({
             }
           : {}),
       },
-      include: { _count: { select: { objekte: true, auftraege: true } } },
       orderBy: { name: "asc" },
     }),
     db.kunde.findMany({
@@ -61,33 +58,46 @@ export default async function KundenPage({
   ]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-      <div>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Kontakte</h1>
-        {sp.import === "ok" && (
-          <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">
-            Import fertig: {sp.neu} neu{Number(sp.uebersprungen) > 0 && `, ${sp.uebersprungen} übersprungen (leer/Duplikat)`}.
-          </p>
-        )}
-        {sp.import === "fehler" && (
-          <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">
-            Import fehlgeschlagen ({importFehler[sp.grund ?? ""] ?? "Fehler"}).
-          </p>
-        )}
-        {sp.fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte einen Namen angeben.</p>}
+        <div className="flex items-center gap-2">
+          <details className="relative">
+            <summary className="cursor-pointer list-none rounded border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2" title="Weitere Aktionen">
+              ⋮
+            </summary>
+            <div className="absolute right-0 z-10 mt-1 w-72 rounded-tiff border border-line bg-white p-3 shadow-lg">
+              <form action={importKundenCsv} className="grid gap-2 text-sm">
+                <div className="font-semibold">Kontakte importieren (CSV)</div>
+                <p className="text-xs text-muted">
+                  Kopfzeile mit Name/Firma, Strasse, PLZ, Ort, Telefon, Mobile, E-Mail, Website, Kategorie, Typ. Trennzeichen ; oder ,
+                  Duplikate (Name + PLZ) werden übersprungen.
+                </p>
+                <input name="datei" type="file" accept=".csv,text/csv" required className="rounded border border-line p-1.5 text-xs" />
+                <button className="rounded border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
+              </form>
+              <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline">⬇ Kontakte exportieren (CSV)</a>
+            </div>
+          </details>
+          <Link href="/kunden/neu" className="rounded bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">
+            ＋ Neuer Kontakt
+          </Link>
+        </div>
+      </div>
 
-        <form className="mt-3 flex flex-wrap gap-2">
-          {archiv && <input type="hidden" name="filter" value="archiviert" />}
-          <input name="q" defaultValue={q} placeholder="Suche: Name, Ort, E-Mail, Telefon…" className="min-w-0 flex-1 rounded border border-line p-2 text-sm" />
-          <select name="kategorie" defaultValue={sp.kategorie ?? ""} className="rounded border border-line p-2 text-sm">
-            <option value="">Alle Kategorien</option>
-            {kategorien.map((c) => (
-              <option key={c.kategorie}>{c.kategorie}</option>
-            ))}
-          </select>
-          <button className="rounded bg-forest px-4 text-sm font-medium text-white">Filtern</button>
-        </form>
-        <div className="mt-3 flex gap-1 text-sm">
+      {sp.import === "ok" && (
+        <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">
+          Import fertig: {sp.neu} neu{Number(sp.uebersprungen) > 0 && `, ${sp.uebersprungen} übersprungen (leer/Duplikat)`}.
+        </p>
+      )}
+      {sp.import === "fehler" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">
+          Import fehlgeschlagen ({importFehler[sp.grund ?? ""] ?? "Fehler"}).
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-1 text-sm">
           <Link href="/kunden" className={`rounded-full border px-3 py-1 ${!archiv ? "border-forest bg-forest text-white" : "border-line bg-white hover:bg-surface2"}`}>
             Alle
           </Link>
@@ -95,46 +105,59 @@ export default async function KundenPage({
             Archiviert
           </Link>
         </div>
-
-        <ul className="mt-3 divide-y divide-line rounded-tiff border border-line bg-white">
-          {kunden.map((k) => (
-            <li key={k.id}>
-              <Link href={`/kunden/${k.id}`} className="block p-3 hover:bg-surface2">
-                <div className="font-medium">
-                  {k.name}
-                  {k.kategorie && (
-                    <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 text-[11px] font-normal text-muted">{k.kategorie}</span>
-                  )}
-                </div>
-                <div className="text-sm text-muted">
-                  {[k.strasse, `${k.plz} ${k.ort}`.trim()].filter(Boolean).join(", ")} · {k._count.objekte} Objekt(e) ·{" "}
-                  {k._count.auftraege} Auftrag/Aufträge
-                </div>
-              </Link>
-            </li>
-          ))}
-          {kunden.length === 0 && <li className="p-3 text-sm text-muted">Keine Kontakte.</li>}
-        </ul>
+        <form className="flex flex-wrap gap-2">
+          {archiv && <input type="hidden" name="filter" value="archiviert" />}
+          <input name="q" defaultValue={q} placeholder="Suche: Name, Ort, E-Mail, Telefon …" className="w-56 rounded border border-line p-1.5 text-sm" />
+          <select name="kategorie" defaultValue={sp.kategorie ?? ""} className="rounded border border-line p-1.5 text-sm">
+            <option value="">Alle Kategorien</option>
+            {kategorien.map((c) => (
+              <option key={c.kategorie}>{c.kategorie}</option>
+            ))}
+          </select>
+          <button className="rounded bg-forest px-3 text-sm font-medium text-white">Filtern</button>
+        </form>
       </div>
 
-      <div className="grid h-fit gap-4">
-        <form action={saveKunde} className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-          <h2 className="font-semibold">Neuer Kontakt</h2>
-          <div className="mt-3">
-            <KundeFelder />
-            <button className="mt-3 w-full rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift">Speichern</button>
-          </div>
-        </form>
-
-        <form action={importKundenCsv} className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-          <h2 className="font-semibold">Kontakte importieren (CSV)</h2>
-          <p className="mt-1 text-xs text-muted">
-            Kopfzeile mit Spalten wie Name/Firma, Strasse, PLZ, Ort, Telefon, Mobile, E-Mail, Website, Kategorie, Typ.
-            Trennzeichen ; oder ,. Duplikate (Name + PLZ) werden übersprungen.
-          </p>
-          <input name="datei" type="file" accept=".csv,text/csv" required className="mt-2 w-full rounded border border-line p-2 text-sm" />
-          <button className="mt-2 w-full rounded border border-forest p-2 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
-        </form>
+      <div className="mt-3 overflow-hidden rounded-tiff border border-line bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-surface2 text-left text-xs uppercase text-muted">
+            <tr>
+              <th className="w-10 p-2" />
+              <th className="p-2">Name</th>
+              <th className="p-2">PLZ</th>
+              <th className="p-2">Ort</th>
+              <th className="hidden p-2 md:table-cell">E-Mail</th>
+              <th className="hidden p-2 md:table-cell">Telefon</th>
+              <th className="hidden p-2 lg:table-cell">Kategorie</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {kunden.map((k) => (
+              <tr key={k.id} className="hover:bg-surface2">
+                <td className="p-2 text-center" title={k.typ === "PRIVAT" ? "Privatperson" : "Firma"}>
+                  {k.typ === "PRIVAT" ? "👤" : "🏢"}
+                </td>
+                <td className="p-2 font-medium">
+                  <Link href={`/kunden/${k.id}`} className="block hover:underline">
+                    {k.name}
+                  </Link>
+                </td>
+                <td className="p-2 text-muted">{k.plz}</td>
+                <td className="p-2 text-muted">{k.ort}</td>
+                <td className="hidden p-2 text-muted md:table-cell">{k.email}</td>
+                <td className="hidden p-2 text-muted md:table-cell">{k.telefon || k.mobile}</td>
+                <td className="hidden p-2 text-muted lg:table-cell">{k.kategorie}</td>
+              </tr>
+            ))}
+            {kunden.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-4 text-center text-muted">
+                  Keine Kontakte. <Link href="/kunden/neu" className="text-forest underline">Ersten Kontakt erstellen</Link>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
