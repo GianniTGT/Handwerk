@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -60,7 +61,7 @@ export default async function BankingPage({
             <div className="mt-3 grid gap-1 border-t border-line pt-3 text-sm">
               {/* Download-Route, kein Seitenwechsel */}
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a href="/api/export/zahlungen" className="text-forest underline">⬇ Zahlungen exportieren (CSV)</a>
+              <a href="/api/export/zahlungen" className="text-forest underline"><Ik name="download" />Zahlungen exportieren (CSV)</a>
             </div>
           </>
         }
@@ -124,7 +125,7 @@ export default async function BankingPage({
               <td className="p-2 text-right">
                 <form action={deleteZahlung}>
                   <input type="hidden" name="id" value={z.id} />
-                  <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                  <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                 </form>
               </td>
             </tr>

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { projektNr } from "@/lib/nrtext";
+import { Ik } from "@/components/Icons";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -80,7 +81,7 @@ export default async function ZeitenPage({
             <Link href="/einstellungen" className="text-forest underline">Stundensätze (Einstellungen)</Link>
             {/* Download-Route, kein Seitenwechsel */}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-            <a href="/api/export/zeiten" className="text-forest underline">⬇ Zeiten exportieren (CSV)</a>
+            <a href="/api/export/zeiten" className="text-forest underline"><Ik name="download" />Zeiten exportieren (CSV)</a>
           </div>
         }
       />
@@ -141,7 +142,7 @@ export default async function ZeitenPage({
                     </form>
                     <form action={deleteZeit}>
                       <input type="hidden" name="id" value={z.id} />
-                      <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                      <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                     </form>
                   </span>
                 )}

@@ -47,6 +47,17 @@ main select,
 main textarea {
   border-radius: 0.375rem;
 }
+/* Eingabefelder deutlich vom Hintergrund abgesetzt (dunklerer Rand als Karten und Linien) */
+main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+main select,
+main textarea {
+  border-color: #a9b9b0;
+  background-color: #fff;
+}
+main input::placeholder,
+main textarea::placeholder {
+  color: #8a968f;
+}
 main input:focus,
 main select:focus,
 main textarea:focus {

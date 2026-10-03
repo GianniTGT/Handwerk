@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { gutschriftNr, rechnungNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -67,10 +68,10 @@ export default async function GutschriftenPage({
               <td className="hidden max-w-xs truncate p-2 text-muted lg:table-cell">{g.grund || "—"}</td>
               <td className="p-2 text-right tabular-nums">{chf(g.totalBrutto)}</td>
               <td className="p-2 text-right">
-                <a href={`/api/gutschriften/${g.id}`} target="_blank" title="PDF" className="mr-2 hover:opacity-70">📄</a>
+                <a href={`/api/gutschriften/${g.id}`} target="_blank" title="PDF" className="mr-2 hover:opacity-70"><Ik name="pdf" className="mr-0" /></a>
                 <form action={deleteGutschrift} className="inline">
                   <input type="hidden" name="id" value={g.id} />
-                  <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                  <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                 </form>
               </td>
             </tr>

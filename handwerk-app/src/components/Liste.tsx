@@ -167,10 +167,20 @@ export const SPEICHERLEISTE =
 export const KNOPF = "rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift";
 export const KNOPF_RUHIG = "rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2";
 
+function Pflicht({ label }: { label: string }) {
+  return label.trim().endsWith("*") ? (
+    <>
+      {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
+    </>
+  ) : (
+    <>{label}</>
+  );
+}
+
 export function Feld({ label, children, voll }: { label: ReactNode; children: ReactNode; voll?: boolean }) {
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
-      {label}
+      {typeof label === "string" ? <Pflicht label={label} /> : label}
       {children}
     </label>
   );

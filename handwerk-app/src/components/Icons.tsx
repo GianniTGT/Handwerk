@@ -20,7 +20,28 @@ const PFADE: Record<string, React.ReactNode> = {
   abmelden: (<><path d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4" /><path d="M16 8l4 4-4 4M20 12H9" /></>),
   profil: (<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></>),
   gebaeude: (<><path d="M4 21V5a1 1 0 011-1h9a1 1 0 011 1v16" /><path d="M15 9h4a1 1 0 011 1v11M3 21h18M8 8h3M8 12h3M8 16h3" /></>),
+  globus: (<><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" /></>),
+  pdf: (<><path d="M6 2h9l5 5v15H6z" /><path d="M14 2v6h6M9 13h6M9 17h4" /></>),
+  download: (<><path d="M12 4v12M6 10l6 6 6-6" /><path d="M4 20h16" /></>),
+  stift: (<><path d="M4 20h4L18 10l-4-4L4 16z" /><path d="M13 7l4 4" /></>),
+  x: <path d="M6 6l12 12M18 6L6 18" />,
+  blitz: <path d="M13 2L4 14h7l-1 8 9-12h-7z" />,
+  glocke: (<><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z" /><path d="M10 21h4" /></>),
+  lkw: (<><path d="M3 7h11v10H3z" /><path d="M14 10h4l3 3v4h-7z" /><circle cx="7" cy="18" r="1.5" /><circle cx="17" cy="18" r="1.5" /></>),
+  rueck: (<><path d="M9 14L4 9l5-5" /><path d="M4 9h11a5 5 0 010 10h-3" /></>),
+  bild: (<><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="8.5" cy="10" r="1.5" /><path d="M21 15l-5-5-9 9" /></>),
+  drucker: (<><path d="M6 9V3h12v6" /><path d="M6 18H4v-8h16v8h-2" /><path d="M8 14h8v7H8z" /></>),
+  kamera: (<><path d="M4 8h4l2-3h4l2 3h4v11H4z" /><circle cx="12" cy="13" r="3" /></>),
+  geld: (<><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="3" /><path d="M6 12h.01M18 12h.01" /></>),
+  uhr: (<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>),
+  werkzeug: <path d="M14.7 6.3a4 4 0 00-5.6 5.6L3 18l3 3 6.1-6.1a4 4 0 005.6-5.6l-2.8 2.8-2.1-.7-.7-2.1z" />,
+  check: <path d="M5 13l4 4L19 7" />,
 };
+
+// Icon im Fliesstext oder in einem Knopf (sitzt auf der Grundlinie, kleiner Abstand rechts)
+export function Ik({ name, className = "" }: { name: string; className?: string }) {
+  return <Icon name={name} className={`mr-1.5 inline-block h-4 w-4 align-[-3px] ${className}`} />;
+}
 
 export default function Icon({ name, className = "h-[18px] w-[18px]" }: { name: string; className?: string }) {
   return (

@@ -18,10 +18,20 @@ type ArtikelWerte = {
 
 const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
+function Pflicht({ label }: { label: string }) {
+  return label.trim().endsWith("*") ? (
+    <>
+      {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
+    </>
+  ) : (
+    <>{label}</>
+  );
+}
+
 function Zeile({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
-      {label}
+      <Pflicht label={label} />
       {children}
     </label>
   );

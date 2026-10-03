@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -69,7 +70,7 @@ export default async function LieferscheinDetail({
       )}
 
       <div className={SPEICHERLEISTE}>
-                <a href={`/api/lieferscheine/${l.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
+                <a href={`/api/lieferscheine/${l.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift"><Ik name="pdf" />PDF</a>
                 <form action={setLieferscheinStatus}>
                   <input type="hidden" name="id" value={l.id} />
                   <input type="hidden" name="status" value={l.status === "ENTWURF" ? "GELIEFERT" : "ENTWURF"} />

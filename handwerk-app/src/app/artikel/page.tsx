@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -88,7 +89,7 @@ export default async function ArtikelPage({
                 <Link href="/artikel/lieferanten" className="text-forest underline">Lieferanten &amp; Konditionen verwalten</Link>
                 {/* Download-Route, kein Seitenwechsel */}
                 {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-                <a href="/api/export/artikel" className="text-forest underline">⬇ Produkte exportieren (CSV)</a>
+                <a href="/api/export/artikel" className="text-forest underline"><Ik name="download" />Produkte exportieren (CSV)</a>
                 <Link href="/import?typ=artikel" className="text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
               </div>
             </div>
@@ -168,10 +169,10 @@ export default async function ArtikelPage({
                   <td className="p-2 text-right font-medium tabular-nums">{chf(vk)}</td>
                   <td className="hidden p-2 text-right text-muted tabular-nums lg:table-cell">{m > 0 ? `${m}%` : "—"}</td>
                   <td className="p-2 text-right">
-                    <Link href={`/artikel/${a.id}`} className="mr-2 text-muted hover:text-forest" title="Bearbeiten">✎</Link>
+                    <Link href={`/artikel/${a.id}`} className="mr-2 text-muted hover:text-forest" title="Bearbeiten"><Ik name="stift" className="mr-0" /></Link>
                     <form action={deleteArtikel} className="inline">
                       <input type="hidden" name="artikelId" value={a.id} />
-                      <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                      <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                     </form>
                   </td>
                 </tr>

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { importKundenCsv } from "@/lib/actions-kontakte";
@@ -78,7 +79,7 @@ export default async function KundenPage({
               </form>
               {/* Download-Route, kein Seitenwechsel */}
               {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline">⬇ Kontakte exportieren (CSV)</a>
+              <a href="/api/export/kontakte" className="mt-3 block text-sm text-forest underline"><Ik name="download" />Kontakte exportieren (CSV)</a>
               <Link href="/import?typ=kontakte" className="mt-2 block text-sm text-forest underline">Datenübernahme von bexio / Excel (mit Spaltenprüfung)</Link>
             </div>
           </details>
@@ -138,7 +139,7 @@ export default async function KundenPage({
             {kunden.map((k) => (
               <tr key={k.id} className="hover:bg-surface2">
                 <td className="p-2 text-center" title={k.typ === "PRIVAT" ? "Privatperson" : "Firma"}>
-                  {k.typ === "PRIVAT" ? "👤" : "🏢"}
+                  <Ik name={k.typ === "PRIVAT" ? "profil" : "gebaeude"} className="mr-0 text-muted" />
                 </td>
                 <td className="p-2 font-medium">
                   <Link href={`/kunden/${k.id}`} className="block hover:underline">

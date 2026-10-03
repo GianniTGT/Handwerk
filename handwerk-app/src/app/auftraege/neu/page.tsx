@@ -29,7 +29,7 @@ export default async function NeuerAuftrag({ searchParams }: { searchParams: Pro
         <div className="grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <KundeObjektWahl kunden={kunden} startKundeId={kunden.some((k) => k.id === kunde) ? kunde : ""} />
         <label className="grid gap-0.5 text-xs text-muted">
-          Titel *
+          Titel <span className="text-red-600">*</span>
           <input name="titel" required placeholder="z.B. Boiler entkalken" className={feld} />
         </label>
         <label className="col-span-full grid gap-0.5 text-xs text-muted">

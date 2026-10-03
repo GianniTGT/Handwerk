@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { enqueue } from "@/lib/offlineQueue";
+import { Ik } from "@/components/Icons";
 
 // Foto-upload nga tereni: zvogëlon foton NË TELEFON (canvas, max 1600px,
 // JPEG 0.8) para dërgimit — upload i shpejtë edhe me rrjet të dobët mobil.
@@ -71,7 +72,7 @@ export default function FotoUpload({
           laedt ? "bg-muted" : "bg-forest hover:bg-forest-lift"
         }`}
       >
-        {laedt ? "Lädt hoch…" : "📷 Foto aufnehmen / hochladen"}
+        {laedt ? "Lädt hoch…" : <><Ik name="kamera" />Foto aufnehmen / hochladen</>}
       </label>
       {fehler && <p className="mt-1 text-xs text-red-600">{fehler}</p>}
       <p className="mt-1 text-xs text-muted">

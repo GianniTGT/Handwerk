@@ -10,14 +10,15 @@ export default async function NeuerKontakt({ searchParams }: { searchParams: Pro
   const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const { fehler } = await searchParams;
   const letzte = await db.kunde.aggregate({ where: { betriebId: betrieb.id }, _max: { kontaktNr: true } });
+  // Team des Betriebs — plus die angemeldete Person selbst (z.B. Support, der in einem Kundenbetrieb arbeitet)
   const team = await db.mitarbeiter.findMany({
-    where: { betriebId: betrieb.id, aktiv: true },
+    where: { OR: [{ betriebId: betrieb.id, aktiv: true }, { id: mitarbeiter.id }] },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <Link href="/kunden" className="text-sm text-forest underline">← Kontakte</Link>
       <h1 className="mt-1 text-xl font-bold">Neuer Kontakt</h1>
       {fehler && (

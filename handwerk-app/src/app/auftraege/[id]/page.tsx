@@ -1,4 +1,5 @@
 import { verkaufsPreis } from "@/lib/preise";
+import { Ik } from "@/components/Icons";
 import Link from "next/link";
 import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
@@ -133,7 +134,7 @@ export default async function AuftragDetail({
         <form action={zeitenInRapport} className="mt-3 flex flex-wrap items-center gap-3 rounded-tiff border border-line bg-white p-3 text-sm">
           <input type="hidden" name="auftragId" value={auftrag.id} />
           <span>
-            ⏱ {offeneZeiten.length} offene abrechenbare Zeit(en): <strong>{stunden(zeitMinuten)} h</strong> · CHF {chf(zeitWert)}
+            <Ik name="uhr" />{offeneZeiten.length} offene abrechenbare Zeit(en): <strong>{stunden(zeitMinuten)} h</strong> · CHF {chf(zeitWert)}
           </span>
           <button className="rounded border border-forest px-3 py-1.5 text-xs font-semibold text-forest hover:bg-surface2">
             In Rapport übernehmen
@@ -144,7 +145,7 @@ export default async function AuftragDetail({
       {darfVerkauf && !schluss && positionen.length > 0 && (
         <details className="mt-3 rounded-tiff border border-line bg-white">
           <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
-            💶 Teilrechnung (Akonto) erstellen
+            <Ik name="geld" />Teilrechnung (Akonto) erstellen
           </summary>
           <form action={createTeilrechnung} className="grid gap-2 border-t border-line p-3 md:grid-cols-[2fr_1fr_1fr_auto]">
             <input type="hidden" name="auftragId" value={auftrag.id} />
@@ -163,7 +164,7 @@ export default async function AuftragDetail({
       {positionen.length > 0 && (
         <details id="lieferschein" open={sp.lieferschein === "1"} className="mt-3 rounded-tiff border border-line bg-white">
           <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
-            🚛 Lieferschein erstellen{auftrag.lieferscheine.length > 0 && ` (${auftrag.lieferscheine.map((l) => lieferscheinNr(l)).join(", ")} bereits vorhanden)`}
+            <Ik name="lkw" />Lieferschein erstellen{auftrag.lieferscheine.length > 0 && ` (${auftrag.lieferscheine.map((l) => lieferscheinNr(l)).join(", ")} bereits vorhanden)`}
           </summary>
           <form action={createLieferschein} className="grid gap-2 border-t border-line p-3 text-sm">
             <input type="hidden" name="auftragId" value={auftrag.id} />
@@ -200,7 +201,7 @@ export default async function AuftragDetail({
             <tbody>
               {positionen.map((p) => (
                 <tr key={p.id} className="border-b border-line">
-                  <td className="p-2">{p.typ === "ARBEIT" ? "🕐" : "🔩"}</td>
+                  <td className="p-2" title={p.typ === "ARBEIT" ? "Arbeit" : "Material"}><Ik name={p.typ === "ARBEIT" ? "uhr" : "werkzeug"} className="mr-0 text-muted" /></td>
                   <td className="p-2">{p.bezeichnung}</td>
                   <td className="p-2 text-right">{p.menge}</td>
                   <td className="p-2">{p.einheit}</td>
@@ -211,7 +212,7 @@ export default async function AuftragDetail({
                       <form action={deleteRapportPosition}>
                         <input type="hidden" name="auftragId" value={auftrag.id} />
                         <input type="hidden" name="positionId" value={p.id} />
-                        <button className="text-muted hover:text-red-600">✕</button>
+                        <button className="text-muted hover:text-red-600"><Ik name="x" className="mr-0" /></button>
                       </form>
                     )}
                   </td>
@@ -298,7 +299,7 @@ export default async function AuftragDetail({
                       <input type="hidden" name="auftragId" value={auftrag.id} />
                       <input type="hidden" name="fotoId" value={foto.id} />
                       <button className="rounded bg-white/90 px-1.5 text-xs text-red-600 opacity-0 shadow group-hover:opacity-100">
-                        ✕
+                        <Ik name="x" />
                       </button>
                     </form>
                   </div>
@@ -324,7 +325,7 @@ export default async function AuftragDetail({
                 <form action={createRechnung}>
                   <input type="hidden" name="auftragId" value={auftrag.id} />
                   <button className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-soft">
-                    ⚡ {teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
+                    <Ik name="blitz" />{teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
                   </button>
                 </form>
               )}

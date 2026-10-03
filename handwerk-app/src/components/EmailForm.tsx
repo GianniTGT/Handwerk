@@ -1,4 +1,5 @@
 // Formular i ripërdorshëm "Per E-Mail senden" (server component, pa JS klienti)
+import { Ik } from "@/components/Icons";
 export default function EmailForm({
   action,
   hiddenName,
@@ -19,7 +20,7 @@ export default function EmailForm({
   return (
     <details className="rounded-tiff border border-line bg-white">
       <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
-        ✉️ Per E-Mail senden
+        <Ik name="mail" />Per E-Mail senden
       </summary>
       <form action={action} className="grid gap-2 border-t border-line p-3">
         <input type="hidden" name={hiddenName} value={hiddenValue} />

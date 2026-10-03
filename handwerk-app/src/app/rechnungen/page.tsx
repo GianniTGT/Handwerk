@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -152,7 +153,7 @@ export default async function RechnungenPage({
                 </td>
                 <td className="p-2 text-center">
                   <a href={`/api/rechnungen/${r.id}/pdf`} target="_blank" title="PDF mit QR-Rechnung" className="hover:opacity-70">
-                    📄
+                    <Ik name="pdf" />
                   </a>
                 </td>
               </tr>

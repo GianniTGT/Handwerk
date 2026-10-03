@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -123,7 +124,7 @@ export default async function OfferteDetail({
                     <form action={deleteOfferteGruppe}>
                       <input type="hidden" name="offerteId" value={offerte.id} />
                       <input type="hidden" name="gruppeId" value={gruppe.id} />
-                      <button className="text-muted hover:text-red-600" aria-label="Gruppe löschen">✕</button>
+                      <button className="text-muted hover:text-red-600" aria-label="Gruppe löschen"><Ik name="x" className="mr-0" /></button>
                     </form>
                   )}
                 </div>
@@ -144,7 +145,7 @@ export default async function OfferteDetail({
                           <form action={deleteOffertePosition}>
                             <input type="hidden" name="offerteId" value={offerte.id} />
                             <input type="hidden" name="positionId" value={p.id} />
-                            <button className="text-muted hover:text-red-600" aria-label="Position löschen">✕</button>
+                            <button className="text-muted hover:text-red-600" aria-label="Position löschen"><Ik name="x" className="mr-0" /></button>
                           </form>
                         )}
                       </td>
@@ -233,7 +234,7 @@ export default async function OfferteDetail({
 
       <div className={SPEICHERLEISTE}>
               <a href={`/api/offerten/${offerte.id}/pdf`} target="_blank" className={`${knopf} bg-forest text-white hover:bg-forest-lift`}>
-                📄 PDF
+                <Ik name="pdf" />PDF
               </a>
               {offerte.status === "ENTWURF" && (
                 <form action={setOfferteStatus}>

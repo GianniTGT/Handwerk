@@ -28,7 +28,7 @@ export default async function NeueOfferte({ searchParams }: { searchParams: Prom
         <div className="grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
         <KundeObjektWahl kunden={kunden} startKundeId={kunden.some((k) => k.id === kunde) ? kunde : ""} />
         <label className="grid gap-0.5 text-xs text-muted">
-          Titel *
+          Titel <span className="text-red-600">*</span>
           <input name="titel" required placeholder="z.B. Anschlüsse neue Pumpen" className={feld} />
         </label>
         <label className="grid gap-0.5 text-xs text-muted">

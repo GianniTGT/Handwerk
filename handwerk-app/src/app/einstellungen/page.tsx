@@ -30,7 +30,7 @@ const knopfRuhig = "mt-3 rounded-md border border-forest px-4 py-2 text-sm font-
 function Feld({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "sm:col-span-2" : ""}`}>
-      {label}
+      {label.trim().endsWith("*") ? <>{label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span></> : label}
       {children}
     </label>
   );

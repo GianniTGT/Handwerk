@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -119,7 +120,7 @@ export default async function WartungPage({
                   {v.status === "AKTIV" && (
                     <form action={wartungAuftragErstellen}>
                       <input type="hidden" name="vertragId" value={v.id} />
-                      <button className="whitespace-nowrap rounded-md bg-gold px-2 py-1 text-xs font-semibold text-ink hover:bg-gold-soft">⚡ Auftrag erstellen</button>
+                      <button className="whitespace-nowrap rounded-md bg-gold px-2 py-1 text-xs font-semibold text-ink hover:bg-gold-soft"><Ik name="blitz" />Auftrag erstellen</button>
                     </form>
                   )}
                   {v.status !== "GEKUENDIGT" ? (
@@ -146,7 +147,7 @@ export default async function WartungPage({
                       </form>
                       <form action={deleteWartungsvertrag}>
                         <input type="hidden" name="vertragId" value={v.id} />
-                        <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                        <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                       </form>
                     </>
                   )}

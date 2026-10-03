@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -167,7 +168,7 @@ export default async function RechnungDetail({
         />
         {r.status !== "ENTWURF" && (
           <details className="rounded-tiff border border-line bg-white">
-            <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">↩️ Gutschrift erstellen</summary>
+            <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2"><Ik name="rueck" />Gutschrift erstellen</summary>
             <form action={createGutschrift} className="grid gap-2 border-t border-line p-3 md:grid-cols-[1fr_1fr_auto]">
               <input type="hidden" name="rechnungId" value={r.id} />
               <input name="grund" placeholder="Grund (z.B. Preisnachlass)" className="rounded border border-line p-2 text-sm" />
@@ -180,7 +181,7 @@ export default async function RechnungDetail({
 
       <div className={SPEICHERLEISTE}>
               <a href={`/api/rechnungen/${r.id}/pdf`} target="_blank" className="rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">
-                📄 PDF mit QR-Rechnung
+                <Ik name="pdf" />PDF mit QR-Rechnung
               </a>
               {r.status !== "BEZAHLT" && (
                 <form action={setRechnungStatus}>
@@ -202,7 +203,7 @@ export default async function RechnungDetail({
                 <form action={mahneRechnung}>
                   <input type="hidden" name="rechnungId" value={r.id} />
                   <button className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
-                    🔔 {MAHNSTUFEN[r.mahnstufe + 1]} senden
+                    <Ik name="glocke" />{MAHNSTUFEN[r.mahnstufe + 1]} senden
                   </button>
                 </form>
               )}

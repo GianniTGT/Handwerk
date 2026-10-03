@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -59,7 +60,7 @@ function Liste({ titel, liste }: { titel: string; liste: Zeile[] }) {
               <form action={createRechnung}>
                 <input type="hidden" name="auftragId" value={a.id} />
                 <button className="rounded bg-forest px-3 py-1.5 text-xs font-semibold text-white hover:bg-forest-lift">
-                  ⚡ {a.rechnungen.length > 0 ? "Schlussrechnung" : "Rechnung"} erstellen
+                  <Ik name="blitz" />{a.rechnungen.length > 0 ? "Schlussrechnung" : "Rechnung"} erstellen
                 </button>
               </form>
             </div>

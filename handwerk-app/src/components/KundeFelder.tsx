@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Ik } from "@/components/Icons";
 import type { SearchChTreffer } from "@/lib/searchch";
 import type { WebseiteTreffer } from "@/lib/webseite";
 
@@ -43,12 +44,17 @@ export const KATEGORIEN = ["Privatkunde", "Hausverwaltung", "Gewerbe", "Bauherr"
 const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 const knopf = "rounded-md border border-line bg-white px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-surface2";
 
-function Zeile({ label, children, voll, hinweis }: { label: string; children: React.ReactNode; voll?: boolean; hinweis?: string }) {
+function Zeile({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
     <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
-      {label}
+      {label.trim().endsWith("*") ? (
+        <>
+          {label.trim().slice(0, -1).trim()} <span className="text-red-600">*</span>
+        </>
+      ) : (
+        label
+      )}
       {children}
-      {hinweis && <span className="text-[11px] leading-snug text-muted">{hinweis}</span>}
     </label>
   );
 }
@@ -197,10 +203,10 @@ export default function KundeFelder({
         <Abschnitt titel="Stammdaten">
           <div className="col-span-full flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => oeffne("web")} className={knopf}>
-              🌐 Von Webseite übernehmen
+              <Ik name="globus" />Von Webseite übernehmen
             </button>
             <button type="button" onClick={() => oeffne("searchch")} className={knopf}>
-              🔍 Von Search.ch übernehmen
+              <Ik name="suche" />Von Search.ch übernehmen
             </button>
             <span className="text-xs text-muted">Adresse, Telefon, E-Mail und UID automatisch ausfüllen</span>
           </div>
@@ -290,7 +296,7 @@ export default function KundeFelder({
       {/* Rechte Spalte */}
       <div className="grid gap-4">
         <Abschnitt titel="Zusatzinformationen">
-          <Zeile label="Betreut von (unser Mitarbeiter)" hinweis="Wer bei uns für diesen Kontakt zuständig ist — nicht die Kontaktperson beim Kunden.">
+          <Zeile label="Betreut von (unser Mitarbeiter)">
             <select name="ansprechpartnerId" defaultValue={k.ansprechpartnerId ?? ""} className={feld}>
               <option value="">—</option>
               {team.map((m) => (

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { aufgabenBulk, deleteAufgabe, setAufgabeStatus } from "@/lib/actions-aufgaben";
@@ -130,7 +131,7 @@ export default async function AufgabenPage({
                     </form>
                     <form action={deleteAufgabe}>
                       <input type="hidden" name="id" value={a.id} />
-                      <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                      <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                     </form>
                   </span>
                 </td>

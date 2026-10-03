@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Ik } from "@/components/Icons";
 
 // Kartë eksporti: opsionalisht me periudhë Von/Bis; shkarkimi shkon te /api/export/<typ>
 export default function ExportKarte({ typ, label, mitZeitraum }: { typ: string; label: string; mitZeitraum: boolean }) {
@@ -23,7 +24,7 @@ export default function ExportKarte({ typ, label, mitZeitraum }: { typ: string; 
             <input type="date" value={bis} onChange={(e) => setBis(e.target.value)} className={feld} aria-label="Bis" />
           </>
         )}
-        <a href={href} className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">⬇ CSV</a>
+        <a href={href} className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift"><Ik name="download" />CSV</a>
       </div>
     </div>
   );

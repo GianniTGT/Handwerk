@@ -14,13 +14,13 @@ export default async function KontaktBearbeiten({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fehler?: string }>;
 }) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich();
   const { id } = await params;
   const { fehler } = await searchParams;
   const [kunde, team] = await Promise.all([
     db.kunde.findFirst({ where: { id, betriebId: betrieb.id } }),
     db.mitarbeiter.findMany({
-      where: { betriebId: betrieb.id, aktiv: true },
+      where: { OR: [{ betriebId: betrieb.id, aktiv: true }, { id: mitarbeiter.id }] }, // Team plus angemeldete Person
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -28,7 +28,7 @@ export default async function KontaktBearbeiten({
   if (!kunde) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <Link href={`/kunden/${kunde.id}`} className="text-sm text-forest underline">← {kunde.name}</Link>
       <h1 className="mt-1 text-xl font-bold">Kontakt bearbeiten</h1>
       {fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">{fehler === "nr" ? "Diese Kontakt-Nr. ist bereits vergeben." : "Bitte Firma bzw. Nachname angeben."}</p>}

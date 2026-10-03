@@ -19,7 +19,7 @@ export default function KundeObjektWahl({
   return (
     <>
       <label className="grid gap-0.5 text-xs text-muted">
-        Kontakt *
+        Kontakt <span className="text-red-600">*</span>
         <select name="kundeId" required value={kundeId} onChange={(e) => setKundeId(e.target.value)} className={feld}>
           <option value="">Kontakt wählen …</option>
           {kunden.map((k) => (

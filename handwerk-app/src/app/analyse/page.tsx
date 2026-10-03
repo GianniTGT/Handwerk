@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { lokalIso } from "@/lib/datum";
+import { Ik } from "@/components/Icons";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -234,10 +235,10 @@ export default async function AnalysePage({
 
       <div className="mt-4 flex flex-wrap gap-2 text-sm">
         <a href={`/api/export/verkaufspositionen?${exportQ}`} className="rounded bg-forest px-3 py-1.5 font-medium text-white hover:bg-forest-lift">
-          ⬇ Positionsdaten (CSV, für Pivot-Tabellen)
+          <Ik name="download" />Positionsdaten (CSV, für Pivot-Tabellen)
         </a>
         <a href={`/api/export/rechnungen?${exportQ}`} className="rounded border border-forest px-3 py-1.5 font-medium text-forest hover:bg-surface2">
-          ⬇ Rechnungen (CSV)
+          <Ik name="download" />Rechnungen (CSV)
         </a>
       </div>
     </div>

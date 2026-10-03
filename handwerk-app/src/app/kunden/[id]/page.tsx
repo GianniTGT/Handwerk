@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -75,12 +76,12 @@ export default async function KundeDetail({
       {gespeichert && <p className="mb-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       <div className="flex items-start justify-between">
         <h1 className="text-xl font-bold">
-          {kunde.typ === "PRIVAT" ? "👤" : "🏢"} {kunde.name}
+          <Ik name={kunde.typ === "PRIVAT" ? "profil" : "gebaeude"} className="h-5 w-5" /> {kunde.name}
           {kunde.kontaktNr ? <span className="ml-2 text-sm font-normal text-muted">#{kunde.kontaktNr}</span> : null}
           {kunde.archiviert && <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 text-xs font-normal text-muted">archiviert</span>}
         </h1>
         <div className="flex gap-2">
-        <Link href={`/kunden/${kunde.id}/bearbeiten`} className="rounded bg-forest px-3 py-1 text-xs font-semibold text-white hover:bg-forest-lift">✎ Bearbeiten</Link>
+        <Link href={`/kunden/${kunde.id}/bearbeiten`} className="rounded bg-forest px-3 py-1 text-xs font-semibold text-white hover:bg-forest-lift"><Ik name="stift" />Bearbeiten</Link>
         <form action={archiviereKunde}>
           <input type="hidden" name="kundeId" value={kunde.id} />
           <input type="hidden" name="archiviert" value={kunde.archiviert ? "0" : "1"} />
@@ -131,7 +132,7 @@ export default async function KundeDetail({
             </div>
             <form action={deleteKontaktperson}>
               <input type="hidden" name="id" value={p.id} />
-              <button className="text-muted hover:text-red-600">✕</button>
+              <button className="text-muted hover:text-red-600"><Ik name="x" className="mr-0" /></button>
             </form>
           </li>
         ))}
@@ -160,7 +161,7 @@ export default async function KundeDetail({
                 </div>
                 <form action={deleteObjekt}>
                   <input type="hidden" name="objektId" value={o.id} />
-                  <button className="text-muted hover:text-red-600">✕</button>
+                  <button className="text-muted hover:text-red-600"><Ik name="x" className="mr-0" /></button>
                 </form>
               </li>
             ))}

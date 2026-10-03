@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { createLieferant, deleteKondition, setKondition } from "@/lib/actions";
@@ -58,7 +59,7 @@ export default async function LieferantenPage() {
                   <strong>−{k.rabattProzent}%</strong>
                   <form action={deleteKondition}>
                     <input type="hidden" name="konditionId" value={k.id} />
-                    <button className="text-muted hover:text-red-600" aria-label="Löschen">✕</button>
+                    <button className="text-muted hover:text-red-600" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                   </form>
                 </span>
               </li>

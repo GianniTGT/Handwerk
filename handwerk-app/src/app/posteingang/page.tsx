@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { Ik } from "@/components/Icons";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { deleteBeleg, setBelegStatus } from "@/lib/actions-buero";
@@ -62,7 +63,7 @@ export default async function PosteingangPage({
               <td className="hidden whitespace-nowrap p-2 text-muted sm:table-cell">{b.erstellt.toLocaleDateString("de-CH")}</td>
               <td className="p-2 font-medium">
                 <a href={`/api/belege/${b.id}`} target="_blank" className="hover:underline" title="Beleg ansehen">
-                  {b.mimeTyp === "application/pdf" ? "📄" : "🖼️"} {b.titel}
+                  <Ik name={b.mimeTyp === "application/pdf" ? "pdf" : "bild"} /> {b.titel}
                 </a>
               </td>
               <td className="hidden max-w-xs truncate p-2 text-muted md:table-cell">{b.dateiname}</td>
@@ -85,7 +86,7 @@ export default async function PosteingangPage({
                   </form>
                   <form action={deleteBeleg}>
                     <input type="hidden" name="id" value={b.id} />
-                    <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
+                    <button className="px-1 text-muted hover:text-red-600" title="Löschen" aria-label="Löschen"><Ik name="x" className="mr-0" /></button>
                   </form>
                 </span>
               </td>

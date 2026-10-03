@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { bestellungNr } from "@/lib/nrtext";
+import { Ik } from "@/components/Icons";
 import Link from "next/link";
 import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
@@ -81,7 +82,7 @@ export default async function BestellungDetail({
                 {entwurf && (
                   <form action={deleteBestellPosition}>
                     <input type="hidden" name="id" value={p.id} />
-                    <button className="text-muted hover:text-red-600">✕</button>
+                    <button className="text-muted hover:text-red-600"><Ik name="x" className="mr-0" /></button>
                   </form>
                 )}
               </td>
@@ -132,7 +133,7 @@ export default async function BestellungDetail({
       )}
 
       <div className={SPEICHERLEISTE}>
-                <a href={`/api/bestellungen/${b.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
+                <a href={`/api/bestellungen/${b.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift"><Ik name="pdf" />PDF</a>
                 {naechster && b.positionen.length > 0 && (
                   <form action={setBestellStatus}>
                     <input type="hidden" name="id" value={b.id} />
