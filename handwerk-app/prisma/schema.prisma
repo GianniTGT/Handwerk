@@ -76,6 +76,7 @@ model Mitarbeiter {
   dashboard    String  @default("") // JSON {order:[...], hidden:[...]} — rendi/dukshmëria e widget-eve
   passwortAendern Boolean @default(false) // true = duhet të ndryshojë fjalëkalimin para se të vazhdojë (llogari e re / e rivendosur nga admini)
   rechte       String  @default("") // lista e zonave me presje; bosh = standard sipas rolles
+  foto         String  @default("") // Profilbild als data-URL (JPEG, clientseitig auf 256 px verkleinert)
   zeiten       Zeiteintrag[]
   aufgaben     Aufgabe[]
   resets       PasswortReset[]

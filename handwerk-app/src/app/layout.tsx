@@ -49,8 +49,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 aktivId={sitzung.aktiverBetrieb.id}
                 wechseln={wechselBetrieb}
                 abmelden={logout}
-                benutzer={{ name: sitzung.mitarbeiter.name, email: sitzung.mitarbeiter.email ?? "" }}
+                benutzer={{
+                  id: sitzung.mitarbeiter.id,
+                  name: sitzung.mitarbeiter.name,
+                  email: sitzung.mitarbeiter.email ?? "",
+                  fotoV: sitzung.mitarbeiter.foto.length,
+                }}
                 darfEinstellungen={rechte.includes("EINSTELLUNGEN")}
+                tiffAdmin={tiffAdmin}
               />
               <MobileNav
                 erlaubt={rechte}
@@ -73,7 +79,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {sitzung ? (
           <div className="flex min-h-[calc(100vh-3.5rem)]">
-            <Sidebar erlaubt={rechte} tiffAdmin={tiffAdmin} support={support} />
+            <Sidebar erlaubt={rechte} support={support} />
             <main className="mx-auto w-full min-w-0 max-w-[1200px] px-4 py-6 md:px-8">{children}</main>
           </div>
         ) : (

@@ -33,7 +33,7 @@ export default async function AdminBetriebe({
       <h1 className="text-xl font-bold">Kunden-Betriebe (TIFF-Administration)</h1>
       <p className="mt-1 text-sm text-muted">
         Hier legen Sie neue Kunden-Betriebe mit ihrem Chef-Benutzer an. Die öffentliche Registrierung ist geschlossen.
-        Sie erhalten automatisch Zugriff und wechseln über die Betriebsauswahl links in den neuen Betrieb.
+        Sie erhalten automatisch Zugriff und wechseln über das Betriebs-Menü oben links in den neuen Betrieb.
       </p>
       {sp.angelegt && (
         <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">
@@ -42,7 +42,7 @@ export default async function AdminBetriebe({
       )}
       {sp.fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">{fehlerTexte[sp.fehler] ?? "Fehler."}</p>}
 
-      <form action={createKundenBetrieb} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-2">
+      <form id="neu" action={createKundenBetrieb} className="mt-4 grid scroll-mt-20 gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-2">
         <h2 className="font-semibold md:col-span-2">Neuer Betrieb</h2>
         <input name="firmenname" required placeholder="Firmenname" className={`${feld} md:col-span-2`} />
         <input name="name" required placeholder="Name des Chefs" className={feld} />

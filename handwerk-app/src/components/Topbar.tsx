@@ -28,6 +28,17 @@ export function BetriebLogo({ b, gross = false }: { b: TopBetrieb; gross?: boole
   );
 }
 
+// Benutzer-Avatar: Profilfoto, sonst Initialen
+function Avatar({ benutzer, gross = false }: { benutzer: { id: string; name: string; fotoV: number }; gross?: boolean }) {
+  const mass = gross ? "h-12 w-12 text-base" : "h-8 w-8 text-xs";
+  return benutzer.fotoV > 0 ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={`/api/avatar/${benutzer.id}?v=${benutzer.fotoV}`} alt="" className={`${mass} shrink-0 rounded-full border border-line object-cover`} />
+  ) : (
+    <span className={`${mass} flex shrink-0 items-center justify-center rounded-full bg-surface2 font-bold text-forest`}>{initialen(benutzer.name)}</span>
+  );
+}
+
 // Dropdown, das beim Klick ausserhalb oder mit Escape schliesst
 function useOffen() {
   const [offen, setOffen] = useState(false);
@@ -55,13 +66,15 @@ export default function Topbar({
   abmelden,
   benutzer,
   darfEinstellungen,
+  tiffAdmin,
 }: {
   betriebe: TopBetrieb[];
   aktivId: string;
   wechseln: (formData: FormData) => void | Promise<void>;
   abmelden: () => void | Promise<void>;
-  benutzer: { name: string; email: string };
+  benutzer: { id: string; name: string; email: string; fotoV: number }; // fotoV 0 = kein Foto, sonst Version für Cache
   darfEinstellungen: boolean;
+  tiffAdmin: boolean;
 }) {
   const aktiv = betriebe.find((b) => b.id === aktivId) ?? betriebe[0];
   const [betriebOffen, setBetriebOffen, betriebRef] = useOffen();
@@ -98,26 +111,48 @@ export default function Topbar({
         <div ref={betriebRef} className="relative hidden md:block">
           <button
             type="button"
-            onClick={() => betriebe.length > 1 && setBetriebOffen((o) => !o)}
-            aria-haspopup={betriebe.length > 1}
+            onClick={() => setBetriebOffen((o) => !o)}
+            aria-haspopup="true"
             aria-expanded={betriebOffen}
-            className={`flex h-10 items-center gap-2.5 rounded border border-line bg-white px-2.5 text-sm font-medium ${betriebe.length > 1 ? "hover:bg-surface2" : "cursor-default"}`}
+            className="flex h-10 items-center gap-2.5 rounded border border-line bg-white px-2.5 text-sm font-medium hover:bg-surface2"
           >
             <BetriebLogo b={aktiv} />
             <span className="max-w-48 truncate">{aktiv.name}</span>
-            {betriebe.length > 1 && <span className="text-[10px] text-muted">▼</span>}
+            <span className="text-[10px] text-muted">▼</span>
           </button>
           {betriebOffen && (
-            <form action={wechseln} className={`${menuKarte} left-0`}>
-              <div className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Betrieb wechseln</div>
-              {betriebe.map((b) => (
-                <button key={b.id} name="betriebId" value={b.id} className={`${menuPunkt} ${b.id === aktivId ? "font-semibold" : ""}`}>
-                  <BetriebLogo b={b} />
-                  <span className="truncate">{b.name}</span>
-                  {b.id === aktivId && <span className="ml-auto text-forest">✓</span>}
-                </button>
-              ))}
-            </form>
+            <div className={`${menuKarte} left-0 min-w-64`}>
+              {betriebe.length > 1 && (
+                <form action={wechseln} className="border-b border-line pb-1">
+                  <div className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Betrieb wechseln</div>
+                  {betriebe.map((b) => (
+                    <button key={b.id} name="betriebId" value={b.id} className={`${menuPunkt} ${b.id === aktivId ? "font-semibold" : ""}`}>
+                      <BetriebLogo b={b} />
+                      <span className="truncate">{b.name}</span>
+                      {b.id === aktivId && <span className="ml-auto text-forest">✓</span>}
+                    </button>
+                  ))}
+                </form>
+              )}
+              {darfEinstellungen && (
+                <Link href="/einstellungen" onClick={() => setBetriebOffen(false)} className={menuPunkt}>
+                  <Icon name="einstellungen" /> Meinen Betrieb verwalten
+                </Link>
+              )}
+              {tiffAdmin && (
+                <>
+                  <Link href="/admin/betriebe" onClick={() => setBetriebOffen(false)} className={menuPunkt}>
+                    <Icon name="gebaeude" /> Kunden-Betriebe verwalten
+                  </Link>
+                  <Link href="/admin/betriebe#neu" onClick={() => setBetriebOffen(false)} className={`${menuPunkt} font-medium text-forest`}>
+                    <Icon name="plus" /> Neuen Betrieb erstellen
+                  </Link>
+                </>
+              )}
+              {!darfEinstellungen && !tiffAdmin && betriebe.length <= 1 && (
+                <div className="px-4 py-2 text-xs text-muted">Betriebsdaten verwaltet Ihr Administrator.</div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -142,11 +177,6 @@ export default function Topbar({
         <Link href="/hilfe" className={ikonKnopf} title="Hilfe & Kurzanleitung">
           <Icon name="hilfe" />
         </Link>
-        {darfEinstellungen && (
-          <Link href="/einstellungen" className={ikonKnopf} title="Einstellungen">
-            <Icon name="einstellungen" />
-          </Link>
-        )}
         <div ref={benutzerRef} className="relative ml-1">
           <button
             type="button"
@@ -155,17 +185,18 @@ export default function Topbar({
             aria-expanded={benutzerOffen}
             className="flex h-10 items-center gap-2 rounded-full pl-1 pr-3 text-sm hover:bg-surface2"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface2 text-xs font-bold text-forest">
-              {initialen(benutzer.name)}
-            </span>
+            <Avatar benutzer={benutzer} />
             <span className="hidden max-w-36 truncate md:inline">{benutzer.name}</span>
             <span className="text-[10px] text-muted">▼</span>
           </button>
           {benutzerOffen && (
             <div className={`${menuKarte} right-0`}>
-              <div className="border-b border-line px-4 py-2">
-                <div className="text-sm font-semibold">{benutzer.name}</div>
-                <div className="text-xs text-muted">{benutzer.email}</div>
+              <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+                <Avatar benutzer={benutzer} gross />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold">{benutzer.name}</div>
+                  <div className="truncate text-xs text-muted">{benutzer.email}</div>
+                </div>
               </div>
               <Link href="/profil" onClick={() => setBenutzerOffen(false)} className={menuPunkt}>
                 <Icon name="profil" /> Mein Profil bearbeiten

@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { sitzungErforderlich } from "@/lib/auth";
-import { aendereEigenesPasswort, aendereProfil } from "@/lib/actions-profil";
+import { aendereEigenesPasswort, aendereProfil, loescheProfilFoto, speichereProfilFoto } from "@/lib/actions-profil";
+import ProfilFoto from "@/components/ProfilFoto";
+import { initialen } from "@/lib/initialen";
 import { ROLLEN } from "@/lib/rechte";
 
 const fehlerTexte: Record<string, string> = {
@@ -48,6 +50,19 @@ export default async function ProfilPage({
       )}
 
       {sp.profil && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Profil gespeichert ✓</p>}
+
+      <section className="mt-4 rounded-tiff border border-line bg-white p-4 shadow-sm">
+        <h2 className="font-semibold">Profilbild</h2>
+        <div className="mt-3">
+          <ProfilFoto
+            mitarbeiterId={mitarbeiter.id}
+            fotoV={mitarbeiter.foto.length}
+            initialen={initialen(mitarbeiter.name)}
+            speichern={speichereProfilFoto}
+            loeschen={loescheProfilFoto}
+          />
+        </div>
+      </section>
 
       <form action={aendereProfil} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Profil</h2>

@@ -48,3 +48,20 @@ export async function aendereProfil(formData: FormData) {
   revalidatePath("/", "layout");
   redirect("/profil?profil=1");
 }
+
+// Profilbild speichern: kommt als data-URL (JPEG/PNG), clientseitig bereits auf 256 px verkleinert; Grenze 300 KB
+export async function speichereProfilFoto(dataUrl: string) {
+  const { mitarbeiter } = await sitzungErforderlich();
+  if (!/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(dataUrl) || dataUrl.length > 300_000) {
+    throw new Error("Ungültiges Bild");
+  }
+  await db.mitarbeiter.update({ where: { id: mitarbeiter.id }, data: { foto: dataUrl } });
+  revalidatePath("/", "layout");
+}
+
+export async function loescheProfilFoto() {
+  const { mitarbeiter } = await sitzungErforderlich();
+  await db.mitarbeiter.update({ where: { id: mitarbeiter.id }, data: { foto: "" } });
+  revalidatePath("/", "layout");
+  redirect("/profil?profil=1");
+}

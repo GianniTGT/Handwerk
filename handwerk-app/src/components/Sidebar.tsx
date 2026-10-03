@@ -165,21 +165,13 @@ function SupportFuss({ support, tiffAdmin, beiKlick }: { support: Support; tiffA
   );
 }
 
-export default function Sidebar({
-  erlaubt,
-  tiffAdmin,
-  support,
-}: {
-  erlaubt: Bereich[];
-  tiffAdmin: boolean;
-  support: Support;
-}) {
+export default function Sidebar({ erlaubt, support }: { erlaubt: Bereich[]; support: Support }) {
   return (
     <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 flex-col border-r border-line bg-white md:flex print:hidden">
       <nav className="flex-1 overflow-y-auto p-3" aria-label="Hauptmenü">
         <NavListe erlaubt={erlaubt} />
       </nav>
-      <SupportFuss support={support} tiffAdmin={tiffAdmin} />
+      <SupportFuss support={support} tiffAdmin={false} />
     </aside>
   );
 }
