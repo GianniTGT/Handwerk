@@ -1,6 +1,6 @@
 // Shfaqja e numrave të dokumenteve (pa DB): numri i formatuar nga Nummernkreis, ose formati i vjetër
 
-export type NrTyp = "OFFERTE" | "RECHNUNG" | "GUTSCHRIFT" | "BESTELLUNG" | "PROJEKT";
+export type NrTyp = "OFFERTE" | "RECHNUNG" | "GUTSCHRIFT" | "BESTELLUNG" | "PROJEKT" | "LIEFERSCHEIN";
 
 export const NR_STANDARD: Record<NrTyp, { label: string; format: string; laenge: number; start: number }> = {
   OFFERTE: { label: "Offerte", format: "AN-{JJJJ}-{NR}", laenge: 4, start: 1 },
@@ -8,6 +8,7 @@ export const NR_STANDARD: Record<NrTyp, { label: string; format: string; laenge:
   GUTSCHRIFT: { label: "Gutschrift", format: "GS-{NR}", laenge: 1, start: 20260001 },
   BESTELLUNG: { label: "Bestellung", format: "BE-{NR}", laenge: 1, start: 1 },
   PROJEKT: { label: "Projekt", format: "P-{NR}", laenge: 1, start: 1 },
+  LIEFERSCHEIN: { label: "Lieferschein", format: "LS-{NR}", laenge: 1, start: 1 },
 };
 
 // {JJJJ} → 2026, {JJ} → 26, {NR} → numri me zero para deri te gjatësia minimale
@@ -23,6 +24,7 @@ type MitNr = { nummer: number; nummerText?: string };
 export const rechnungNr = (r: MitNr) => r.nummerText || `RE-${r.nummer}`;
 export const gutschriftNr = (g: MitNr) => g.nummerText || `GS-${g.nummer}`;
 export const bestellungNr = (b: MitNr) => b.nummerText || `BE-${b.nummer}`;
+export const lieferscheinNr = (l: MitNr) => l.nummerText || `LS-${l.nummer}`;
 export const projektNr = (p: MitNr) => p.nummerText || `P-${p.nummer}`;
 export const offerteNr = (o: MitNr & { datum: Date }) =>
   o.nummerText || `AN-${o.datum.getFullYear()}-${String(o.nummer).padStart(4, "0")}`;

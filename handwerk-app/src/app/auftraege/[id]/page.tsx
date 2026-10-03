@@ -12,7 +12,8 @@ import {
   saveRapportFoto,
   saveUnterschrift,
 } from "@/lib/actions";
-import { rechnungNr } from "@/lib/nrtext";
+import { rechnungNr, lieferscheinNr } from "@/lib/nrtext";
+import { createLieferschein } from "@/lib/actions-lieferscheine";
 import { zeitenInRapport } from "@/lib/actions-projekte";
 import { stunden } from "@/lib/projekte";
 import SignaturePad from "@/components/SignaturePad";
@@ -37,6 +38,7 @@ export default async function AuftragDetail({
       kunde: true,
       objekt: true,
       rechnungen: { orderBy: { nummer: "asc" } },
+      lieferscheine: { orderBy: { nummer: "asc" } },
       offerte: { include: { gruppen: { include: { positionen: true } } } },
       rapporte: { include: { positionen: true, fotos: { orderBy: { erstellt: "asc" } } } },
     },
@@ -112,6 +114,9 @@ export default async function AuftragDetail({
       {sp.fehler === "akonto-betrag" && (
         <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte einen Betrag oder Prozentsatz angeben.</p>
       )}
+      {sp.fehler === "lieferschein-leer" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte mindestens eine Position für den Lieferschein auswählen.</p>
+      )}
       {sp.fehler === "verrechnet" && (
         <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Auftrag ist bereits verrechnet.</p>
       )}
@@ -155,6 +160,28 @@ export default async function AuftragDetail({
               Auftragswert netto CHF {chf(auftragswert)}{offertenWert > 0 ? " (laut Offerte)" : " (laut Rapport)"} · bereits per Akonto: CHF {chf(akontoNetto)}.
               Die Schlussrechnung zieht die Akonto-Rechnungen automatisch ab.
             </p>
+          </form>
+        </details>
+      )}
+
+      {positionen.length > 0 && (
+        <details className="mt-3 rounded-tiff border border-line bg-white">
+          <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
+            🚛 Lieferschein erstellen{auftrag.lieferscheine.length > 0 && ` (${auftrag.lieferscheine.map((l) => lieferscheinNr(l)).join(", ")} bereits vorhanden)`}
+          </summary>
+          <form action={createLieferschein} className="grid gap-2 border-t border-line p-3 text-sm">
+            <input type="hidden" name="auftragId" value={auftrag.id} />
+            <div className="grid gap-1">
+              {auftrag.rapporte.flatMap((r) => r.positionen).map((p) => (
+                <label key={p.id} className="flex items-center gap-2">
+                  <input type="checkbox" name="positionId" value={p.id} defaultChecked={p.typ === "MATERIAL"} />
+                  {p.menge} {p.einheit} — {p.bezeichnung}
+                  <span className="text-xs text-muted">({p.typ === "MATERIAL" ? "Material" : "Arbeit"})</span>
+                </label>
+              ))}
+            </div>
+            <input name="bemerkung" placeholder="Bemerkung (optional)" className="rounded border border-line p-2" />
+            <button className="w-fit rounded bg-forest px-4 py-2 font-semibold text-white hover:bg-forest-lift">Lieferschein erstellen</button>
           </form>
         </details>
       )}

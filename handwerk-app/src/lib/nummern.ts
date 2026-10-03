@@ -13,7 +13,9 @@ async function maxBestehend(betriebId: string, typ: NrTyp): Promise<number> {
           ? await db.gutschrift.aggregate({ where, _max: { nummer: true } })
           : typ === "BESTELLUNG"
             ? await db.bestellung.aggregate({ where, _max: { nummer: true } })
-            : await db.projekt.aggregate({ where, _max: { nummer: true } });
+            : typ === "LIEFERSCHEIN"
+              ? await db.lieferschein.aggregate({ where, _max: { nummer: true } })
+              : await db.projekt.aggregate({ where, _max: { nummer: true } });
   return agg._max.nummer ?? 0;
 }
 

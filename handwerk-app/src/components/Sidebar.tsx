@@ -25,6 +25,7 @@ const verkauf: Eintrag[] = [
   { href: "/auftraege", label: "Aufträge", icon: "🔧" },
   { href: "/wartung", label: "Wartung", icon: "⏰" },
   { href: "/rechnungen", label: "Rechnungen", icon: "🧾" },
+  { href: "/lieferscheine", label: "Lieferscheine", icon: "🚛" },
   { href: "/gutschriften", label: "Gutschriften", icon: "↩️" },
   { href: "/mahnwesen", label: "Mahnwesen", icon: "🔔" },
 ];
