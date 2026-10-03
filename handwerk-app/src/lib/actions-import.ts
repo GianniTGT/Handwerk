@@ -45,15 +45,19 @@ export async function importiereKontakte(zeilen: ImportZeile[], duplikate: Dupli
   const nachNr = new Map(vorhandene.filter((k) => k.kontaktNr != null).map((k) => [k.kontaktNr as number, k.id]));
   const nachName = new Map(vorhandene.map((k) => [`${k.name.toLowerCase()}|${k.plz}`, k.id]));
   let naechsteNr = Math.max(0, ...vorhandene.map((k) => k.kontaktNr ?? 0)) + 1;
+  // bexio «Ansprechpartner» = unser Mitarbeiter → per Name zuordnen
+  const team = await db.mitarbeiter.findMany({ where: { betriebId: betrieb.id }, select: { id: true, name: true } });
+  const teamNachName = new Map(team.map((m) => [m.name.toLowerCase().replace(/\s+/g, " "), m.id]));
 
   for (const [i, z] of paket.entries()) {
     const vorname = t(z, "vorname");
+    const firmenname = t(z, "firmenname");
     const name1 = t(z, "name");
     const nachnameExplizit = t(z, "nachname");
-    const typ = kontaktTyp(t(z, "typ"), vorname, name1);
-    // bexio: Name 1 = Firma oder Nachname, Name 2 = Vorname
+    const typ = kontaktTyp(t(z, "typ"), vorname, firmenname || name1);
+    // bexio: Name 1 = Firma oder Nachname, Name 2 = Vorname; im Serienbrief-Export steht die Firma zusätzlich in «Firmenname»
     const nachname = typ === "PRIVAT" ? nachnameExplizit || name1 : "";
-    const name = typ === "PRIVAT" ? `${vorname} ${nachname}`.trim() : name1 || `${vorname} ${nachnameExplizit}`.trim();
+    const name = typ === "PRIVAT" ? `${vorname} ${nachname}`.trim() : firmenname || name1 || `${vorname} ${nachnameExplizit}`.trim();
     if (!name) {
       erg.uebersprungen++;
       erg.fehler.push(`Zeile ${i + 1}: kein Name`);
@@ -62,6 +66,10 @@ export async function importiereKontakte(zeilen: ImportZeile[], duplikate: Dupli
     const nrRoh = parseInt(t(z, "kontaktNr").replace(/\D/g, ""));
     const kontaktNr = Number.isFinite(nrRoh) && nrRoh > 0 ? nrRoh : null;
     const uid = t(z, "uid");
+    // bexio «Adresse» kann mehrzeilig sein: erste Zeile Strasse, Rest als Adresszusatz
+    const [strasse, ...adressRest] = t(z, "strasse").split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    const anzahlRoh = parseInt(t(z, "anzahlMitarbeiter").replace(/\D/g, ""));
+    const ansprech = t(z, "ansprechpartner").toLowerCase().replace(/\s+/g, " ");
     const daten = {
       typ,
       name,
@@ -69,8 +77,11 @@ export async function importiereKontakte(zeilen: ImportZeile[], duplikate: Dupli
       nachname,
       anrede: typ === "PRIVAT" ? t(z, "anrede") : "",
       zusatz: typ === "FIRMA" ? t(z, "zusatz") : "",
-      strasse: t(z, "strasse"),
-      adresszusatz: t(z, "adresszusatz"),
+      strasse: strasse ?? "",
+      adresszusatz: t(z, "adresszusatz") || adressRest.join(", "),
+      korrespondenzweg: /post|brief/i.test(t(z, "korrespondenzweg")) ? "POST" : "MAIL",
+      anzahlMitarbeiter: Number.isFinite(anzahlRoh) && anzahlRoh > 0 ? anzahlRoh : null,
+      ansprechpartnerId: (ansprech && teamNachName.get(ansprech)) || null,
       plz: t(z, "plz"),
       ort: t(z, "ort"),
       land: t(z, "land") || "Schweiz",
@@ -93,7 +104,9 @@ export async function importiereKontakte(zeilen: ImportZeile[], duplikate: Dupli
     if (bestehendId) {
       if (duplikate === "aktualisieren") {
         // Nur gefüllte Felder überschreiben, Leeres aus der Datei löscht nichts
-        const nurGefuellt = Object.fromEntries(Object.entries(daten).filter(([, v]) => v !== "" && v !== "Schweiz" && v !== "DE"));
+        const nurGefuellt = Object.fromEntries(
+          Object.entries(daten).filter(([, v]) => v !== "" && v !== null && v !== "Schweiz" && v !== "DE" && v !== "MAIL")
+        );
         await db.kunde.update({ where: { id: bestehendId }, data: nurGefuellt });
         erg.aktualisiert++;
       } else {

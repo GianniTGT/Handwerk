@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CHUNK, FELDER, MAX_ZEILEN, erkenneZuordnung, parseCsv, type ImportTyp } from "@/lib/import-felder";
+import { CHUNK, FELDER, MAX_ZEILEN, bereinige, erkenneZuordnung, parseCsv, type ImportTyp } from "@/lib/import-felder";
 import type { Duplikate, ImportErgebnis, ImportZeile } from "@/lib/actions-import";
 
 // Datenübernahme in drei Schritten: Datei wählen → Spalten prüfen → importieren.
@@ -38,18 +38,32 @@ export default function ImportAssistent({
       setFehler("Datei grösser als 10 MB.");
       return;
     }
-    if (/\.xlsx?$/i.test(datei.name)) {
-      setFehler("Bitte als CSV speichern: in Excel «Datei → Speichern unter → CSV UTF-8 (durch Trennzeichen getrennt)». bexio bietet den CSV-Export direkt an.");
-      return;
-    }
     const puffer = await datei.arrayBuffer();
-    let text: string;
-    try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(puffer);
-    } catch {
-      text = new TextDecoder("windows-1252").decode(puffer); // Excel ohne UTF-8
+    let k: string[] = [];
+    let z: string[][] = [];
+    if (/\.xlsx?$/i.test(datei.name)) {
+      // Excel direkt lesen (bexio «Serienbrief (.xlsx)», eigene Tabellen): erstes Blatt, erste Zeile = Spaltennamen
+      try {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(puffer, { type: "array" });
+        const blatt = wb.Sheets[wb.SheetNames[0]];
+        const roh = XLSX.utils.sheet_to_json<unknown[]>(blatt, { header: 1, raw: false, defval: "" });
+        const nichtLeer = roh.filter((r) => r.some((c) => bereinige(c) !== ""));
+        k = (nichtLeer[0] ?? []).map((c) => bereinige(c));
+        z = nichtLeer.slice(1).map((r) => k.map((_, i) => bereinige(r[i])));
+      } catch {
+        setFehler("Die Excel-Datei konnte nicht gelesen werden. Alternativ in Excel als CSV UTF-8 speichern.");
+        return;
+      }
+    } else {
+      let text: string;
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(puffer);
+      } catch {
+        text = new TextDecoder("windows-1252").decode(puffer); // Excel ohne UTF-8
+      }
+      ({ kopf: k, zeilen: z } = parseCsv(text));
     }
-    const { kopf: k, zeilen: z } = parseCsv(text);
     if (k.length < 2 || z.length === 0) {
       setFehler("Keine Tabelle erkannt. Die erste Zeile muss die Spaltennamen enthalten.");
       return;
@@ -137,8 +151,8 @@ export default function ImportAssistent({
         <h2 className="font-semibold">1. Datei wählen</h2>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <label className="cursor-pointer rounded-md bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">
-            CSV-Datei wählen
-            <input type="file" accept=".csv,.txt,text/csv,text/plain" onChange={dateiGewaehlt} className="hidden" />
+            CSV- oder Excel-Datei wählen
+            <input type="file" accept=".csv,.txt,.xlsx,.xls,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={dateiGewaehlt} className="hidden" />
           </label>
           {dateiName && (
             <span className="text-sm text-muted">

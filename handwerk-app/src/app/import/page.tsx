@@ -53,21 +53,20 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
             <h2 className="font-semibold">So exportieren Sie aus bexio</h2>
             {typ === "kontakte" ? (
               <ol className="mt-2 list-inside list-decimal space-y-1.5 text-muted">
-                <li>In bexio <b>Kontakte</b> öffnen.</li>
-                <li>Oben links alle Kontakte anhaken (Kästchen in der Kopfzeile).</li>
-                <li><b>Exportieren → CSV</b> wählen und die Datei speichern.</li>
-                <li>Datei hier hochladen. Spalten wie «Name 1», «Name 2», «Kontaktart», «Telefon Fix» werden erkannt.</li>
+                <li>In bexio <b>Einstellungen → Export</b> öffnen.</li>
+                <li>Unter «Kontakte» <b>Kontaktliste (.csv)</b> oder <b>Serienbrief (.xlsx)</b> herunterladen.</li>
+                <li>Datei hier hochladen. Die bexio-Spalten («Nr.», «Kontaktart», «Name 1», «Name 2», «Adresse», «Telefon», «Ansprechpartner», «MWST-Nummer» …) werden automatisch erkannt.</li>
               </ol>
             ) : (
               <ol className="mt-2 list-inside list-decimal space-y-1.5 text-muted">
-                <li>In bexio <b>Produkte</b> öffnen.</li>
-                <li>Alle Produkte anhaken und <b>Exportieren → CSV</b> wählen.</li>
+                <li>In bexio <b>Produkte</b> öffnen, oben rechts <b>Aktuelle Liste exportieren</b> (Excel oder CSV).</li>
+                <li>Alternativ unter <b>Einstellungen → Export</b> die «Lagerprodukte (.csv)» — sie enthalten nur Produkt, Code und Einkaufswert.</li>
                 <li>Datei hier hochladen. Art-Nr., Bezeichnung, Einheit, Einkaufs- und Verkaufspreis werden erkannt.</li>
               </ol>
             )}
             <h3 className="mt-4 font-semibold">Aus Excel</h3>
             <p className="mt-1 text-muted">
-              Tabelle mit einer Kopfzeile als <b>CSV UTF-8</b> speichern (Datei → Speichern unter). Deutsche Spaltennamen genügen, der Rest wird hier zugeordnet.
+              Excel-Dateien (.xlsx) werden direkt gelesen, erstes Blatt mit einer Kopfzeile. Deutsche Spaltennamen genügen, der Rest wird hier zugeordnet.
             </p>
             <h3 className="mt-4 font-semibold">Gut zu wissen</h3>
             <ul className="mt-1 list-inside list-disc space-y-1 text-muted">

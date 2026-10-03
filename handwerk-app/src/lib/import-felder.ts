@@ -30,8 +30,9 @@ export const FELDER: Record<ImportTyp, FeldDef[]> = {
       label: "Firma / Name 1",
       pflicht: true,
       hinweis: "Bei bexio «Name 1»: Firma oder Nachname",
-      aliase: ["name1", "name", "firma", "name1firma", "firmaname", "firmenname", "kontakt", "company", "unternehmen", "kunde", "bezeichnung", "organisation"],
+      aliase: ["name1", "name", "firma", "name1firma", "firmaname", "kontakt", "company", "unternehmen", "kunde", "bezeichnung", "organisation"],
     },
+    { key: "firmenname", label: "Firmenname (bexio Serienbrief)", hinweis: "Falls vorhanden, hat er Vorrang vor Name 1", aliase: ["firmenname", "firmenbezeichnung"] },
     { key: "vorname", label: "Vorname / Name 2", hinweis: "Bei bexio «Name 2»", aliase: ["name2", "vorname", "firstname", "name2vorname"] },
     { key: "nachname", label: "Nachname", aliase: ["nachname", "lastname", "familienname", "surname"] },
     { key: "zusatz", label: "Firmennamen-Zusatz", aliase: ["zusatz", "firmennamenzusatz", "namenszusatz", "name3", "namezusatz"] },
@@ -50,18 +51,21 @@ export const FELDER: Record<ImportTyp, FeldDef[]> = {
     { key: "kategorie", label: "Kategorie", aliase: ["kategorie", "kontaktgruppe", "kontaktgruppen", "gruppe", "category", "kundengruppe", "kategorien"] },
     { key: "branche", label: "Branche", aliase: ["branche", "industry", "sektor"] },
     { key: "sprache", label: "Sprache", aliase: ["sprache", "language", "korrespondenzsprache"] },
+    { key: "korrespondenzweg", label: "Korrespondenzweg (Mail/Post)", aliase: ["korrespondenzweg", "versandart", "korrespondenz"] },
+    { key: "ansprechpartner", label: "Betreut von (Name unseres Mitarbeiters)", hinweis: "Bei bexio «Ansprechpartner» — wird per Name zugeordnet", aliase: ["ansprechpartner", "betreutvon", "zustaendig", "verantwortlich", "besitzer", "owner"] },
+    { key: "anzahlMitarbeiter", label: "Anzahl Mitarbeitende", aliase: ["anzahlmitarbeiter", "anzahlmitarbeitende", "mitarbeiter", "employees"] },
     { key: "bemerkung", label: "Bemerkungen", aliase: ["bemerkung", "bemerkungen", "notiz", "notizen", "remarks", "kommentar", "notes"] },
     { key: "mwstNr", label: "MWST-Nr.", aliase: ["mwstnr", "mwstnummer", "mehrwertsteuernummer", "vatnr", "mwst", "vat"] },
     { key: "uid", label: "UID", aliase: ["uid", "uidnummer", "uidnr", "unternehmensidentifikationsnummer", "umsatzsteueridentifikationsnummer", "ustid"] },
     { key: "handelsregisterNr", label: "Handelsregister-Nr.", aliase: ["handelsregisternr", "handelsregisternummer", "hrnr", "handelsregister"] },
   ],
   artikel: [
-    { key: "artikelNr", label: "Art-Nr. / Produktcode", aliase: ["artikelnr", "artnr", "artikelnummer", "produktnr", "produktcode", "code", "nummer", "nr", "intercode", "artikelcode", "produktnummer"] },
-    { key: "bezeichnung", label: "Bezeichnung", pflicht: true, aliase: ["bezeichnung", "name", "produktname", "artikelname", "titel", "text", "artikel", "produkt", "artikeltext"] },
+    { key: "artikelNr", label: "Art-Nr. / Produktcode", aliase: ["artikelnr", "artnr", "artikelnummer", "produktnr", "produktcode", "code", "nummer", "nr", "intercode", "artikelcode", "produktnummer", "artikelcode"] },
+    { key: "bezeichnung", label: "Bezeichnung", pflicht: true, aliase: ["bezeichnung", "name", "produktname", "artikelname", "titel", "text", "artikel", "produkt", "artikeltext", "produktbezeichnung"] },
     { key: "gruppe", label: "Gruppe", aliase: ["gruppe", "produktgruppe", "artikelgruppe", "kategorie", "warengruppe", "artikelkategorie"] },
     { key: "einheit", label: "Einheit", aliase: ["einheit", "mengeneinheit", "me", "unit", "einh"] },
     { key: "art", label: "Art (Ware/Dienstleistung)", aliase: ["art", "typ", "produktart", "type", "artikeltyp", "artikelart"] },
-    { key: "einkaufspreis", label: "Einkaufspreis (EK)", aliase: ["einkaufspreis", "ek", "ekpreis", "purchaseprice", "einkauf", "einstandspreis"] },
+    { key: "einkaufspreis", label: "Einkaufspreis (EK)", aliase: ["einkaufspreis", "ek", "ekpreis", "purchaseprice", "einkauf", "einstandspreis", "einkaufswert"] },
     { key: "preis", label: "Verkaufspreis (VK)", aliase: ["verkaufspreis", "vk", "preis", "vkpreis", "salesprice", "preisexklmwst", "nettopreis", "listenpreis", "einzelpreis", "preisexkl", "verkaufspreisexklmwst"] },
     { key: "mwstSatz", label: "MwSt %", aliase: ["mwst", "mwstsatz", "steuersatz", "taxrate", "mehrwertsteuer", "mwstprozent"] },
   ],
@@ -84,6 +88,12 @@ export function erkenneZuordnung(kopf: string[], typ: ImportTyp): Record<string,
   }
   return out;
 }
+
+// Zellwert bereinigen: bexio/Excel setzen vor Nummern und Adressen ein Apostroph als Textmarker («'000003», «'Holenackerstrasse 27»)
+export const bereinige = (w: unknown) =>
+  String(w ?? "")
+    .replace(/^'+/, "")
+    .trim();
 
 // CSV lesen: Trennzeichen ; , oder Tab automatisch, Anführungszeichen mit "" als Escape, Zeilenumbrüche in Feldern
 export function parseCsv(text: string): { kopf: string[]; zeilen: string[][] } {
@@ -114,12 +124,12 @@ export function parseCsv(text: string): { kopf: string[]; zeilen: string[][] } {
       if (c === "\r" && t[i + 1] === "\n") i++;
       zeile.push(feld);
       feld = "";
-      if (zeile.some((x) => x.trim() !== "")) zeilen.push(zeile.map((x) => x.trim()));
+      if (zeile.some((x) => x.trim() !== "")) zeilen.push(zeile.map(bereinige));
       zeile = [];
     } else feld += c;
   }
   zeile.push(feld);
-  if (zeile.some((x) => x.trim() !== "")) zeilen.push(zeile.map((x) => x.trim()));
+  if (zeile.some((x) => x.trim() !== "")) zeilen.push(zeile.map(bereinige));
   const [kopf = [], ...daten] = zeilen;
   return { kopf, zeilen: daten };
 }
