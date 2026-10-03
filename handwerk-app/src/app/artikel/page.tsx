@@ -1,59 +1,102 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
+import { chf } from "@/lib/format";
 import { einkaufsPreis, marge, verkaufsPreis } from "@/lib/preise";
-import { saveArtikel } from "@/lib/actions";
-import {
-  createLieferant,
-  deleteArtikel,
-  deleteKondition,
-  importArtikelCsv,
-  setKondition,
-} from "@/lib/actions";
+import { deleteArtikel, importArtikelCsv } from "@/lib/actions";
 
-const chf = (n: number) =>
-  n.toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const TABS: [string, string, string | null][] = [
+  ["alle", "Alle", null],
+  ["ware", "Waren", "WARE"],
+  ["dienstleistung", "Dienstleistungen", "DIENSTLEISTUNG"],
+];
 
 export default async function ArtikelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; import?: string; neu?: string; aktualisiert?: string; uebersprungen?: string; grund?: string; gespeichert?: string; fehler?: string; edit?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    filter?: string;
+    import?: string;
+    neu?: string;
+    aktualisiert?: string;
+    uebersprungen?: string;
+    grund?: string;
+    gespeichert?: string;
+    fehler?: string;
+  }>;
 }) {
   const { betrieb } = await sitzungErforderlich();
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
+  const filter = sp.filter ?? "alle";
+  const art = TABS.find((t) => t[0] === filter)?.[2] ?? null;
 
-  const [artikel, lieferanten, konditionen] = await Promise.all([
+  const [artikel, anzahlen, lieferanten, konditionen] = await Promise.all([
     db.artikel.findMany({
       where: {
         betriebId: betrieb.id,
+        ...(art ? { art } : {}),
         ...(q
           ? {
               OR: [
                 { bezeichnung: { contains: q, mode: "insensitive" } },
                 { artikelNr: { contains: q, mode: "insensitive" } },
+                { gruppe: { contains: q, mode: "insensitive" } },
               ],
             }
           : {}),
       },
       include: { lieferant: true },
       orderBy: { bezeichnung: "asc" },
-      take: 200,
+      take: 300,
     }),
+    db.artikel.groupBy({ by: ["art"], where: { betriebId: betrieb.id }, _count: true }),
     db.lieferant.findMany({ where: { betriebId: betrieb.id }, orderBy: { name: "asc" } }),
-    db.kondition.findMany({
-      where: { betriebId: betrieb.id },
-      include: { lieferant: true },
-      orderBy: [{ lieferantId: "asc" }, { rabattgruppe: "asc" }],
-    }),
+    db.kondition.findMany({ where: { betriebId: betrieb.id } }),
   ]);
-
-  const bearb = sp.edit ? artikel.find((x) => x.id === sp.edit) : undefined;
+  const anzahl = (a: string | null) => anzahlen.filter((x) => !a || x.art === a).reduce((s, x) => s + x._count, 0);
 
   return (
     <div>
-      <h1 className="text-xl font-bold">Artikel & Lieferanten</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-bold">Produkte</h1>
+        <div className="flex items-center gap-2">
+          <details className="relative">
+            <summary className="cursor-pointer list-none rounded-md border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2" title="Weitere Aktionen">
+              ⋮
+            </summary>
+            <div className="absolute right-0 z-10 mt-1 w-80 rounded-tiff border border-line bg-white p-3 shadow-lg">
+              <form action={importArtikelCsv} className="grid gap-2 text-sm">
+                <div className="font-semibold">Artikel importieren (CSV)</div>
+                <p className="text-xs text-muted">
+                  Spalten: ArtikelNr; Bezeichnung; Einheit; Bruttopreis; Rabattgruppe. Trennzeichen ; oder , — z. B. aus dem Webshop von
+                  Debrunner oder Meier Tobler.
+                </p>
+                <select name="lieferantId" className="rounded border border-line p-1.5 text-sm">
+                  <option value="">Ohne Lieferant (manuelle Artikel)</option>
+                  {lieferanten.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+                <input name="datei" type="file" accept=".csv,text/csv" required className="rounded border border-line p-1.5 text-xs" />
+                <button className="rounded-md border border-forest p-1.5 text-sm font-medium text-forest hover:bg-surface2">Importieren</button>
+              </form>
+              <div className="mt-3 grid gap-1 border-t border-line pt-3 text-sm">
+                <Link href="/artikel/lieferanten" className="text-forest underline">Lieferanten &amp; Konditionen verwalten</Link>
+                {/* Download-Route, kein Seitenwechsel */}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                <a href="/api/export/artikel" className="text-forest underline">⬇ Produkte exportieren (CSV)</a>
+              </div>
+            </div>
+          </details>
+          <Link href="/artikel/neu" className="rounded-md bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">
+            ＋ Neues Produkt
+          </Link>
+        </div>
+      </div>
 
       {sp.gespeichert && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       {sp.fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Bitte eine Bezeichnung angeben.</p>}
@@ -66,202 +109,86 @@ export default async function ArtikelPage({
       {sp.import === "fehler" && (
         <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">
           Import fehlgeschlagen (
-          {sp.grund === "datei"
-            ? "keine Datei gewählt"
-            : sp.grund === "gross"
-              ? "Datei grösser als 10 MB"
-              : "keine gültigen Zeilen — Spalte «Bezeichnung» vorhanden?"}
+          {sp.grund === "datei" ? "keine Datei gewählt" : sp.grund === "gross" ? "Datei grösser als 10 MB" : "keine gültigen Zeilen — Spalte «Bezeichnung» vorhanden?"}
           ).
         </p>
       )}
 
-      <div className="mt-4 grid gap-6 md:grid-cols-[2fr_1fr]">
-        <div>
-          <form className="flex gap-2">
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Suche: Bezeichnung oder Art-Nr…"
-              className="w-full rounded border border-line p-2 text-sm"
-            />
-            <button className="rounded bg-forest px-4 text-sm font-medium text-white">Suchen</button>
-          </form>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1 text-sm">
+          {TABS.map(([key, label, a]) => (
+            <Link
+              key={key}
+              href={`/artikel?filter=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1 ${filter === key ? "border-forest bg-forest text-white" : "border-line bg-white hover:bg-surface2"}`}
+            >
+              {label} ({anzahl(a)})
+            </Link>
+          ))}
+        </div>
+        <form className="flex gap-2">
+          <input type="hidden" name="filter" value={filter} />
+          <input name="q" defaultValue={q} placeholder="Suche: Bezeichnung, Art-Nr, Gruppe …" className="w-60 rounded border border-line p-1.5 text-sm" />
+          <button className="rounded-md bg-forest px-3 text-sm font-medium text-white">Suchen</button>
+        </form>
+      </div>
 
-          <table className="mt-3 w-full rounded-tiff border border-line bg-white text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs uppercase text-muted">
-                <th className="p-2">Art-Nr</th>
-                <th className="p-2">Bezeichnung</th>
-                <th className="p-2">Lieferant</th>
-                <th className="p-2">Art</th>
-                <th className="p-2 text-right">EK*</th>
-                <th className="p-2 text-right">Zuschlag</th>
-                <th className="p-2 text-right">VK</th>
-                <th className="p-2 text-right">Marge</th>
-                <th className="p-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {artikel.map((a) => (
-                <tr key={a.id} className="border-b border-line">
-                  <td className="p-2 text-muted">{a.artikelNr || "—"}</td>
-                  <td className="p-2">{a.bezeichnung}</td>
-                  <td className="p-2 text-muted">{a.lieferant?.name ?? "manuell"}</td>
-                  <td className="p-2 text-muted">{a.art === "WARE" ? "Ware" : "Dienstl."}{a.gruppe && ` · ${a.gruppe}`}</td>
-                  <td className="p-2 text-right">{chf(einkaufsPreis(a, konditionen))}</td>
-                  <td className="p-2 text-right text-muted">{a.zuschlagProzent > 0 ? `${a.zuschlagProzent}%` : "—"}</td>
-                  <td className="p-2 text-right font-medium">{chf(verkaufsPreis(a, konditionen))}</td>
-                  <td className="p-2 text-right text-muted">
-                    {marge(einkaufsPreis(a, konditionen), verkaufsPreis(a, konditionen)) > 0
-                      ? `${marge(einkaufsPreis(a, konditionen), verkaufsPreis(a, konditionen))}%`
-                      : "—"}
+      <div className="mt-3 overflow-hidden rounded-tiff border border-line bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-surface2 text-left text-xs uppercase text-muted">
+            <tr>
+              <th className="hidden p-2 sm:table-cell">Art-Nr</th>
+              <th className="p-2">Bezeichnung</th>
+              <th className="hidden p-2 lg:table-cell">Gruppe</th>
+              <th className="hidden p-2 md:table-cell">Lieferant</th>
+              <th className="hidden p-2 text-right md:table-cell">EK</th>
+              <th className="p-2 text-right">VK</th>
+              <th className="hidden p-2 text-right lg:table-cell">Marge</th>
+              <th className="w-16 p-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {artikel.map((a) => {
+              const ek = einkaufsPreis(a, konditionen);
+              const vk = verkaufsPreis(a, konditionen);
+              const m = marge(ek, vk);
+              return (
+                <tr key={a.id} className="hover:bg-surface2">
+                  <td className="hidden p-2 text-muted sm:table-cell">{a.artikelNr || "—"}</td>
+                  <td className="p-2 font-medium">
+                    <Link href={`/artikel/${a.id}`} className="block hover:underline">
+                      {a.bezeichnung}
+                    </Link>
+                    <span className="text-xs font-normal text-muted">{a.art === "WARE" ? "Ware" : "Dienstleistung"} · {a.einheit}</span>
                   </td>
-                  <td className="p-2 whitespace-nowrap">
-                    <a href={`/artikel?edit=${a.id}`} className="mr-2 text-muted hover:text-forest" title="Bearbeiten">✎</a>
+                  <td className="hidden p-2 text-muted lg:table-cell">{a.gruppe || "—"}</td>
+                  <td className="hidden p-2 text-muted md:table-cell">{a.lieferant?.name ?? "—"}</td>
+                  <td className="hidden p-2 text-right tabular-nums md:table-cell">{chf(ek)}</td>
+                  <td className="p-2 text-right font-medium tabular-nums">{chf(vk)}</td>
+                  <td className="hidden p-2 text-right text-muted tabular-nums lg:table-cell">{m > 0 ? `${m}%` : "—"}</td>
+                  <td className="p-2 text-right">
+                    <Link href={`/artikel/${a.id}`} className="mr-2 text-muted hover:text-forest" title="Bearbeiten">✎</Link>
                     <form action={deleteArtikel} className="inline">
                       <input type="hidden" name="artikelId" value={a.id} />
-                      <button className="text-muted hover:text-red-600">✕</button>
+                      <button className="text-muted hover:text-red-600" title="Löschen" aria-label="Löschen">✕</button>
                     </form>
                   </td>
                 </tr>
-              ))}
-              {artikel.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="p-3 text-muted">
-                    Keine Artikel{q && " für diese Suche"} — rechts CSV importieren.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <p className="mt-1 text-xs text-muted">
-            * EK = Brutto × (1 − Rabatt der Kondition) bzw. manueller Einkaufspreis. VK = EK × (1 + Zuschlag). Ohne Zuschlag gilt der EK. Angezeigt werden max. 200 Artikel — Suche benutzen.
-          </p>
-        </div>
-
-        <div className="grid h-fit gap-4">
-          <form action={saveArtikel} className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-            {bearb && <input type="hidden" name="artikelId" value={bearb.id} />}
-            <h2 className="font-semibold">{bearb ? `Bearbeiten: ${bearb.bezeichnung}` : "Neuer Artikel / Dienstleistung"}</h2>
-            <div className="mt-2 grid gap-2 text-sm">
-              <select key={bearb?.id} name="art" defaultValue={bearb?.art ?? "WARE"} className="rounded border border-line p-2">
-                <option value="WARE">Ware</option>
-                <option value="DIENSTLEISTUNG">Dienstleistung</option>
-              </select>
-              <input key={bearb?.id} name="bezeichnung" required defaultValue={bearb?.bezeichnung} placeholder="Bezeichnung" className="rounded border border-line p-2" />
-              <div className="grid grid-cols-2 gap-2">
-                <input key={bearb?.id} name="artikelNr" defaultValue={bearb?.artikelNr} placeholder="Art-Nr / Code" className="rounded border border-line p-2" />
-                <input key={bearb?.id} name="einheit" defaultValue={bearb?.einheit} placeholder="Einheit (Stk., Std., m)" className="rounded border border-line p-2" />
-              </div>
-              <input key={bearb?.id} name="gruppe" defaultValue={bearb?.gruppe} placeholder="Gruppe (z.B. Heizung, Sanitär)" className="rounded border border-line p-2" />
-              <div className="grid grid-cols-3 gap-2">
-                <input key={bearb?.id} name="einkaufspreis" inputMode="decimal" defaultValue={bearb && bearb.einkaufspreis > 0 ? bearb.einkaufspreis : bearb && !bearb.lieferantId ? bearb.preis : ""} placeholder="EK" className="rounded border border-line p-2" />
-                <input key={bearb?.id} name="zuschlagProzent" inputMode="decimal" defaultValue={bearb?.zuschlagProzent || ""} placeholder="Zuschlag %" className="rounded border border-line p-2" />
-                <input name="verkaufspreis" inputMode="decimal" placeholder="VK" className="rounded border border-line p-2" />
-              </div>
-              <p className="text-xs text-muted">EK + Zuschlag oder EK + VK angeben (Zuschlag wird berechnet). Dienstleistung: nur VK.</p>
-              <select key={bearb?.id} name="mwstSatz" defaultValue={String(bearb?.mwstSatz ?? 8.1)} className="rounded border border-line p-2">
-                <option value="8.1">MwSt 8.1%</option>
-                <option value="2.6">MwSt 2.6%</option>
-                <option value="3.8">MwSt 3.8%</option>
-                <option value="0">MwSt 0%</option>
-              </select>
-              <select key={bearb?.id} name="lieferantId" defaultValue={bearb?.lieferantId ?? ""} className="rounded border border-line p-2">
-                <option value="">Ohne Lieferant</option>
-                {lieferanten.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
-                ))}
-              </select>
-              <button className="rounded bg-forest p-2 font-medium text-white hover:bg-forest-lift">Speichern</button>
-              {bearb && <a href="/artikel" className="text-center text-xs text-muted underline">Abbrechen</a>}
-            </div>
-          </form>
-
-          <form
-            action={importArtikelCsv}
-            className="rounded-tiff border border-line bg-white p-4 shadow-sm"
-          >
-            <h2 className="font-semibold">CSV-Import</h2>
-            <p className="mt-1 text-xs text-muted">
-              Spalten (Kopfzeile, Reihenfolge egal): ArtikelNr; Bezeichnung; Einheit;
-              Bruttopreis; Rabattgruppe. Trennzeichen ; oder , — Export aus Excel oder
-              Lieferanten-Webshop (Debrunner, Meier Tobler…).
-            </p>
-            <div className="mt-3 grid gap-2">
-              <select name="lieferantId" className="rounded border border-line p-2 text-sm">
-                <option value="">Ohne Lieferant (manuelle Artikel)</option>
-                {lieferanten.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="datei"
-                type="file"
-                accept=".csv,text/csv"
-                required
-                className="rounded border border-line p-2 text-sm"
-              />
-              <button className="rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift">
-                Importieren
-              </button>
-            </div>
-          </form>
-
-          <form
-            action={createLieferant}
-            className="rounded-tiff border border-line bg-white p-4 shadow-sm"
-          >
-            <h2 className="font-semibold">Neuer Lieferant</h2>
-            <div className="mt-2 flex gap-2">
-              <input
-                name="name"
-                required
-                placeholder="z.B. Debrunner Acifer"
-                className="w-full rounded border border-line p-2 text-sm"
-              />
-              <button className="rounded bg-forest px-3 text-sm font-medium text-white">+</button>
-            </div>
-          </form>
-
-          <div className="rounded-tiff border border-line bg-white p-4 shadow-sm">
-            <h2 className="font-semibold">Konditionen (Rabatte)</h2>
-            <ul className="mt-2 divide-y divide-line text-sm">
-              {konditionen.map((k) => (
-                <li key={k.id} className="flex items-center justify-between py-1.5">
-                  <span>
-                    {k.lieferant.name} · RG «{k.rabattgruppe || "—"}»
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <strong>−{k.rabattProzent}%</strong>
-                    <form action={deleteKondition}>
-                      <input type="hidden" name="konditionId" value={k.id} />
-                      <button className="text-muted hover:text-red-600">✕</button>
-                    </form>
-                  </span>
-                </li>
-              ))}
-              {konditionen.length === 0 && (
-                <li className="py-1.5 text-muted">Noch keine Konditionen.</li>
-              )}
-            </ul>
-            <form action={setKondition} className="mt-3 grid grid-cols-[1fr_1fr_80px_auto] gap-2">
-              <select name="lieferantId" required className="rounded border border-line p-2 text-sm">
-                <option value="">Lieferant…</option>
-                {lieferanten.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </select>
-              <input name="rabattgruppe" placeholder="Rabattgruppe" className="rounded border border-line p-2 text-sm" />
-              <input name="rabattProzent" type="number" step="0.1" min="0" max="100" required placeholder="%" className="rounded border border-line p-2 text-sm" />
-              <button className="rounded bg-forest px-3 text-sm font-medium text-white">OK</button>
-            </form>
-          </div>
-        </div>
+              );
+            })}
+            {artikel.length === 0 && (
+              <tr>
+                <td colSpan={8} className="p-4 text-center text-muted">
+                  Keine Produkte. <Link href="/artikel/neu" className="text-forest underline">Neues Produkt erstellen</Link> oder über «⋮» eine CSV importieren.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+      <p className="mt-2 text-xs text-muted">
+        EK = Einkaufspreis (bei Katalogartikeln Bruttopreis − Lieferanten-Rabatt), VK = EK + Zuschlag. Angezeigt werden max. 300 Produkte — die Suche benutzen.
+      </p>
     </div>
   );
 }

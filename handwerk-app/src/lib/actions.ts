@@ -282,6 +282,7 @@ export async function createLieferant(formData: FormData) {
   if (!name) return;
   await db.lieferant.create({ data: { betriebId: betrieb.id, name } });
   revalidatePath("/artikel");
+  revalidatePath("/artikel/lieferanten");
 }
 
 export async function setKondition(formData: FormData) {
