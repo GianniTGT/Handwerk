@@ -640,6 +640,13 @@ export async function updateBetrieb(formData: FormData) {
     const bytes = Buffer.from(await datei.arrayBuffer());
     logo = `data:${datei.type};base64,${bytes.toString("base64")}`;
   }
+  // Vom Browser bereits verkleinert (LogoUpload): data-URL statt Datei
+  const logoDataUrl = String(formData.get("logoDataUrl") ?? "");
+  if (logoDataUrl) {
+    if (!/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(logoDataUrl)) redirect("/einstellungen?fehler=logo-format");
+    if (logoDataUrl.length > 700_000) redirect("/einstellungen?fehler=logo-gross");
+    logo = logoDataUrl;
+  }
   if (formData.get("logoEntfernen") === "1") logo = "";
 
   // IBAN (QR-Rechnung): vetëm CH/LI, 21 karaktere — përndryshe PDF-ja e faturës nuk gjenerohet
@@ -673,7 +680,7 @@ export async function updateBetrieb(formData: FormData) {
       ...(logo !== undefined ? { logo } : {}),
     },
   });
-  revalidatePath("/einstellungen");
+  revalidatePath("/", "layout"); // Name und Logo stehen auch in der Kopfzeile
   redirect("/einstellungen?gespeichert=1");
 }
 

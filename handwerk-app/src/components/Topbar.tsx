@@ -17,7 +17,7 @@ const initialen = (name: string) =>
     .join("");
 
 export function BetriebLogo({ b, gross = false }: { b: TopBetrieb; gross?: boolean }) {
-  const mass = gross ? "h-10 w-10" : "h-7 w-7";
+  const mass = gross ? "h-10 w-10" : "h-6 w-6";
   return b.logoV > 0 ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={`/api/logo/${b.id}?v=${b.logoV}`} alt="" className={`${mass} shrink-0 rounded border border-line bg-white object-contain`} />
@@ -99,9 +99,10 @@ export default function Topbar({
 
   return (
     <div className="flex h-14 items-center gap-3 px-4">
-      <Link href="/" className="flex shrink-0 items-center gap-2 font-bold tracking-tight" aria-label="Handwerk by TIFF — Dashboard">
+      {/* Marke deutlich grösser als das Kundenlogo daneben (wie bei bexio) */}
+      <Link href="/" className="flex shrink-0 items-center gap-2.5 text-lg font-bold tracking-tight" aria-label="Handwerk by TIFF — Dashboard">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/tiff-logo.svg" alt="" className="h-8 w-8 rounded" />
+        <img src="/tiff-logo.svg" alt="" className="h-11 w-11 rounded-lg" />
         <span className="hidden sm:inline">Handwerk</span>
         <span className="hidden text-[9px] font-normal uppercase tracking-widest text-gold lg:inline">by Tiff</span>
       </Link>
@@ -114,7 +115,7 @@ export default function Topbar({
             onClick={() => setBetriebOffen((o) => !o)}
             aria-haspopup="true"
             aria-expanded={betriebOffen}
-            className="flex h-10 items-center gap-2.5 rounded border border-line bg-white px-2.5 text-sm font-medium hover:bg-surface2"
+            className="ml-2 flex h-9 items-center gap-2 rounded border border-line bg-white px-2.5 text-sm font-medium hover:bg-surface2"
           >
             <BetriebLogo b={aktiv} />
             <span className="max-w-48 truncate">{aktiv.name}</span>

@@ -80,7 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {sitzung ? (
           <div className="flex min-h-[calc(100vh-3.5rem)]">
             <Sidebar erlaubt={rechte} support={support} />
-            <main className="mx-auto w-full min-w-0 max-w-[1200px] px-4 py-6 md:px-8">{children}</main>
+            <main className="mx-auto w-full min-w-0 max-w-[1800px] px-4 py-6 md:px-8">{children}</main>
           </div>
         ) : (
           <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>

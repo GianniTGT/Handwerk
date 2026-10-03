@@ -10,7 +10,6 @@ import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 import { WIDGETS, WIDGET_BEREICH, parseLayout, type WidgetId } from "@/lib/dashboard";
 import DashboardEditor from "@/components/DashboardEditor";
-import { BetriebLogo } from "@/components/Topbar";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
@@ -256,13 +255,7 @@ export default async function Dashboard({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <BetriebLogo b={{ id: betrieb.id, name: betrieb.name, logoV: betrieb.logo.length }} gross />
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">Dashboard</h1>
-            <p className="text-sm text-muted">{betrieb.name}</p>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold leading-tight">Dashboard</h1>
         {bearbeiten ? (
           <Link href="/" className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-green-700">
             Fertig
