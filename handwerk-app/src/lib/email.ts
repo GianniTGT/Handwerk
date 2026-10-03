@@ -46,3 +46,25 @@ export async function sendeDokument(args: {
     return { ok: false, simuliert: false, fehler: e instanceof Error ? e.message : "Unbekannt" };
   }
 }
+
+// Einfache Textnachricht ohne Anhang (z.B. Passwort-Reset). Ohne SMTP: Simulation.
+export async function sendeNachricht(args: {
+  an: string;
+  absenderName: string;
+  betreff: string;
+  text: string;
+}): Promise<{ ok: boolean; simuliert: boolean }> {
+  try {
+    await transport().sendMail({
+      from: process.env.SMTP_FROM
+        ? `"${args.absenderName}" <${process.env.SMTP_FROM}>`
+        : `"${args.absenderName}" <noreply@localhost>`,
+      to: args.an,
+      subject: args.betreff,
+      text: args.text,
+    });
+    return { ok: true, simuliert: !emailKonfiguriert() };
+  } catch {
+    return { ok: false, simuliert: false };
+  }
+}

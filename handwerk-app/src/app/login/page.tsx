@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fehler?: string; min?: string }>;
+  searchParams: Promise<{ fehler?: string; min?: string; zurueckgesetzt?: string }>;
 }) {
   if (await leseSitzung()) redirect("/");
-  const { fehler, min } = await searchParams;
+  const { fehler, min, zurueckgesetzt } = await searchParams;
 
   return (
     <div className="mx-auto mt-16 max-w-sm">
@@ -21,6 +21,11 @@ export default async function LoginPage({
       <h1 className="mt-3 text-center text-2xl font-bold">Handwerk</h1>
       <p className="text-center text-[10px] uppercase tracking-widest text-gold">by Tiff Software Solutions</p>
       <p className="mt-1 text-center text-sm text-muted">Anmelden</p>
+      {zurueckgesetzt && (
+        <p className="mt-4 rounded bg-green-100 p-2 text-center text-sm text-green-800">
+          Passwort geändert. Bitte melden Sie sich mit dem neuen Passwort an.
+        </p>
+      )}
       {fehler && (
         <p className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-700">
           {fehler === "gesperrt"
@@ -47,6 +52,11 @@ export default async function LoginPage({
           Anmelden
         </button>
       </form>
+      <p className="mt-4 text-center text-sm">
+        <Link href="/passwort-vergessen" className="text-muted underline">
+          Passwort vergessen?
+        </Link>
+      </p>
       {registrierungOffen() && (
       <p className="mt-4 text-center text-sm text-muted">
         Noch kein Konto?{" "}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Mbrojtje e trashë në skaj: pa cookie sesioni → /login.
 // Verifikimi i vërtetë (DB) bëhet në faqe/actions me sitzungErforderlich().
-const OEFFENTLICH = ["/login", "/registrieren", "/offline"];
+const OEFFENTLICH = ["/login", "/registrieren", "/offline", "/passwort-vergessen", "/passwort-zuruecksetzen"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
