@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -36,16 +37,6 @@ export default async function LieferscheinDetail({
             {l.bemerkung && ` · ${l.bemerkung}`}
           </p>
         </div>
-        <div className="flex gap-2">
-          <a href={`/api/lieferscheine/${l.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
-          <form action={setLieferscheinStatus}>
-            <input type="hidden" name="id" value={l.id} />
-            <input type="hidden" name="status" value={l.status === "ENTWURF" ? "GELIEFERT" : "ENTWURF"} />
-            <button className="rounded border border-forest px-3 py-1.5 text-sm font-medium text-forest hover:bg-surface2">
-              {l.status === "ENTWURF" ? "Als geliefert markieren" : "Wieder öffnen"}
-            </button>
-          </form>
-        </div>
       </div>
       {fehler === "gesperrt" && (
         <p className="mt-3 rounded bg-amber-100 p-2 text-sm text-amber-800">Gelieferte Lieferscheine können nicht gelöscht werden. Zuerst wieder öffnen.</p>
@@ -76,6 +67,17 @@ export default async function LieferscheinDetail({
           <button className="rounded border border-line px-3 py-1.5 text-xs text-red-700 hover:bg-red-50">Lieferschein löschen</button>
         </form>
       )}
+
+      <div className={SPEICHERLEISTE}>
+                <a href={`/api/lieferscheine/${l.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
+                <form action={setLieferscheinStatus}>
+                  <input type="hidden" name="id" value={l.id} />
+                  <input type="hidden" name="status" value={l.status === "ENTWURF" ? "GELIEFERT" : "ENTWURF"} />
+                  <button className="rounded border border-forest px-3 py-1.5 text-sm font-medium text-forest hover:bg-surface2">
+                    {l.status === "ENTWURF" ? "Als geliefert markieren" : "Wieder öffnen"}
+                  </button>
+                </form>
+              </div>
     </div>
   );
 }

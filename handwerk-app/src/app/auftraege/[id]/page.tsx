@@ -1,5 +1,6 @@
 import { verkaufsPreis } from "@/lib/preise";
 import Link from "next/link";
+import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -76,7 +77,7 @@ export default async function AuftragDetail({
   const auftragswert = offertenWert > 0 ? offertenWert : totalNetto;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <Link href="/auftraege" className="text-sm text-forest underline">← Aufträge</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -90,28 +91,6 @@ export default async function AuftragDetail({
         >
           {{ OFFEN: "Offen", IN_ARBEIT: "In Arbeit", ERLEDIGT: "Erledigt", VERRECHNET: "Verrechnet" }[auftrag.status] ?? auftrag.status}
         </span>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {darfVerkauf && !schluss && positionen.length > 0 && (
-          <form action={createRechnung}>
-            <input type="hidden" name="auftragId" value={auftrag.id} />
-            <button className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-soft">
-              ⚡ {teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
-            </button>
-          </form>
-        )}
-        {darfVerkauf &&
-          auftrag.rechnungen.map((r) => (
-            <Link key={r.id} href={`/rechnungen/${r.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
-              {r.art === "TEIL" ? "Akonto" : "Rechnung"} {rechnungNr(r)} ansehen
-            </Link>
-          ))}
-        {auftrag.projekt && (
-          <Link href={`/projekte/${auftrag.projekt.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
-            Projekt {auftrag.projekt.name}
-          </Link>
-        )}
       </div>
 
       <dl className="mt-4 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
@@ -339,6 +318,28 @@ export default async function AuftragDetail({
           </div>
         </div>
       </div>
+
+      <div className={SPEICHERLEISTE}>
+              {darfVerkauf && !schluss && positionen.length > 0 && (
+                <form action={createRechnung}>
+                  <input type="hidden" name="auftragId" value={auftrag.id} />
+                  <button className="rounded-md bg-gold px-4 py-2 text-sm font-semibold text-ink hover:bg-gold-soft">
+                    ⚡ {teile.length > 0 ? "Schlussrechnung erstellen" : "Rechnung erstellen"}
+                  </button>
+                </form>
+              )}
+              {darfVerkauf &&
+                auftrag.rechnungen.map((r) => (
+                  <Link key={r.id} href={`/rechnungen/${r.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
+                    {r.art === "TEIL" ? "Akonto" : "Rechnung"} {rechnungNr(r)} ansehen
+                  </Link>
+                ))}
+              {auftrag.projekt && (
+                <Link href={`/projekte/${auftrag.projekt.id}`} className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:bg-surface2">
+                  Projekt {auftrag.projekt.name}
+                </Link>
+              )}
+            </div>
     </div>
   );
 }

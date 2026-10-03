@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -74,7 +75,7 @@ export default async function OfferteDetail({
   const bearbeitbar = offerte.status === "ENTWURF" || offerte.status === "GESENDET";
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <Link href="/offerten" className="text-sm text-forest underline">← Offerten</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -88,51 +89,6 @@ export default async function OfferteDetail({
 
       <div className="mt-3">
         <EmailStatusBanner status={email} />
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a href={`/api/offerten/${offerte.id}/pdf`} target="_blank" className={`${knopf} bg-forest text-white hover:bg-forest-lift`}>
-          📄 PDF
-        </a>
-        {offerte.status === "ENTWURF" && (
-          <form action={setOfferteStatus}>
-            <input type="hidden" name="offerteId" value={offerte.id} />
-            <input type="hidden" name="status" value="GESENDET" />
-            <button className={`${knopf} border border-forest text-forest hover:bg-surface2`}>Als gesendet markieren</button>
-          </form>
-        )}
-        {offerte.status === "GESENDET" && (
-          <form action={setOfferteStatus}>
-            <input type="hidden" name="offerteId" value={offerte.id} />
-            <input type="hidden" name="status" value="ANGENOMMEN" />
-            <button className={`${knopf} border border-forest text-forest hover:bg-surface2`}>Als bestätigt markieren</button>
-          </form>
-        )}
-        {!offerte.auftragId && bearbeitbar && totalNetto > 0 && (
-          <form action={konvertiereOfferte}>
-            <input type="hidden" name="offerteId" value={offerte.id} />
-            <button className={`${knopf} bg-gold text-ink hover:bg-gold-soft`}>✓ In Auftrag umwandeln</button>
-          </form>
-        )}
-        {bearbeitbar && (
-          <form action={setOfferteStatus}>
-            <input type="hidden" name="offerteId" value={offerte.id} />
-            <input type="hidden" name="status" value="ABGELEHNT" />
-            <button className={`${knopf} border border-red-300 text-red-700 hover:bg-red-50`}>Abgelehnt</button>
-          </form>
-        )}
-        {offerte.status === "ABGELEHNT" && (
-          <form action={setOfferteStatus}>
-            <input type="hidden" name="offerteId" value={offerte.id} />
-            <input type="hidden" name="status" value="ENTWURF" />
-            <button className={`${knopf} border border-line bg-white hover:bg-surface2`}>Wieder als Entwurf öffnen</button>
-          </form>
-        )}
-        {offerte.auftragId && (
-          <Link href={`/auftraege/${offerte.auftragId}`} className={`${knopf} border border-line bg-white hover:bg-surface2`}>
-            → Auftrag ansehen
-          </Link>
-        )}
       </div>
 
       <dl className="mt-4 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
@@ -274,6 +230,51 @@ export default async function OfferteDetail({
           text={fuelle(vorlagen.OFFERTE.text, offerteWerte)}
         />
       </div>
+
+      <div className={SPEICHERLEISTE}>
+              <a href={`/api/offerten/${offerte.id}/pdf`} target="_blank" className={`${knopf} bg-forest text-white hover:bg-forest-lift`}>
+                📄 PDF
+              </a>
+              {offerte.status === "ENTWURF" && (
+                <form action={setOfferteStatus}>
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <input type="hidden" name="status" value="GESENDET" />
+                  <button className={`${knopf} border border-forest text-forest hover:bg-surface2`}>Als gesendet markieren</button>
+                </form>
+              )}
+              {offerte.status === "GESENDET" && (
+                <form action={setOfferteStatus}>
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <input type="hidden" name="status" value="ANGENOMMEN" />
+                  <button className={`${knopf} border border-forest text-forest hover:bg-surface2`}>Als bestätigt markieren</button>
+                </form>
+              )}
+              {!offerte.auftragId && bearbeitbar && totalNetto > 0 && (
+                <form action={konvertiereOfferte}>
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <button className={`${knopf} bg-gold text-ink hover:bg-gold-soft`}>✓ In Auftrag umwandeln</button>
+                </form>
+              )}
+              {bearbeitbar && (
+                <form action={setOfferteStatus}>
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <input type="hidden" name="status" value="ABGELEHNT" />
+                  <button className={`${knopf} border border-red-300 text-red-700 hover:bg-red-50`}>Abgelehnt</button>
+                </form>
+              )}
+              {offerte.status === "ABGELEHNT" && (
+                <form action={setOfferteStatus}>
+                  <input type="hidden" name="offerteId" value={offerte.id} />
+                  <input type="hidden" name="status" value="ENTWURF" />
+                  <button className={`${knopf} border border-line bg-white hover:bg-surface2`}>Wieder als Entwurf öffnen</button>
+                </form>
+              )}
+              {offerte.auftragId && (
+                <Link href={`/auftraege/${offerte.auftragId}`} className={`${knopf} border border-line bg-white hover:bg-surface2`}>
+                  → Auftrag ansehen
+                </Link>
+              )}
+            </div>
     </div>
   );
 }

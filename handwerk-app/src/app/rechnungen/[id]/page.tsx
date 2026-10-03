@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
+import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -60,7 +61,7 @@ export default async function RechnungDetail({
   const mwst = r.totalBrutto - r.totalNetto;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-7xl">
       <Link href="/rechnungen" className="text-sm text-forest underline">← Rechnungen</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -83,41 +84,6 @@ export default async function RechnungDetail({
       </div>
 
       <div className="mt-3"><EmailStatusBanner status={email} /></div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a href={`/api/rechnungen/${r.id}/pdf`} target="_blank" className="rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">
-          📄 PDF mit QR-Rechnung
-        </a>
-        {r.status !== "BEZAHLT" && (
-          <form action={setRechnungStatus}>
-            <input type="hidden" name="rechnungId" value={r.id} />
-            <input type="hidden" name="status" value={r.status === "ENTWURF" ? "VERSENDET" : "BEZAHLT"} />
-            <button className="rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
-              {r.status === "ENTWURF" ? "Als versendet markieren" : "Als bezahlt markieren"}
-            </button>
-          </form>
-        )}
-        {r.status === "BEZAHLT" && (
-          <form action={setRechnungStatus}>
-            <input type="hidden" name="rechnungId" value={r.id} />
-            <input type="hidden" name="status" value="VERSENDET" />
-            <button className="rounded border border-line bg-white px-4 py-2 text-sm hover:bg-surface2">Wieder öffnen</button>
-          </form>
-        )}
-        {r.status === "VERSENDET" && r.mahnstufe < 3 && (
-          <form action={mahneRechnung}>
-            <input type="hidden" name="rechnungId" value={r.id} />
-            <button className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
-              🔔 {MAHNSTUFEN[r.mahnstufe + 1]} senden
-            </button>
-          </form>
-        )}
-        {r.mahnstufe > 0 && (
-          <a href={`/api/mahnungen/${r.id}`} target="_blank" className="rounded border border-line bg-white px-4 py-2 text-sm hover:bg-surface2">
-            Mahnung (PDF)
-          </a>
-        )}
-      </div>
 
       <dl className="mt-4 grid gap-x-6 gap-y-1.5 rounded-tiff border border-line bg-white p-4 text-sm sm:grid-cols-2">
         {([
@@ -211,6 +177,41 @@ export default async function RechnungDetail({
           </details>
         )}
       </div>
+
+      <div className={SPEICHERLEISTE}>
+              <a href={`/api/rechnungen/${r.id}/pdf`} target="_blank" className="rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">
+                📄 PDF mit QR-Rechnung
+              </a>
+              {r.status !== "BEZAHLT" && (
+                <form action={setRechnungStatus}>
+                  <input type="hidden" name="rechnungId" value={r.id} />
+                  <input type="hidden" name="status" value={r.status === "ENTWURF" ? "VERSENDET" : "BEZAHLT"} />
+                  <button className="rounded border border-forest px-4 py-2 text-sm font-semibold text-forest hover:bg-surface2">
+                    {r.status === "ENTWURF" ? "Als versendet markieren" : "Als bezahlt markieren"}
+                  </button>
+                </form>
+              )}
+              {r.status === "BEZAHLT" && (
+                <form action={setRechnungStatus}>
+                  <input type="hidden" name="rechnungId" value={r.id} />
+                  <input type="hidden" name="status" value="VERSENDET" />
+                  <button className="rounded border border-line bg-white px-4 py-2 text-sm hover:bg-surface2">Wieder öffnen</button>
+                </form>
+              )}
+              {r.status === "VERSENDET" && r.mahnstufe < 3 && (
+                <form action={mahneRechnung}>
+                  <input type="hidden" name="rechnungId" value={r.id} />
+                  <button className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50">
+                    🔔 {MAHNSTUFEN[r.mahnstufe + 1]} senden
+                  </button>
+                </form>
+              )}
+              {r.mahnstufe > 0 && (
+                <a href={`/api/mahnungen/${r.id}`} target="_blank" className="rounded border border-line bg-white px-4 py-2 text-sm hover:bg-surface2">
+                  Mahnung (PDF)
+                </a>
+              )}
+            </div>
     </div>
   );
 }

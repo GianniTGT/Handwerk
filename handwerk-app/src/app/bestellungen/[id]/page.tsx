@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { bestellungNr } from "@/lib/nrtext";
 import Link from "next/link";
+import { SPEICHERLEISTE } from "@/components/Liste";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -50,18 +51,6 @@ export default async function BestellungDetail({
         <div>
           <h1 className="text-xl font-bold">Bestellung {bestellungNr(b)} — {b.lieferant.name}</h1>
           <p className="text-sm text-muted">{b.datum.toLocaleDateString("de-CH")} · {b.status}{b.bemerkung && ` · ${b.bemerkung}`}</p>
-        </div>
-        <div className="flex gap-2">
-          <a href={`/api/bestellungen/${b.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
-          {naechster && b.positionen.length > 0 && (
-            <form action={setBestellStatus}>
-              <input type="hidden" name="id" value={b.id} />
-              <input type="hidden" name="status" value={naechster} />
-              <button className="rounded border border-forest px-3 py-1.5 text-sm font-medium text-forest hover:bg-surface2">
-                {naechster === "BESTELLT" ? "Als bestellt markieren" : "Als geliefert markieren"}
-              </button>
-            </form>
-          )}
         </div>
       </div>
       {fehler === "gesperrt" && <p className="mt-3 rounded bg-amber-100 p-2 text-sm text-amber-800">Nur Entwürfe können geändert oder gelöscht werden.</p>}
@@ -141,6 +130,19 @@ export default async function BestellungDetail({
           <button className="rounded border border-line px-3 py-1.5 text-xs text-red-700 hover:bg-red-50">Bestellung löschen</button>
         </form>
       )}
+
+      <div className={SPEICHERLEISTE}>
+                <a href={`/api/bestellungen/${b.id}`} target="_blank" className="rounded bg-forest px-3 py-1.5 text-sm font-medium text-white hover:bg-forest-lift">📄 PDF</a>
+                {naechster && b.positionen.length > 0 && (
+                  <form action={setBestellStatus}>
+                    <input type="hidden" name="id" value={b.id} />
+                    <input type="hidden" name="status" value={naechster} />
+                    <button className="rounded border border-forest px-3 py-1.5 text-sm font-medium text-forest hover:bg-surface2">
+                      {naechster === "BESTELLT" ? "Als bestellt markieren" : "Als geliefert markieren"}
+                    </button>
+                  </form>
+                )}
+              </div>
     </div>
   );
 }
