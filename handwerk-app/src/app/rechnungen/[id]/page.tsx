@@ -60,7 +60,7 @@ export default async function RechnungDetail({
   const mwst = r.totalBrutto - r.totalNetto;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <Link href="/rechnungen" className="text-sm text-forest underline">← Rechnungen</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>

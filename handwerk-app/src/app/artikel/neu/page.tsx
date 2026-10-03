@@ -13,7 +13,7 @@ export default async function NeuesProdukt() {
     orderBy: { name: "asc" },
   });
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/artikel" className="text-sm text-forest underline">← Produkte</Link>
       <h1 className="mt-1 text-xl font-bold">Neues Produkt</h1>
       <div className="mt-4">

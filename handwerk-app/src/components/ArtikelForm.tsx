@@ -20,7 +20,7 @@ const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
 function Zeile({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
-    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "sm:col-span-2" : ""}`}>
+    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
       {label}
       {children}
     </label>
@@ -44,7 +44,7 @@ export default function ArtikelForm({
       {a.id && <input type="hidden" name="artikelId" value={a.id} />}
       <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">Stammdaten</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Zeile label="Produktart">
             <select name="art" defaultValue={a.art ?? "WARE"} className={feld}>
               <option value="WARE">Ware</option>
@@ -100,7 +100,7 @@ export default function ArtikelForm({
 
       <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold">Lieferantendaten</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Zeile label="Lieferant">
             <select name="lieferantId" defaultValue={a.lieferantId ?? ""} className={feld}>
               <option value="">— kein Lieferant —</option>

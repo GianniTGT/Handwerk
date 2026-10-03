@@ -17,7 +17,7 @@ export default async function NeuerKontakt({ searchParams }: { searchParams: Pro
   });
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/kunden" className="text-sm text-forest underline">← Kontakte</Link>
       <h1 className="mt-1 text-xl font-bold">Neuer Kontakt</h1>
       {fehler && (

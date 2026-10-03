@@ -29,7 +29,7 @@ export default async function AdminBetriebe({
   const feld = "rounded border border-line p-2 text-sm";
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <h1 className="text-xl font-bold">Kunden-Betriebe (TIFF-Administration)</h1>
       <p className="mt-1 text-sm text-muted">
         Hier legen Sie neue Kunden-Betriebe mit ihrem Chef-Benutzer an. Die öffentliche Registrierung ist geschlossen.

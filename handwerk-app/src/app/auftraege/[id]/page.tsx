@@ -76,7 +76,7 @@ export default async function AuftragDetail({
   const auftragswert = offertenWert > 0 ? offertenWert : totalNetto;
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl">
       <Link href="/auftraege" className="text-sm text-forest underline">← Aufträge</Link>
       <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
         <div>

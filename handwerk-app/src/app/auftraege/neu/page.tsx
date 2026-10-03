@@ -6,6 +6,7 @@ import { sitzungErforderlich } from "@/lib/auth";
 import { createAuftrag } from "@/lib/actions";
 import { projektNr } from "@/lib/nrtext";
 import KundeObjektWahl from "@/components/KundeObjektWahl";
+import { SPEICHERLEISTE } from "@/components/Liste";
 
 export default async function NeuerAuftrag({ searchParams }: { searchParams: Promise<{ kunde?: string }> }) {
   const { betrieb } = await sitzungErforderlich();
@@ -21,21 +22,22 @@ export default async function NeuerAuftrag({ searchParams }: { searchParams: Pro
   const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/auftraege" className="text-sm text-forest underline">← Aufträge</Link>
       <h1 className="mt-1 text-xl font-bold">Neuer Auftrag</h1>
-      <form action={createAuftrag} className="mt-4 grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2">
+      <form action={createAuftrag} className="mt-4">
+        <div className="grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <KundeObjektWahl kunden={kunden} startKundeId={kunden.some((k) => k.id === kunde) ? kunde : ""} />
-        <label className="grid gap-0.5 text-xs text-muted sm:col-span-2">
+        <label className="grid gap-0.5 text-xs text-muted">
           Titel *
           <input name="titel" required placeholder="z.B. Boiler entkalken" className={feld} />
         </label>
-        <label className="grid gap-0.5 text-xs text-muted sm:col-span-2">
+        <label className="col-span-full grid gap-0.5 text-xs text-muted">
           Beschreibung
           <textarea name="beschreibung" rows={3} className={feld} />
         </label>
         {projekte.length > 0 && (
-          <label className="grid gap-0.5 text-xs text-muted sm:col-span-2">
+          <label className="col-span-full grid gap-0.5 text-xs text-muted">
             Projekt (optional)
             <select name="projektId" className={feld} defaultValue="">
               <option value="">— kein Projekt —</option>
@@ -45,9 +47,10 @@ export default async function NeuerAuftrag({ searchParams }: { searchParams: Pro
             </select>
           </label>
         )}
-        <div className="flex items-end gap-2 sm:col-span-2">
-          <button className="rounded bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Auftrag erstellen</button>
-          <Link href="/auftraege" className="rounded border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">Abbrechen</Link>
+        </div>
+        <div className={SPEICHERLEISTE}>
+          <button className="rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Auftrag erstellen</button>
+          <Link href="/auftraege" className="rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">Abbrechen</Link>
           <Link href="/kunden/neu" className="ml-auto text-xs text-forest underline">Kontakt fehlt? Neu anlegen</Link>
         </div>
       </form>

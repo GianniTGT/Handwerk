@@ -148,7 +148,7 @@ export function FormularSeite({
   children: ReactNode;
 }) {
   return (
-    <div className={`mx-auto ${breit ? "max-w-3xl" : "max-w-2xl"}`}>
+    <div className={`mx-auto ${breit ? "max-w-7xl" : "max-w-5xl"}`}>
       <Link href={zurueckHref} className="text-sm text-forest underline">
         ← {zurueckLabel}
       </Link>
@@ -160,13 +160,16 @@ export function FormularSeite({
 }
 
 export const FELD = "w-full rounded border border-line bg-white p-2 text-sm";
-export const KARTE = "grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2";
+export const KARTE = "grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-3";
+// Speicherleiste, die beim Scrollen am unteren Rand sichtbar bleibt
+export const SPEICHERLEISTE =
+  "sticky bottom-0 z-10 -mx-4 mt-3 flex flex-wrap items-center gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-tiff md:border";
 export const KNOPF = "rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift";
 export const KNOPF_RUHIG = "rounded-md border border-line bg-white px-5 py-2 text-sm hover:bg-surface2";
 
 export function Feld({ label, children, voll }: { label: ReactNode; children: ReactNode; voll?: boolean }) {
   return (
-    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "sm:col-span-2" : ""}`}>
+    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
       {label}
       {children}
     </label>
@@ -175,7 +178,7 @@ export function Feld({ label, children, voll }: { label: ReactNode; children: Re
 
 export function FormularFuss({ speichern, abbrechenHref, children }: { speichern: string; abbrechenHref: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+    <div className={`${SPEICHERLEISTE} col-span-full -mb-4 mt-1`}>
       <button className={KNOPF}>{speichern}</button>
       <Link href={abbrechenHref} className={KNOPF_RUHIG}>
         Abbrechen

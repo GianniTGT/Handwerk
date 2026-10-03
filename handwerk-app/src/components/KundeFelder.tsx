@@ -43,7 +43,7 @@ const feld = "w-full rounded border border-line bg-white p-2 text-sm";
 
 function Zeile({ label, children, voll }: { label: string; children: React.ReactNode; voll?: boolean }) {
   return (
-    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "sm:col-span-2" : ""}`}>
+    <label className={`grid gap-0.5 text-xs text-muted ${voll ? "col-span-full" : ""}`}>
       {label}
       {children}
     </label>
@@ -54,7 +54,7 @@ function Abschnitt({ titel, children }: { titel: string; children: React.ReactNo
   return (
     <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
       <h2 className="text-sm font-semibold">{titel}</h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">{children}</div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </section>
   );
 }
@@ -128,7 +128,7 @@ export default function KundeFelder({
   return (
     <div ref={wurzel} className="grid gap-4">
       <Abschnitt titel="Stammdaten">
-        <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+        <div className="col-span-full flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => {

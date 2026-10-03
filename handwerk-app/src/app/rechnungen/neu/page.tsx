@@ -24,7 +24,7 @@ export default async function NeueRechnung() {
   const weitere = mitWert.filter((x) => x.a.status !== "ERLEDIGT");
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/rechnungen" className="text-sm text-forest underline">← Rechnungen</Link>
       <h1 className="mt-1 text-xl font-bold">Neue Rechnung</h1>
       <p className="mt-1 text-sm text-muted">

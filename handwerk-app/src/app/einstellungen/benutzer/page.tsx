@@ -29,7 +29,7 @@ export default async function BenutzerPage({
   const feld = "rounded border border-line p-2 text-sm";
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/einstellungen" className="text-sm text-forest underline">← Einstellungen</Link>
       <h1 className="mt-1 text-xl font-bold">Benutzer &amp; Rechte</h1>
       <p className="mt-1 text-sm text-muted">
@@ -39,8 +39,8 @@ export default async function BenutzerPage({
       {sp.gespeichert && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Gespeichert ✓</p>}
       {sp.fehler && <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">{fehlerTexte[sp.fehler] ?? "Aktion fehlgeschlagen."}</p>}
 
-      <form action={createBenutzer} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-2">
-        <h2 className="font-semibold md:col-span-2">Neuer Benutzer</h2>
+      <form action={createBenutzer} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-4">
+        <h2 className="col-span-full font-semibold">Neuer Benutzer</h2>
         <input name="name" required placeholder="Name" className={feld} />
         <input name="email" type="email" required placeholder="E-Mail (Login)" className={feld} />
         <input name="passwort" type="password" minLength={8} required placeholder="Passwort (mind. 8 Zeichen)" className={feld} autoComplete="new-password" />
@@ -49,7 +49,7 @@ export default async function BenutzerPage({
             <option key={r.wert} value={r.wert}>{r.label}</option>
           ))}
         </select>
-        <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift md:col-span-2">Benutzer anlegen</button>
+        <button className="col-span-full w-fit rounded-md bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Benutzer anlegen</button>
       </form>
 
       <ul className="mt-4 grid gap-3">

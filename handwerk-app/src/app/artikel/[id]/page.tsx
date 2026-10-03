@@ -21,7 +21,7 @@ export default async function ProduktBearbeiten({ params }: { params: Promise<{ 
   const vk = verkaufsPreis(a, konditionen);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-5xl">
       <Link href="/artikel" className="text-sm text-forest underline">← Produkte</Link>
       <h1 className="mt-1 text-xl font-bold">{a.bezeichnung}</h1>
       <p className="mt-1 text-sm text-muted">

@@ -25,7 +25,7 @@ export default async function ProfilPage({
   const feld = "rounded border border-line p-2 text-sm";
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-5xl">
       <h1 className="text-xl font-bold">Mein Profil</h1>
       <p className="mt-1 text-sm text-muted">
         {mitarbeiter.name} · {mitarbeiter.email ?? "kein Login"} · {ROLLEN.find((r) => r.wert === mitarbeiter.rolle)?.label ?? mitarbeiter.rolle}
@@ -51,7 +51,9 @@ export default async function ProfilPage({
 
       {sp.profil && <p className="mt-3 rounded bg-green-100 p-2 text-sm text-green-800">Profil gespeichert ✓</p>}
 
-      <section className="mt-4 rounded-tiff border border-line bg-white p-4 shadow-sm">
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
+      <section className="rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Profilbild</h2>
         <div className="mt-3">
           <ProfilFoto
@@ -64,7 +66,7 @@ export default async function ProfilPage({
         </div>
       </section>
 
-      <form action={aendereProfil} className="mt-4 grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
+      <form action={aendereProfil} className="grid gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Profil</h2>
         <label className="grid gap-0.5 text-xs text-muted">
           Name
@@ -75,16 +77,18 @@ export default async function ProfilPage({
           <input value={mitarbeiter.email ?? ""} disabled className={`${feld} bg-surface2 text-muted`} readOnly />
           <span>Die E-Mail-Adresse ändert Ihr Administrator.</span>
         </label>
-        <button className="w-fit rounded bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Profil speichern</button>
+        <button className="w-fit rounded-md bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Profil speichern</button>
       </form>
+      </div>
 
-      <form id="passwort" action={aendereEigenesPasswort} className="mt-4 grid scroll-mt-20 gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
+      <form id="passwort" action={aendereEigenesPasswort} className="grid scroll-mt-20 gap-2 rounded-tiff border border-line bg-white p-4 shadow-sm">
         <h2 className="font-semibold">Passwort ändern</h2>
         <input name="aktuell" type="password" required placeholder="Aktuelles Passwort" autoComplete="current-password" className={feld} />
         <input name="neu" type="password" required minLength={8} placeholder="Neues Passwort (mind. 8 Zeichen)" autoComplete="new-password" className={feld} />
         <input name="wiederholung" type="password" required minLength={8} placeholder="Neues Passwort wiederholen" autoComplete="new-password" className={feld} />
-        <button className="rounded bg-forest p-2 text-sm font-semibold text-white hover:bg-forest-lift">Passwort ändern</button>
+        <button className="w-fit rounded-md bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Passwort ändern</button>
       </form>
+      </div>
     </div>
   );
 }
