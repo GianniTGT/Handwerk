@@ -38,7 +38,9 @@ const weitere: Eintrag[] = [
   { href: "/buchhaltung", label: "Buchhaltung", icon: "📊" },
   { href: "/posteingang", label: "Posteingang", icon: "📥" },
 ];
-const mehr: Eintrag[] = [{ href: "/einstellungen", label: "Einstellungen", icon: "⚙️" }];
+const mehr: Eintrag[] = [
+  { href: "/export", label: "Export", icon: "⬇️" },
+  { href: "/einstellungen", label: "Einstellungen", icon: "⚙️" }];
 
 function Punkt({ e, aktiv }: { e: Eintrag; aktiv: boolean }) {
   return (
