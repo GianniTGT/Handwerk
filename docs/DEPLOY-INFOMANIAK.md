@@ -62,8 +62,10 @@ openssl rand -base64 24        # ← kopjojeni rezultatin si fjalëkalim DB
 nano .env.prod
 ```
 Në editor plotësoni: `DOMAIN=app.tiff-software.ch` (domain-i juaj nga Hapi 2),
-`DB_PASSWORT=` (rezultati i openssl). SMTP lëreni bosh në fillim.
-Ruani me `Ctrl+O`, `Enter`, dilni me `Ctrl+X`.
+`DB_PASSWORT=` (rezultati i openssl), `APP_URL=https://app.tiff-software.ch` (e detyrueshme —
+përdoret te linqet në email, p.sh. "Passwort vergessen") dhe `TIFF_ADMIN_EMAILS=` me email-in tuaj.
+SMTP lëreni bosh në fillim. Ruani me `Ctrl+O`, `Enter`, dilni me `Ctrl+X`.
+(Regjistrimi publik mbetet i mbyllur — `REGISTRIERUNG` lëreni bosh.)
 
 ## HAPI 6 — Nisja 🚀
 
@@ -72,7 +74,14 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 Hera e parë zgjat 3–5 minuta (build + shkarkime). Pastaj hapni në browser:
 **https://app.tiff-software.ch** — HTTPS vjen automatikisht nga Caddy/Let's Encrypt.
-Regjistroni firmën e parë te `/registrieren`. Gati.
+Regjistrimi publik është i mbyllur — llogaria e parë krijohet me një komandë (jep fjalëkalim fillestar
+të rastësishëm që duhet ndryshuar në hyrjen e parë):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec app \
+  npm run admin:anlegen -- "TIFF Software Solutions" "Emri Juaj" email@juaj.ch
+```
+Pastaj hyni, dhe te "Kunden-Betriebe verwalten" krijoni firmat-klientë. Detajet e plota: `docs/PILOT-CHECKLISTE.md`.
 
 Kontroll shëndeti: `docker compose -f docker-compose.prod.yml ps` (të tre "running")
 dhe `docker compose -f docker-compose.prod.yml logs app --tail 50` për logs.

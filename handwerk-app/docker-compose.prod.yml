@@ -26,11 +26,22 @@ services:
     environment:
       DATABASE_URL: postgresql://handwerk:${DB_PASSWORT}@db:5432/handwerk
       COOKIE_SECURE: "1"
+      APP_URL: ${APP_URL}
+      TIFF_ADMIN_EMAILS: ${TIFF_ADMIN_EMAILS:-}
+      REGISTRIERUNG: ${REGISTRIERUNG:-}
+      TIFF_SUPPORT_EMAIL: ${TIFF_SUPPORT_EMAIL:-}
+      TIFF_SUPPORT_TELEFON: ${TIFF_SUPPORT_TELEFON:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s # Migrationen laufen beim Start
 
   caddy:
     image: caddy:2
