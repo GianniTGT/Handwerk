@@ -23,7 +23,7 @@ export async function createKundenBetrieb(formData: FormData) {
 
   const betrieb = await db.betrieb.create({ data: { name: firma } });
   await db.mitarbeiter.create({
-    data: { betriebId: betrieb.id, name, email, rolle: "CHEF", passwortHash: await hashPasswort(passwort) },
+    data: { betriebId: betrieb.id, name, email, rolle: "CHEF", passwortHash: await hashPasswort(passwort), passwortAendern: true },
   });
   // Der Administrator kann sofort in den neuen Betrieb wechseln (Support)
   await db.betriebZugang.create({ data: { mitarbeiterId: mitarbeiter.id, betriebId: betrieb.id } });

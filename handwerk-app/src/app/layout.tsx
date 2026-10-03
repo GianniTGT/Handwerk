@@ -48,9 +48,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   />
                 </form>
                 <div className="ml-auto flex shrink-0 items-center gap-3 text-sm">
-                  <span className="hidden text-muted md:inline">
+                  <Link href="/profil" className="hidden text-muted hover:text-ink md:inline" title="Mein Profil / Passwort ändern">
                     {sitzung.mitarbeiter.name} · {sitzung.aktiverBetrieb.name}
-                  </span>
+                  </Link>
                   <form action={logout}>
                     <button className="rounded border border-line px-2 py-1 text-xs hover:bg-surface2">
                       Abmelden

@@ -62,10 +62,20 @@ export async function sitzungErforderlich(bereich?: Bereich) {
   const sitzung = await leseSitzung();
   if (!sitzung) redirect("/login");
   const m = sitzung.mitarbeiter;
-  const pfadBereich = bereichFuerPfad((await headers()).get("x-pathname") ?? "");
+  const pfad = (await headers()).get("x-pathname") ?? "";
+  // Llogari e re / e rivendosur nga admini: fillimisht duhet ndryshuar fjalëkalimi
+  if (m.passwortAendern && !pfad.startsWith("/profil")) redirect("/profil?pflicht=1");
+  const pfadBereich = bereichFuerPfad(pfad);
   if (pfadBereich && !darf(m, pfadBereich)) redirect("/kein-zugriff");
   if (bereich && !darf(m, bereich)) redirect("/kein-zugriff");
   return { mitarbeiter: m, betrieb: sitzung.aktiverBetrieb };
+}
+
+// Pas ndryshimit të fjalëkalimit: të gjitha seancat e tjera të përdoruesit mbyllen (e ruan vetëm këtë pajisje)
+export async function beendeAndereSitzungen(mitarbeiterId: string) {
+  const jar = await cookies();
+  const token = jar.get(COOKIE_NAME)?.value;
+  await db.sitzung.deleteMany({ where: { mitarbeiterId, ...(token ? { token: { not: token } } : {}) } });
 }
 
 export async function beendeSitzung() {

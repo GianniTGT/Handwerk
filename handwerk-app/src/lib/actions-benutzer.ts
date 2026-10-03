@@ -5,7 +5,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { hashPasswort, sitzungErforderlich } from "./auth";
+import { beendeAndereSitzungen, hashPasswort, sitzungErforderlich } from "./auth";
 import { ALLE_BEREICHE, ROLLEN, rechteAlsText, wirksameRechte, type Bereich } from "./rechte";
 
 const BASIS = "/einstellungen/benutzer";
@@ -29,7 +29,7 @@ export async function createBenutzer(formData: FormData) {
   if (!name || !EMAIL_RE.test(email) || passwort.length < 8 || !rolleOk(rolle)) redirect(`${BASIS}?fehler=eingabe`);
   if (await db.mitarbeiter.findUnique({ where: { email } })) redirect(`${BASIS}?fehler=email`);
   await db.mitarbeiter.create({
-    data: { betriebId: betrieb.id, name, email, rolle, passwortHash: await hashPasswort(passwort) },
+    data: { betriebId: betrieb.id, name, email, rolle, passwortHash: await hashPasswort(passwort), passwortAendern: true },
   });
   revalidatePath(BASIS);
   redirect(`${BASIS}?gespeichert=1`);
@@ -62,14 +62,20 @@ export async function updateBenutzer(formData: FormData) {
 }
 
 export async function setBenutzerPasswort(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich("BENUTZER");
+  const { betrieb, mitarbeiter: ich } = await sitzungErforderlich("BENUTZER");
   const id = String(formData.get("id"));
   const passwort = String(formData.get("passwort") ?? "");
   if (passwort.length < 8) redirect(`${BASIS}?fehler=passwort`);
   const ziel = await db.mitarbeiter.findFirst({ where: { id, betriebId: betrieb.id } });
   if (!ziel) redirect(`${BASIS}?fehler=nicht-gefunden`);
-  await db.mitarbeiter.update({ where: { id }, data: { passwortHash: await hashPasswort(passwort) } });
-  await db.sitzung.deleteMany({ where: { mitarbeiterId: id } }); // dil nga të gjitha pajisjet
+  // Admin setzt Passwort → Benutzer muss es beim nächsten Login ändern (ausser er setzt sein eigenes)
+  await db.mitarbeiter.update({
+    where: { id },
+    data: { passwortHash: await hashPasswort(passwort), passwortAendern: id !== ich.id },
+  });
+  // dil nga të gjitha pajisjet (admini që ndryshon të vetin mban seancën aktuale)
+  if (id === ich.id) await beendeAndereSitzungen(id);
+  else await db.sitzung.deleteMany({ where: { mitarbeiterId: id } });
   revalidatePath(BASIS);
   redirect(`${BASIS}?gespeichert=1`);
 }
