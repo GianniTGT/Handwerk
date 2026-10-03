@@ -47,7 +47,17 @@ export async function vergibNummer(betriebId: string, typ: NrTyp, datum = new Da
   const kreis = await holeKreis(betriebId, typ);
   const jahr = datum.getFullYear();
   const reset = kreis.jaehrlichNeu && kreis.jahr !== 0 && kreis.jahr !== jahr;
-  const nr = reset ? kreis.startNummer : kreis.naechste;
-  await db.nummernkreis.update({ where: { id: kreis.id }, data: { naechste: nr + 1, jahr } });
+  let nr: number;
+  if (reset) {
+    nr = kreis.startNummer;
+    await db.nummernkreis.update({ where: { id: kreis.id }, data: { naechste: nr + 1, jahr } });
+  } else {
+    // increment atomik në DB: dy krijime të njëkohshme nuk marrin kurrë të njëjtin numër
+    const neu = await db.nummernkreis.update({
+      where: { id: kreis.id },
+      data: { naechste: { increment: 1 }, jahr },
+    });
+    nr = neu.naechste - 1;
+  }
   return { nummer: nr, nummerText: formatNr(kreis.format, nr, kreis.laenge, datum) };
 }

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import { projektNr } from "@/lib/nrtext";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -72,7 +73,7 @@ export default async function AusgabenPage({
         </select>
         <label className="grid gap-0.5 text-xs text-muted">
           Datum
-          <input name="datum" type="date" defaultValue={heute.toISOString().slice(0, 10)} className={feld} />
+          <input name="datum" type="date" defaultValue={lokalIso(heute)} className={feld} />
         </label>
         <label className="grid gap-0.5 text-xs text-muted">
           Fällig am

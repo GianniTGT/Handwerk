@@ -14,7 +14,17 @@ export async function GET(
   if (!darf(sitzung.mitarbeiter, "VERKAUF")) return new Response("Keine Berechtigung", { status: 403 });
 
   const { id } = await params;
-  const pdf = await rechnungPdf(id, sitzung.aktiverBetrieb.id);
+  let pdf;
+  try {
+    pdf = await rechnungPdf(id, sitzung.aktiverBetrieb.id);
+  } catch (e) {
+    // p.sh. IBAN mungon/e pavlefshme për QR-Rechnung
+    const grund = e instanceof Error ? e.message : "unbekannter Fehler";
+    return new Response(
+      `PDF konnte nicht erstellt werden (${grund}). Bitte unter Einstellungen → Bank & QR-Rechnung eine gültige IBAN hinterlegen.`,
+      { status: 422 }
+    );
+  }
   if (!pdf) return new Response("Rechnung nicht gefunden", { status: 404 });
 
   return new Response(new Uint8Array(pdf.buffer), {

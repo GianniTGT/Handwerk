@@ -9,6 +9,7 @@ import { offertePdf, rechnungPdf } from "./pdf";
 import { sendeDokument } from "./email";
 import { offerteNummer } from "./format";
 import { vergibNummer } from "./nummern";
+import { plusMonate } from "./datum";
 import {
   beendeSitzung,
   erstelleSitzung,
@@ -17,6 +18,17 @@ import {
   pruefePasswort,
   sitzungErforderlich,
 } from "./auth";
+
+// Numra nga formularët: pa NaN/negativë (përndryshe Prisma/DB gabon ose ruan çmime absurde)
+const zahl = (v: FormDataEntryValue | null) => Number(String(v ?? "").trim().replace(",", "."));
+const positiv = (v: FormDataEntryValue | null, fallback: number) => {
+  const n = zahl(v);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+const nichtNegativ = (v: FormDataEntryValue | null, fallback: number) => {
+  const n = zahl(v);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
 
 // ---------- Auth ----------
 
@@ -74,7 +86,7 @@ export async function registriereBetrieb(formData: FormData) {
 // ---------- Kunden & Objekte ----------
 
 export async function createKunde(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   await db.kunde.create({
     data: {
       betriebId: betrieb.id,
@@ -90,7 +102,7 @@ export async function createKunde(formData: FormData) {
 }
 
 export async function createObjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const kundeId = String(formData.get("kundeId"));
   const kunde = await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } });
   if (!kunde) throw new Error("Kunde nicht gefunden");
@@ -110,7 +122,7 @@ export async function createObjekt(formData: FormData) {
 // ---------- Aufträge & Rapporte ----------
 
 export async function createAuftrag(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const kundeId = String(formData.get("kundeId"));
   const kunde = await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } });
   if (!kunde) throw new Error("Kunde nicht gefunden");
@@ -146,6 +158,12 @@ async function eigenerAuftrag(auftragId: string, betriebId: string) {
   return auftrag;
 }
 
+// Pas Schlussrechnung-it nuk lejohen ndryshime në rapport (dokumenti i faturuar mbetet i pandryshuar)
+async function pasVerrechnung(auftragId: string) {
+  const schluss = await db.rechnung.findFirst({ where: { auftragId, art: "SCHLUSS" }, select: { id: true } });
+  if (schluss) redirect(`/auftraege/${auftragId}?fehler=verrechnet`);
+}
+
 async function rapportFuerAuftrag(auftragId: string) {
   const vorhanden = await db.rapport.findFirst({ where: { auftragId } });
   if (vorhanden) return vorhanden;
@@ -153,15 +171,16 @@ async function rapportFuerAuftrag(auftragId: string) {
 }
 
 export async function addRapportPosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
+  await pasVerrechnung(auftragId);
   const rapport = await rapportFuerAuftrag(auftragId);
 
   const artikelId = String(formData.get("artikelId") ?? "");
   let bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   let einheit = String(formData.get("einheit") ?? "Std.");
-  let ansatz = Number(formData.get("ansatz") ?? 0);
+  let ansatz = nichtNegativ(formData.get("ansatz"), 0);
   if (artikelId) {
     const artikel = await db.artikel.findFirst({
       where: { id: artikelId, betriebId: betrieb.id },
@@ -177,21 +196,22 @@ export async function addRapportPosition(formData: FormData) {
   await db.rapportPosition.create({
     data: {
       rapportId: rapport.id,
-      typ: String(formData.get("typ") ?? "ARBEIT"),
+      typ: String(formData.get("typ")) === "MATERIAL" ? "MATERIAL" : "ARBEIT",
       bezeichnung,
-      menge: Number(formData.get("menge") ?? 1),
+      menge: positiv(formData.get("menge"), 1),
       einheit,
       ansatz,
     },
   });
-  await db.auftrag.update({ where: { id: auftragId }, data: { status: "IN_ARBEIT" } });
+  await db.auftrag.updateMany({ where: { id: auftragId, status: { not: "VERRECHNET" } }, data: { status: "IN_ARBEIT" } });
   revalidatePath(`/auftraege/${auftragId}`);
 }
 
 export async function deleteRapportPosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
+  await pasVerrechnung(auftragId);
   await db.rapportPosition.deleteMany({
     where: { id: String(formData.get("positionId")), rapport: { auftragId } },
   });
@@ -199,7 +219,7 @@ export async function deleteRapportPosition(formData: FormData) {
 }
 
 export async function saveRapportFoto(auftragId: string, dataUrl: string) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   await eigenerAuftrag(auftragId, betrieb.id);
   if (!/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl) || dataUrl.length > 2_000_000) {
     throw new Error("Ungültiges Foto (max. ~1.5 MB nach Komprimierung)");
@@ -212,7 +232,7 @@ export async function saveRapportFoto(auftragId: string, dataUrl: string) {
 }
 
 export async function deleteRapportFoto(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const auftragId = String(formData.get("auftragId"));
   await eigenerAuftrag(auftragId, betrieb.id);
   await db.rapportFoto.deleteMany({
@@ -222,7 +242,7 @@ export async function deleteRapportFoto(formData: FormData) {
 }
 
 export async function saveUnterschrift(auftragId: string, dataUrl: string) {
-  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich("AUFTRAEGE");
   await eigenerAuftrag(auftragId, betrieb.id);
   if (!dataUrl.startsWith("data:image/png;base64,") || dataUrl.length > 500_000) {
     throw new Error("Ungültige Unterschrift");
@@ -232,14 +252,15 @@ export async function saveUnterschrift(auftragId: string, dataUrl: string) {
     where: { id: rapport.id },
     data: { unterschrift: dataUrl, mitarbeiterId: mitarbeiter.id },
   });
-  await db.auftrag.update({ where: { id: auftragId }, data: { status: "ERLEDIGT" } });
+  // Auftrag-i i faturuar nuk kthehet prapa në «ERLEDIGT»
+  await db.auftrag.updateMany({ where: { id: auftragId, status: { not: "VERRECHNET" } }, data: { status: "ERLEDIGT" } });
   revalidatePath(`/auftraege/${auftragId}`);
 }
 
 // ---------- Artikel, Lieferanten & Konditionen ----------
 
 export async function createLieferant(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   await db.lieferant.create({ data: { betriebId: betrieb.id, name } });
@@ -247,7 +268,7 @@ export async function createLieferant(formData: FormData) {
 }
 
 export async function setKondition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   const lieferantId = String(formData.get("lieferantId"));
   const lieferant = await db.lieferant.findFirst({
     where: { id: lieferantId, betriebId: betrieb.id },
@@ -267,7 +288,7 @@ export async function setKondition(formData: FormData) {
 }
 
 export async function deleteKondition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   await db.kondition.deleteMany({
     where: { id: String(formData.get("konditionId")), betriebId: betrieb.id },
   });
@@ -275,7 +296,7 @@ export async function deleteKondition(formData: FormData) {
 }
 
 export async function importArtikelCsv(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   const lieferantId = String(formData.get("lieferantId") ?? "");
   const lieferant = lieferantId
     ? await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } })
@@ -357,7 +378,7 @@ export async function importArtikelCsv(formData: FormData) {
 }
 
 export async function deleteArtikel(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   await db.artikel.deleteMany({
     where: { id: String(formData.get("artikelId")), betriebId: betrieb.id },
   });
@@ -367,7 +388,7 @@ export async function deleteArtikel(formData: FormData) {
 // ---------- Offerten ----------
 
 export async function createOfferte(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const kundeId = String(formData.get("kundeId"));
   const kunde = await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } });
   if (!kunde) throw new Error("Kunde nicht gefunden");
@@ -407,7 +428,7 @@ async function eigeneOfferte(offerteId: string, betriebId: string) {
 }
 
 export async function addOfferteGruppe(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   await eigeneOfferte(offerteId, betrieb.id);
   const anzahl = await db.offerteGruppe.count({ where: { offerteId } });
@@ -422,7 +443,7 @@ export async function addOfferteGruppe(formData: FormData) {
 }
 
 export async function deleteOfferteGruppe(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   await eigeneOfferte(offerteId, betrieb.id);
   await db.offerteGruppe.deleteMany({
@@ -432,7 +453,7 @@ export async function deleteOfferteGruppe(formData: FormData) {
 }
 
 export async function addOffertePosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const gruppeId = String(formData.get("gruppeId"));
   const gruppe = await db.offerteGruppe.findFirst({
     where: { id: gruppeId, offerte: { betriebId: betrieb.id } },
@@ -443,7 +464,7 @@ export async function addOffertePosition(formData: FormData) {
   const artikelId = String(formData.get("artikelId") ?? "");
   let bezeichnung = String(formData.get("bezeichnung") ?? "").replace(/\r/g, "").trim();
   let einheit = String(formData.get("einheit") ?? "Stk.");
-  let ansatz = Number(formData.get("ansatz") ?? 0);
+  let ansatz = nichtNegativ(formData.get("ansatz"), 0);
   if (artikelId) {
     const artikel = await db.artikel.findFirst({
       where: { id: artikelId, betriebId: betrieb.id },
@@ -462,7 +483,7 @@ export async function addOffertePosition(formData: FormData) {
       gruppeId,
       reihenfolge: anzahl,
       bezeichnung,
-      menge: Number(formData.get("menge") ?? 1),
+      menge: positiv(formData.get("menge"), 1),
       einheit,
       ansatz,
     },
@@ -471,7 +492,7 @@ export async function addOffertePosition(formData: FormData) {
 }
 
 export async function deleteOffertePosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   await eigeneOfferte(offerteId, betrieb.id);
   await db.offertePosition.deleteMany({
@@ -481,7 +502,7 @@ export async function deleteOffertePosition(formData: FormData) {
 }
 
 export async function setOfferteStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   await eigeneOfferte(offerteId, betrieb.id);
   const status = String(formData.get("status"));
@@ -492,7 +513,7 @@ export async function setOfferteStatus(formData: FormData) {
 
 // Konvertimi Offerte → Auftrag: pozicionet e grupeve kopjohen të sheshta në rapport
 export async function konvertiereOfferte(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   const offerte = await db.offerte.findFirst({
     where: { id: offerteId, betriebId: betrieb.id },
@@ -541,7 +562,7 @@ export async function konvertiereOfferte(formData: FormData) {
 }
 
 export async function deleteKunde(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const kundeId = String(formData.get("kundeId"));
   const kunde = await db.kunde.findFirst({
     where: { id: kundeId, betriebId: betrieb.id },
@@ -565,7 +586,7 @@ export async function deleteKunde(formData: FormData) {
 }
 
 export async function deleteObjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const objekt = await db.objekt.findFirst({
     where: { id: String(formData.get("objektId")), kunde: { betriebId: betrieb.id } },
     include: { _count: { select: { auftraege: true, offerten: true } } },
@@ -581,7 +602,7 @@ export async function deleteObjekt(formData: FormData) {
 // ---------- Einstellungen / Dokumenten-Designer ----------
 
 export async function updateBetrieb(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINSTELLUNGEN");
   const hex = (name: string, fallback: string) => {
     const wert = String(formData.get(name) ?? "").trim();
     return /^#[0-9a-fA-F]{6}$/.test(wert) ? wert : fallback;
@@ -605,6 +626,10 @@ export async function updateBetrieb(formData: FormData) {
   }
   if (formData.get("logoEntfernen") === "1") logo = "";
 
+  // IBAN (QR-Rechnung): vetëm CH/LI, 21 karaktere — përndryshe PDF-ja e faturës nuk gjenerohet
+  const ibanRoh = String(formData.get("iban") ?? "").replace(/\s/g, "").toUpperCase();
+  if (ibanRoh && !/^(CH|LI)\d{2}[0-9A-Z]{17}$/.test(ibanRoh)) redirect("/einstellungen?fehler=iban");
+
   await db.betrieb.update({
     where: { id: betrieb.id },
     data: {
@@ -614,7 +639,7 @@ export async function updateBetrieb(formData: FormData) {
       ort: String(formData.get("ort") ?? ""),
       telefon: String(formData.get("telefon") ?? ""),
       email: String(formData.get("email") ?? ""),
-      iban: String(formData.get("iban") ?? "").replace(/\s/g, ""),
+      iban: ibanRoh,
       bank: String(formData.get("bank") ?? ""),
       bic: String(formData.get("bic") ?? ""),
       zahlungsfristTage: Math.min(365, Math.max(0, parseInt(String(formData.get("zahlungsfristTage") ?? "")) || betrieb.zahlungsfristTage)),
@@ -650,10 +675,16 @@ async function sendeDokumentEmail(args: {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(args.an)) {
     redirect(`${args.zurueck}?email=ungueltig`);
   }
-  const pdf =
-    args.typ === "offerte"
-      ? await offertePdf(args.dokumentId, args.betrieb.id)
-      : await rechnungPdf(args.dokumentId, args.betrieb.id);
+  let pdf;
+  try {
+    pdf =
+      args.typ === "offerte"
+        ? await offertePdf(args.dokumentId, args.betrieb.id)
+        : await rechnungPdf(args.dokumentId, args.betrieb.id);
+  } catch {
+    // p.sh. IBAN mungon → QR-Rechnung nuk gjenerohet; mos ktheje faqe gabimi 500
+    redirect(`${args.zurueck}?email=pdf-fehler`);
+  }
   if (!pdf) throw new Error("Dokument nicht gefunden");
 
   const ergebnis = await sendeDokument({
@@ -682,7 +713,7 @@ async function sendeDokumentEmail(args: {
 }
 
 export async function sendeOfferteEmail(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const offerteId = String(formData.get("offerteId"));
   await eigeneOfferte(offerteId, betrieb.id);
   await sendeDokumentEmail({
@@ -697,7 +728,7 @@ export async function sendeOfferteEmail(formData: FormData) {
 }
 
 export async function sendeRechnungEmail(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const rechnungId = String(formData.get("rechnungId"));
   const rechnung = await db.rechnung.findFirst({
     where: { id: rechnungId, betriebId: betrieb.id },
@@ -717,7 +748,7 @@ export async function sendeRechnungEmail(formData: FormData) {
 // ---------- Wartungsverträge ----------
 
 export async function createWartungsvertrag(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const objektId = String(formData.get("objektId"));
   const objekt = await db.objekt.findFirst({
     where: { id: objektId, kunde: { betriebId: betrieb.id } },
@@ -747,7 +778,7 @@ export async function createWartungsvertrag(formData: FormData) {
 }
 
 export async function setWartungsvertragStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const status = String(formData.get("status"));
   if (!["AKTIV", "PAUSIERT", "GEKUENDIGT"].includes(status)) return;
   await db.wartungsvertrag.updateMany({
@@ -758,7 +789,7 @@ export async function setWartungsvertragStatus(formData: FormData) {
 }
 
 export async function deleteWartungsvertrag(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   await db.wartungsvertrag.deleteMany({
     where: { id: String(formData.get("vertragId")), betriebId: betrieb.id, status: "GEKUENDIGT" },
   });
@@ -768,7 +799,7 @@ export async function deleteWartungsvertrag(formData: FormData) {
 // Një klik: nga kontrata e radhës → Auftrag-u i servisit; data e ardhshme
 // e mirëmbajtjes shtyhet automatikisht me intervalin
 export async function wartungAuftragErstellen(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const vertrag = await db.wartungsvertrag.findFirst({
     where: { id: String(formData.get("vertragId")), betriebId: betrieb.id },
     include: { objekt: true },
@@ -794,8 +825,7 @@ export async function wartungAuftragErstellen(formData: FormData) {
     },
   });
 
-  const naechste = new Date(vertrag.naechsteWartung);
-  naechste.setMonth(naechste.getMonth() + vertrag.intervallMonate);
+  const naechste = plusMonate(vertrag.naechsteWartung, vertrag.intervallMonate);
   await db.wartungsvertrag.update({
     where: { id: vertrag.id },
     data: { naechsteWartung: naechste },
@@ -898,16 +928,16 @@ export async function createTeilrechnung(formData: FormData) {
 }
 
 export async function setRechnungStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   await db.rechnung.updateMany({
     where: { id: String(formData.get("rechnungId")), betriebId: betrieb.id },
-    data: { status: String(formData.get("status")) },
+    data: { status: ["ENTWURF", "VERSENDET", "BEZAHLT"].includes(String(formData.get("status"))) ? String(formData.get("status")) : undefined },
   });
   revalidatePath("/rechnungen");
 }
 
 export async function saveArtikel(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PRODUKTE");
   const zahl = (n: string) => {
     const v = parseFloat(String(formData.get(n) ?? "").replace(",", "."));
     return Number.isFinite(v) && v >= 0 ? v : 0;

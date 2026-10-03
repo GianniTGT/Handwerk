@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
 import { rechnungslauf, speichereAbo } from "@/lib/actions-wiederkehrend";
 
-const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
+const iso = (d: Date | null) => (d ? lokalIso(d) : "");
 
 export default async function WiederkehrendPage({
   searchParams,

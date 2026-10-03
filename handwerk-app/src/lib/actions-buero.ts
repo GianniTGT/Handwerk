@@ -16,7 +16,7 @@ const datumOderHeute = (wert: FormDataEntryValue | null) => {
 // ---------- Ausgaben ----------
 
 export async function createAusgabe(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const beschreibung = String(formData.get("beschreibung") ?? "").trim();
   const betrag = parseFloat(String(formData.get("betragBrutto") ?? "").replace(",", "."));
   if (!beschreibung || !Number.isFinite(betrag) || betrag <= 0) {
@@ -55,7 +55,7 @@ export async function createAusgabe(formData: FormData) {
 }
 
 export async function setAusgabeStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   await db.ausgabe.updateMany({
     where: { id: String(formData.get("id")), betriebId: betrieb.id },
     data: { status: String(formData.get("status")) === "BEZAHLT" ? "BEZAHLT" : "OFFEN" },
@@ -64,7 +64,7 @@ export async function setAusgabeStatus(formData: FormData) {
 }
 
 export async function deleteAusgabe(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   await db.ausgabe.deleteMany({ where: { id: String(formData.get("id")), betriebId: betrieb.id } });
   revalidatePath("/ausgaben");
 }
@@ -77,7 +77,7 @@ async function zuordneZahlung(betriebId: string, zahlungId: string, betrag: numb
     const r = await db.rechnung.findFirst({
       where: {
         betriebId,
-        status: { not: "BEZAHLT" },
+        status: "VERSENDET", // vetëm fatura të dërguara (jo draft, jo të paguara)
         totalBrutto: { gte: betrag - 0.01, lte: betrag + 0.01 },
       },
       orderBy: { nummer: "asc" },
@@ -106,7 +106,7 @@ function revalidiereBanking() {
 }
 
 export async function createZahlung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("FINANZEN");
   const vorzeichen = String(formData.get("art")) === "aus" ? -1 : 1;
   const betrag = parseFloat(String(formData.get("betrag") ?? "").replace(",", "."));
   if (!Number.isFinite(betrag) || betrag <= 0) redirect("/banking?fehler=eingabe");
@@ -126,7 +126,7 @@ export async function createZahlung(formData: FormData) {
 
 // CSV e bankës: Datum;Text;Betrag[;Referenz] — datë dd.mm.yyyy ose yyyy-mm-dd
 export async function importZahlungenCsv(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("FINANZEN");
   const datei = formData.get("datei");
   if (!(datei instanceof File) || datei.size === 0) redirect("/banking?fehler=datei");
   if (datei.size > 2 * 1024 * 1024) redirect("/banking?fehler=gross");
@@ -154,7 +154,7 @@ export async function importZahlungenCsv(formData: FormData) {
 }
 
 export async function deleteZahlung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("FINANZEN");
   await db.zahlung.deleteMany({ where: { id: String(formData.get("id")), betriebId: betrieb.id } });
   revalidatePath("/banking");
 }
@@ -162,7 +162,7 @@ export async function deleteZahlung(formData: FormData) {
 // ---------- Posteingang ----------
 
 export async function uploadBeleg(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const datei = formData.get("datei");
   if (!(datei instanceof File) || datei.size === 0) redirect("/posteingang?fehler=datei");
   if (datei.size > 3 * 1024 * 1024) redirect("/posteingang?fehler=gross");
@@ -184,7 +184,7 @@ export async function uploadBeleg(formData: FormData) {
 }
 
 export async function setBelegStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   await db.beleg.updateMany({
     where: { id: String(formData.get("id")), betriebId: betrieb.id },
     data: { status: String(formData.get("status")) === "ERLEDIGT" ? "ERLEDIGT" : "NEU" },
@@ -193,7 +193,7 @@ export async function setBelegStatus(formData: FormData) {
 }
 
 export async function deleteBeleg(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   await db.beleg.deleteMany({ where: { id: String(formData.get("id")), betriebId: betrieb.id } });
   revalidatePath("/posteingang");
 }

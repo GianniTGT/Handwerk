@@ -15,6 +15,7 @@ import { NR_STANDARD, formatNr, type NrTyp } from "@/lib/nrtext";
 const fehlerTexte: Record<string, string> = {
   "logo-gross": "Logo zu gross — max. 500 KB.",
   "logo-format": "Nur PNG oder JPEG als Logo.",
+  iban: "IBAN ungültig — für die QR-Rechnung ist eine Schweizer oder liechtensteinische IBAN nötig (z.B. CH58 0079 1123 0008 8901 2).",
   nummernformat: "Nummernformat ungültig — es muss {NR} enthalten und darf nur Buchstaben, Ziffern und - _ . / # enthalten.",
   recht: "Keine Berechtigung für diese Einstellung.",
   "mail-zu-lang": "Betreff oder Text einer Mailvorlage ist zu lang.",

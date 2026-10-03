@@ -1,4 +1,5 @@
 // Eksporti i listave në CSV (hapet drejt në Excel): ; si ndarës, UTF-8 me BOM, datë dd.mm.yyyy
+import { lokalIso } from "./datum";
 import { db } from "./db";
 import { faelligDatum } from "./faellig";
 import { offenerBetrag } from "./mahnwesen";
@@ -53,7 +54,7 @@ export async function exportiere(
   const bisEnde = bis ? new Date(bis.getFullYear(), bis.getMonth(), bis.getDate() + 1) : undefined;
   const zeitraum = (feld: string) =>
     von || bisEnde ? { [feld]: { ...(von ? { gte: von } : {}), ...(bisEnde ? { lt: bisEnde } : {}) } } : {};
-  const heute = new Date().toISOString().slice(0, 10);
+  const heute = lokalIso(new Date());
   const datei = (n: string) => `${n}-${heute}.csv`;
 
   switch (typ) {

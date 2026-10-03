@@ -9,7 +9,7 @@ import { sitzungErforderlich } from "./auth";
 import { MAIL_TYPEN } from "./mailvorlagen";
 
 export async function saveMailvorlagen(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINSTELLUNGEN");
   for (const { typ } of MAIL_TYPEN) {
     const betreff = String(formData.get(`betreff_${typ}`) ?? "").trim();
     const text = String(formData.get(`text_${typ}`) ?? "").replace(/\r/g, "").trim();

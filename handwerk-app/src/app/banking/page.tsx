@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf } from "@/lib/format";
@@ -75,7 +76,7 @@ export default async function BankingPage({
               <option value="ein">Eingang</option>
               <option value="aus">Ausgang</option>
             </select>
-            <input name="datum" type="date" defaultValue={new Date().toISOString().slice(0, 10)} className={feld} />
+            <input name="datum" type="date" defaultValue={lokalIso(new Date())} className={feld} />
           </div>
           <input name="betrag" required inputMode="decimal" placeholder="Betrag CHF" className={feld} />
           <input name="text" placeholder="Text / Auftraggeber" className={feld} />

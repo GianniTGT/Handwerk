@@ -9,6 +9,7 @@ import { sitzungErforderlich } from "./auth";
 import { vergibNummer } from "./nummern";
 import { rechnungNr } from "./nrtext";
 import { chf } from "./format";
+import { plusMonate } from "./datum";
 
 const MWST = 8.1;
 const runde5 = (n: number) => Math.round(n * 20) / 20;
@@ -86,8 +87,7 @@ export async function rechnungslauf() {
         totalBrutto: brutto,
       },
     });
-    const naechste = new Date(stichtag);
-    naechste.setMonth(naechste.getMonth() + v.intervallMonate);
+    const naechste = plusMonate(stichtag, v.intervallMonate);
     await db.wartungsvertrag.update({ where: { id: v.id }, data: { naechsteRechnung: naechste } });
 
     summe += brutto;

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -9,7 +10,7 @@ import { SUBSTATUS, stunden } from "@/lib/projekte";
 import { projektNr, rechnungNr } from "@/lib/nrtext";
 import { auftragVonProjekt, auftragZuProjekt, deleteProjekt, updateProjekt } from "@/lib/actions-projekte";
 
-const isoTag = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
+const isoTag = (d: Date | null) => (d ? lokalIso(d) : "");
 
 export default async function ProjektDetail({
   params,

@@ -20,3 +20,19 @@ body {
   color: #1c1c1e;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
+
+/* Mobil: asnjë shkurtim horizontal — elementët e grid-it mund të ngushtohen, tabelat rrëshqasin brenda vetes */
+main .grid > * {
+  min-width: 0;
+}
+main select,
+main input,
+main textarea {
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  main table {
+    display: block;
+    overflow-x: auto;
+  }
+}

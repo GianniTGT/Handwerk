@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import { projektNr } from "@/lib/nrtext";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -84,7 +85,7 @@ export default async function ZeitenPage({
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
-        <input name="datum" type="date" defaultValue={heute.toISOString().slice(0, 10)} className={feld} />
+        <input name="datum" type="date" defaultValue={lokalIso(heute)} className={feld} />
         <input name="dauer" required placeholder="Dauer (h:mm oder 1.5)" className={feld} />
         <div className="flex items-center"><Stoppuhr zielName="dauer" /></div>
         <select name="taetigkeit" className={feld}>

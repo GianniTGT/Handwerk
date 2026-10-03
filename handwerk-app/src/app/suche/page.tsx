@@ -7,6 +7,15 @@ import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
 import { chf, offerteNummer } from "@/lib/format";
 
+function Block({ titel, children }: { titel: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-tiff border border-line bg-white">
+      <h2 className="border-b border-line px-3 py-2 text-sm font-semibold">{titel}</h2>
+      <ul className="divide-y divide-line">{children}</ul>
+    </section>
+  );
+}
+
 export default async function SuchePage({
   searchParams,
 }: {
@@ -56,12 +65,6 @@ export default async function SuchePage({
   const leer =
     !kunden.length && !offerten.length && !auftraege.length && !rechnungen.length && !artikel.length;
 
-  const Block = ({ titel, children }: { titel: string; children: React.ReactNode }) => (
-    <section className="rounded-tiff border border-line bg-white">
-      <h2 className="border-b border-line px-3 py-2 text-sm font-semibold">{titel}</h2>
-      <ul className="divide-y divide-line">{children}</ul>
-    </section>
-  );
 
   return (
     <div>

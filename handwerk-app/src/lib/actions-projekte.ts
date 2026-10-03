@@ -33,7 +33,7 @@ function parseDauer(text: string): number {
 // ---------- Projekte ----------
 
 export async function createProjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) redirect("/projekte?fehler=name");
   const kundeId = emptyToNull(formData.get("kundeId"));
@@ -60,7 +60,7 @@ export async function createProjekt(formData: FormData) {
 }
 
 export async function updateProjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const id = String(formData.get("id"));
   const status = String(formData.get("status"));
   await db.projekt.updateMany({
@@ -80,7 +80,7 @@ export async function updateProjekt(formData: FormData) {
 }
 
 export async function deleteProjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const id = String(formData.get("id"));
   const p = await db.projekt.findFirst({
     where: { id, betriebId: betrieb.id },
@@ -98,7 +98,7 @@ export async function deleteProjekt(formData: FormData) {
 }
 
 export async function auftragZuProjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const projektId = String(formData.get("projektId"));
   const auftragId = String(formData.get("auftragId") ?? "");
   const projekt = await db.projekt.findFirst({ where: { id: projektId, betriebId: betrieb.id } });
@@ -113,7 +113,7 @@ export async function auftragZuProjekt(formData: FormData) {
 }
 
 export async function auftragVonProjekt(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const projektId = String(formData.get("projektId"));
   await db.auftrag.updateMany({
     where: { id: String(formData.get("auftragId")), betriebId: betrieb.id, projektId },
@@ -125,7 +125,7 @@ export async function auftragVonProjekt(formData: FormData) {
 // ---------- Zeiterfassung ----------
 
 export async function createZeit(formData: FormData) {
-  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich("PROJEKTE");
   const minuten = parseDauer(String(formData.get("dauer") ?? ""));
   if (minuten <= 0 || minuten > 24 * 60) redirect("/zeiten?fehler=dauer");
 
@@ -166,7 +166,7 @@ export async function createZeit(formData: FormData) {
 }
 
 export async function setZeitStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const status = String(formData.get("status"));
   if (!["OFFEN", "ERLEDIGT"].includes(status)) return;
   await db.zeiteintrag.updateMany({
@@ -177,7 +177,7 @@ export async function setZeitStatus(formData: FormData) {
 }
 
 export async function deleteZeit(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("PROJEKTE");
   await db.zeiteintrag.deleteMany({
     where: { id: String(formData.get("id")), betriebId: betrieb.id, status: { not: "FAKTURIERT" } },
   });
@@ -186,7 +186,7 @@ export async function deleteZeit(formData: FormData) {
 
 // Orët e abrechenbar të një Auftrag-u → një Rapport me pozicione ARBEIT (grupuar sipas Mitarbeiter+tarifë)
 export async function zeitenInRapport(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const auftragId = String(formData.get("auftragId"));
   const auftrag = await db.auftrag.findFirst({ where: { id: auftragId, betriebId: betrieb.id } });
   if (!auftrag) throw new Error("Auftrag nicht gefunden");
@@ -232,7 +232,7 @@ export async function zeitenInRapport(formData: FormData) {
 // ---------- Stundensätze pro Mitarbeiter (Einstellungen) ----------
 
 export async function saveStundensaetze(formData: FormData) {
-  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich("EINSTELLUNGEN");
   if (mitarbeiter.rolle !== "CHEF" && mitarbeiter.rolle !== "BUERO") redirect("/einstellungen?fehler=recht");
   const team = await db.mitarbeiter.findMany({ where: { betriebId: betrieb.id } });
   for (const m of team) {

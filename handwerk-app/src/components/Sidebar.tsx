@@ -145,10 +145,36 @@ export default function Sidebar({
 }
 
 // Navigim kompakt për mobile (sidebar-i fshihet nën md)
-export function MobileNav({ erlaubt }: { erlaubt: Bereich[] }) {
+export function MobileNav({
+  erlaubt,
+  betriebe,
+  aktivId,
+  wechseln,
+}: {
+  erlaubt: Bereich[];
+  betriebe: BetriebInfo[];
+  aktivId: string;
+  wechseln: (formData: FormData) => void | Promise<void>;
+}) {
   const pfad = usePathname();
   const alles = filtro([...haupt, ...verkauf, ...weitere, ...mehr], erlaubt);
   return (
+    <>
+    {betriebe.length > 1 && (
+      <form action={wechseln} className="border-b border-line bg-white px-2 py-1.5 md:hidden">
+        <select
+          name="betriebId"
+          defaultValue={aktivId}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          className="w-full rounded border border-line bg-paper p-1.5 text-sm font-semibold"
+          aria-label="Betrieb wechseln"
+        >
+          {betriebe.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </form>
+    )}
     <nav className="flex gap-1 overflow-x-auto border-b border-line bg-white px-2 py-1.5 md:hidden">
       {alles.map((e) => (
         <Link
@@ -164,5 +190,6 @@ export function MobileNav({ erlaubt }: { erlaubt: Bereich[] }) {
         </Link>
       ))}
     </nav>
+    </>
   );
 }

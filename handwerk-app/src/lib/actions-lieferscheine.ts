@@ -39,7 +39,7 @@ export async function createLieferschein(formData: FormData) {
 }
 
 export async function setLieferscheinStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const status = String(formData.get("status")) === "GELIEFERT" ? "GELIEFERT" : "ENTWURF";
   const id = String(formData.get("id"));
   await db.lieferschein.updateMany({ where: { id, betriebId: betrieb.id }, data: { status } });
@@ -48,7 +48,7 @@ export async function setLieferscheinStatus(formData: FormData) {
 }
 
 export async function deleteLieferschein(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("AUFTRAEGE");
   const id = String(formData.get("id"));
   const l = await db.lieferschein.findFirst({ where: { id, betriebId: betrieb.id } });
   if (!l) redirect("/lieferscheine");

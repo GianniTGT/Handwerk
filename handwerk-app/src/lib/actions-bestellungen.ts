@@ -16,7 +16,7 @@ async function eigeneBestellung(id: string, betriebId: string) {
 }
 
 export async function createBestellung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const lieferantId = String(formData.get("lieferantId") ?? "");
   const lieferant = await db.lieferant.findFirst({ where: { id: lieferantId, betriebId: betrieb.id } });
   if (!lieferant) redirect("/bestellungen?fehler=lieferant");
@@ -34,7 +34,7 @@ export async function createBestellung(formData: FormData) {
 }
 
 export async function addBestellPosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const bestellungId = String(formData.get("bestellungId"));
   const b = await eigeneBestellung(bestellungId, betrieb.id);
   if (b.status !== "ENTWURF") redirect(`/bestellungen/${bestellungId}?fehler=gesperrt`);
@@ -74,7 +74,7 @@ export async function addBestellPosition(formData: FormData) {
 }
 
 export async function deleteBestellPosition(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const pos = await db.bestellPosition.findFirst({
     where: { id: String(formData.get("id")), bestellung: { betriebId: betrieb.id, status: "ENTWURF" } },
   });
@@ -85,7 +85,7 @@ export async function deleteBestellPosition(formData: FormData) {
 }
 
 export async function setBestellStatus(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const id = String(formData.get("id"));
   await eigeneBestellung(id, betrieb.id);
   const status = String(formData.get("status"));
@@ -96,7 +96,7 @@ export async function setBestellStatus(formData: FormData) {
 }
 
 export async function deleteBestellung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("EINKAUF");
   const id = String(formData.get("id"));
   const b = await eigeneBestellung(id, betrieb.id);
   if (b.status !== "ENTWURF") redirect(`/bestellungen/${id}?fehler=gesperrt`);

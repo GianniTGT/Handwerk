@@ -10,6 +10,8 @@ export default function OfflinePage() {
         Aufträge) bleiben offline verfügbar — Fotos und Unterschriften werden
         zwischengespeichert und automatisch synchronisiert, sobald wieder Netz da ist.
       </p>
+      {/* kërkon ringarkim të plotë: faqja offline është jashtë routerit */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/"
         className="mt-6 inline-block rounded bg-forest px-4 py-2 text-sm font-medium text-white"

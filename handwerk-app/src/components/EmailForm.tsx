@@ -68,6 +68,7 @@ export function EmailStatusBanner({ status }: { status?: string }) {
     ],
     fehler: ["bg-red-100 text-red-700", "E-Mail-Versand fehlgeschlagen — SMTP-Einstellungen prüfen."],
     ungueltig: ["bg-red-100 text-red-700", "Ungültige E-Mail-Adresse."],
+    "pdf-fehler": ["bg-red-100 text-red-700", "PDF konnte nicht erstellt werden — bitte unter Einstellungen eine gültige IBAN für die QR-Rechnung hinterlegen."],
   };
   const [klasse, tekst] = stile[status] ?? ["bg-surface2 text-ink", status];
   return <p className={`mb-3 rounded p-2 text-sm ${klasse}`}>{tekst}</p>;

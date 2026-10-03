@@ -59,7 +59,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </>
             )}
           </div>
-          {sitzung && <MobileNav erlaubt={wirksameRechte(sitzung.mitarbeiter)} />}
+          {sitzung && (
+            <MobileNav
+              erlaubt={wirksameRechte(sitzung.mitarbeiter)}
+              betriebe={sitzung.betriebe.map((b) => ({ id: b.id, name: b.name }))}
+              aktivId={sitzung.aktiverBetrieb.id}
+              wechseln={wechselBetrieb}
+            />
+          )}
         </header>
 
         {sitzung ? (
@@ -71,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               erlaubt={wirksameRechte(sitzung.mitarbeiter)}
               support={{ email: TIFF.supportEmail, telefon: TIFF.supportTelefon }}
             />
-            <main className="w-full max-w-6xl px-4 py-6 md:px-8">{children}</main>
+            <main className="w-full min-w-0 max-w-6xl px-4 py-6 md:px-8">{children}</main>
           </div>
         ) : (
           <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>

@@ -61,7 +61,7 @@ async function mahneEine(
 }
 
 export async function mahneRechnung(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const rechnung = await db.rechnung.findFirst({
     where: { id: String(formData.get("rechnungId")), betriebId: betrieb.id },
   });
@@ -77,7 +77,7 @@ export async function mahneRechnung(formData: FormData) {
 
 // Mahnlauf: të gjitha faturat që u erdhi koha për shkallën e radhës
 export async function mahnlauf() {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const kandidaten = await db.rechnung.findMany({
     where: { betriebId: betrieb.id, status: "VERSENDET", mahnstufe: { lt: 3 } },
   });
@@ -96,7 +96,7 @@ export async function mahnlauf() {
 }
 
 export async function createGutschrift(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   const rechnungId = String(formData.get("rechnungId"));
   const rechnung = await db.rechnung.findFirst({
     where: { id: rechnungId, betriebId: betrieb.id },
@@ -108,7 +108,12 @@ export async function createGutschrift(formData: FormData) {
   const offen = offenerBetrag(rechnung);
   const eingabe = parseFloat(String(formData.get("betragBrutto") ?? "").replace(",", "."));
   const brutto = Number.isFinite(eingabe) && eingabe > 0 ? eingabe : offen;
-  if (brutto <= 0 || brutto > rechnung.totalBrutto) redirect(`/rechnungen?fehler=gutschrift-betrag`);
+  if (rechnung.status === "ENTWURF") redirect(`/rechnungen?fehler=gutschrift-entwurf`);
+  // Gjithsej kreditnotat nuk mund ta kalojnë shumën e faturës (tolerancë 5 Rp.)
+  const bereitsGutgeschrieben = rechnung.gutschriften.reduce((s, g) => s + g.totalBrutto, 0);
+  if (brutto <= 0 || bereitsGutgeschrieben + brutto > rechnung.totalBrutto + 0.05) {
+    redirect(`/rechnungen?fehler=gutschrift-betrag`);
+  }
   const netto = Math.round((brutto / (1 + rechnung.mwstSatz / 100)) * 100) / 100;
 
   const nr = await vergibNummer(betrieb.id, "GUTSCHRIFT");
@@ -137,7 +142,7 @@ export async function createGutschrift(formData: FormData) {
 }
 
 export async function deleteGutschrift(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("VERKAUF");
   await db.gutschrift.deleteMany({ where: { id: String(formData.get("id")), betriebId: betrieb.id } });
   revalidatePath("/gutschriften");
   revalidatePath("/rechnungen");

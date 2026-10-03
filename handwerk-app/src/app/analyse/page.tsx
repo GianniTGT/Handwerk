@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -7,7 +8,7 @@ import { chf } from "@/lib/format";
 import { offenerBetrag } from "@/lib/mahnwesen";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = lokalIso;
 
 function Balken({ wert, max, farbe = "bg-forest" }: { wert: number; max: number; farbe?: string }) {
   return (

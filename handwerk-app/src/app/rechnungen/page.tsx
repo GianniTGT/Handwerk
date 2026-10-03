@@ -23,10 +23,10 @@ const statusFarben: Record<string, string> = {
 export default async function RechnungenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; filter?: string }>;
+  searchParams: Promise<{ email?: string; filter?: string; fehler?: string }>;
 }) {
   const { betrieb } = await sitzungErforderlich();
-  const { email, filter = "alle" } = await searchParams;
+  const { email, filter = "alle", fehler } = await searchParams;
   const alle = await db.rechnung.findMany({
     where: { betriebId: betrieb.id },
     include: { auftrag: { include: { kunde: true } }, gutschriften: true },
@@ -67,6 +67,12 @@ export default async function RechnungenPage({
     <div>
       <h1 className="text-xl font-bold">Rechnungen</h1>
       <div className="mt-3"><EmailStatusBanner status={email} /></div>
+      {fehler === "gutschrift-betrag" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Gutschrift ungültig: Der Betrag übersteigt den Rechnungsbetrag (inkl. bereits erstellter Gutschriften).</p>
+      )}
+      {fehler === "gutschrift-entwurf" && (
+        <p className="mt-3 rounded bg-red-100 p-2 text-sm text-red-700">Für einen Entwurf kann keine Gutschrift erstellt werden — Rechnung zuerst als versendet markieren.</p>
+      )}
       <div className="mt-3 flex flex-wrap gap-1 text-sm">
         {tabs.map(([key, label]) => (
           <Link
@@ -102,7 +108,7 @@ export default async function RechnungenPage({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${ueberfaellig ? "bg-red-100 text-red-800" : statusFarben[r.status] ?? ""}`}>
                 {ueberfaellig ? "ÜBERFÄLLIG" : r.status}
               </span>

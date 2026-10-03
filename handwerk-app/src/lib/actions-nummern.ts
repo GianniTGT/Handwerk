@@ -14,7 +14,7 @@ const TYPEN = Object.keys(NR_STANDARD) as NrTyp[];
 const FORMAT_OK = /^[A-Za-z0-9 ._\-/#{}ÄÖÜäöüß]+$/;
 
 export async function saveNummernkreise(formData: FormData) {
-  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich("EINSTELLUNGEN");
   if (mitarbeiter.rolle !== "CHEF" && mitarbeiter.rolle !== "BUERO") {
     redirect("/einstellungen?fehler=recht");
   }

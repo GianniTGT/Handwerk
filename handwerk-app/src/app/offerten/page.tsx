@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { lokalIso } from "@/lib/datum";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
@@ -28,9 +29,7 @@ export default async function OffertenPage() {
     }),
   ]);
 
-  const standardGueltigBis = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const standardGueltigBis = lokalIso(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
 
   return (
     <div className="grid gap-6 md:grid-cols-[2fr_1fr]">

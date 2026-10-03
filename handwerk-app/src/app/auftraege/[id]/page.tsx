@@ -12,6 +12,7 @@ import {
   saveRapportFoto,
   saveUnterschrift,
 } from "@/lib/actions";
+import { darf } from "@/lib/rechte";
 import { rechnungNr, lieferscheinNr } from "@/lib/nrtext";
 import { createLieferschein } from "@/lib/actions-lieferscheine";
 import { zeitenInRapport } from "@/lib/actions-projekte";
@@ -31,7 +32,8 @@ export default async function AuftragDetail({
 }) {
   const { id } = await params;
   const sp = await searchParams;
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb, mitarbeiter } = await sitzungErforderlich();
+  const darfVerkauf = darf(mitarbeiter, "VERKAUF");
   const auftrag = await db.auftrag.findFirst({
     where: { id, betriebId: betrieb.id },
     include: {
@@ -87,7 +89,7 @@ export default async function AuftragDetail({
           </p>
           {auftrag.beschreibung && <p className="mt-2 text-sm">{auftrag.beschreibung}</p>}
         </div>
-        {!schluss && positionen.length > 0 && (
+        {darfVerkauf && !schluss && positionen.length > 0 && (
           <form action={createRechnung}>
             <input type="hidden" name="auftragId" value={auftrag.id} />
             <button className="rounded bg-gold px-4 py-2 text-sm font-semibold text-white hover:bg-gold-soft">
@@ -95,7 +97,7 @@ export default async function AuftragDetail({
             </button>
           </form>
         )}
-        {schluss && (
+        {darfVerkauf && schluss && (
           <Link
             href="/rechnungen"
             className="rounded bg-surface2 px-4 py-2 text-sm font-medium text-ink"
@@ -132,7 +134,7 @@ export default async function AuftragDetail({
         </form>
       )}
 
-      {auftrag.rechnungen.length > 0 && (
+      {darfVerkauf && auftrag.rechnungen.length > 0 && (
         <ul className="mt-3 divide-y divide-line rounded-tiff border border-line bg-white text-sm">
           {auftrag.rechnungen.map((r) => (
             <li key={r.id} className="flex flex-wrap justify-between gap-2 p-2">
@@ -145,7 +147,7 @@ export default async function AuftragDetail({
           ))}
         </ul>
       )}
-      {!schluss && positionen.length > 0 && (
+      {darfVerkauf && !schluss && positionen.length > 0 && (
         <details className="mt-3 rounded-tiff border border-line bg-white">
           <summary className="cursor-pointer select-none p-3 text-sm font-semibold hover:bg-surface2">
             💶 Teilrechnung (Akonto) erstellen

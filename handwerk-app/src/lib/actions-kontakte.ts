@@ -26,7 +26,7 @@ function kundeDaten(formData: FormData) {
 }
 
 export async function saveKunde(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const daten = kundeDaten(formData);
   if (!daten.name) redirect("/kunden?fehler=name");
   const id = s(formData, "kundeId");
@@ -41,7 +41,7 @@ export async function saveKunde(formData: FormData) {
 }
 
 export async function archiviereKunde(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const id = s(formData, "kundeId");
   await db.kunde.updateMany({
     where: { id, betriebId: betrieb.id },
@@ -52,7 +52,7 @@ export async function archiviereKunde(formData: FormData) {
 }
 
 export async function createKontaktperson(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const kundeId = s(formData, "kundeId");
   if (!(await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } }))) {
     throw new Error("Kunde nicht gefunden");
@@ -74,7 +74,7 @@ export async function createKontaktperson(formData: FormData) {
 }
 
 export async function deleteKontaktperson(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const kp = await db.kontaktperson.findFirst({
     where: { id: s(formData, "id"), kunde: { betriebId: betrieb.id } },
   });
@@ -122,7 +122,7 @@ function felder(zeile: string, trenner: string): string[] {
 }
 
 export async function importKundenCsv(formData: FormData) {
-  const { betrieb } = await sitzungErforderlich();
+  const { betrieb } = await sitzungErforderlich("KONTAKTE");
   const datei = formData.get("datei");
   if (!(datei instanceof File) || datei.size === 0) redirect("/kunden?import=fehler&grund=datei");
   if (datei.size > 5 * 1024 * 1024) redirect("/kunden?import=fehler&grund=gross");
