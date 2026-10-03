@@ -1,15 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { flushQueue, leseQueue } from "@/lib/offlineQueue";
 import { saveRapportFoto, saveUnterschrift } from "@/lib/actions";
+
+// Online-/Offline-Zustand des Browsers als externe Quelle (kein setState im Effekt nötig)
+const abonniereNetz = (cb: () => void) => {
+  window.addEventListener("online", cb);
+  window.addEventListener("offline", cb);
+  return () => {
+    window.removeEventListener("online", cb);
+    window.removeEventListener("offline", cb);
+  };
+};
+const istOffline = () => !navigator.onLine;
+const serverSeitig = () => false;
 
 // Regjistron Service Worker-in, tregon gjendjen offline dhe sinkronizon
 // radhën e fotove/nënshkrimeve kur kthehet rrjeti.
 export default function PwaSetup() {
   const router = useRouter();
-  const [offline, setOffline] = useState(false);
+  const offline = useSyncExternalStore(abonniereNetz, istOffline, serverSeitig);
   const [wartend, setWartend] = useState(0);
   const [sync, setSync] = useState("");
 
@@ -38,21 +50,13 @@ export default function PwaSetup() {
       }
     };
 
-    const online = () => {
-      setOffline(false);
-      void synchronisiere();
-    };
-    const offlineHandler = () => setOffline(true);
-
-    setOffline(!navigator.onLine);
+    const online = () => void synchronisiere();
     if (navigator.onLine) void synchronisiere();
 
     window.addEventListener("online", online);
-    window.addEventListener("offline", offlineHandler);
     window.addEventListener("handwerk-queue-geaendert", aktualisiereQueue);
     return () => {
       window.removeEventListener("online", online);
-      window.removeEventListener("offline", offlineHandler);
       window.removeEventListener("handwerk-queue-geaendert", aktualisiereQueue);
     };
   }, [router]);

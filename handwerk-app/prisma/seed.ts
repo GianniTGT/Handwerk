@@ -72,11 +72,11 @@ async function main() {
       },
       artikel: {
         create: [
-          { artikelNr: "A-100", bezeichnung: "Monteurstunde", einheit: "Std.", preis: 110 },
-          { artikelNr: "A-101", bezeichnung: "Servicetechniker-Stunde", einheit: "Std.", preis: 125 },
+          { artikelNr: "A-100", bezeichnung: "Monteurstunde", einheit: "Std.", preis: 110, art: "DIENSTLEISTUNG" },
+          { artikelNr: "A-101", bezeichnung: "Servicetechniker-Stunde", einheit: "Std.", preis: 125, art: "DIENSTLEISTUNG" },
           { artikelNr: "M-200", bezeichnung: "Boiler-Anode 230mm", einheit: "Stk.", preis: 85 },
           { artikelNr: "M-201", bezeichnung: "Dichtungssatz 3/4\"", einheit: "Stk.", preis: 12.5 },
-          { artikelNr: "P-300", bezeichnung: "Anfahrtspauschale", einheit: "pauschal", preis: 60 },
+          { artikelNr: "P-300", bezeichnung: "Anfahrtspauschale", einheit: "pauschal", preis: 60, art: "DIENSTLEISTUNG" },
         ],
       },
     },

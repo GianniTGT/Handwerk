@@ -16,6 +16,8 @@ export default async function NeueOfferte({ searchParams }: { searchParams: Prom
     orderBy: { name: "asc" },
   });
   const feld = "w-full rounded border border-line bg-white p-2 text-sm";
+  const in14Tagen = new Date();
+  in14Tagen.setDate(in14Tagen.getDate() + 14);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -29,7 +31,7 @@ export default async function NeueOfferte({ searchParams }: { searchParams: Prom
         </label>
         <label className="grid gap-0.5 text-xs text-muted">
           Gültig bis
-          <input name="gueltigBis" type="date" defaultValue={lokalIso(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))} className={feld} />
+          <input name="gueltigBis" type="date" defaultValue={lokalIso(in14Tagen)} className={feld} />
         </label>
         <div className="flex items-end gap-2 sm:col-span-2">
           <button className="rounded bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Offerte erstellen</button>

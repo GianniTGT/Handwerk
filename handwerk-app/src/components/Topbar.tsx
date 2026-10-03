@@ -45,7 +45,7 @@ function useOffen() {
       document.removeEventListener("keydown", esc);
     };
   }, [offen]);
-  return { offen, setOffen, ref };
+  return [offen, setOffen, ref] as const;
 }
 
 export default function Topbar({
@@ -64,8 +64,8 @@ export default function Topbar({
   darfEinstellungen: boolean;
 }) {
   const aktiv = betriebe.find((b) => b.id === aktivId) ?? betriebe[0];
-  const betriebMenu = useOffen();
-  const benutzerMenu = useOffen();
+  const [betriebOffen, setBetriebOffen, betriebRef] = useOffen();
+  const [benutzerOffen, setBenutzerOffen, benutzerRef] = useOffen();
   const suche = useRef<HTMLInputElement>(null);
 
   // Strg+K / Cmd+K fokussiert die Suche
@@ -95,19 +95,19 @@ export default function Topbar({
 
       {/* Betrieb mit Logo (bei mehreren Betrieben wählbar) */}
       {aktiv && (
-        <div ref={betriebMenu.ref} className="relative hidden md:block">
+        <div ref={betriebRef} className="relative hidden md:block">
           <button
             type="button"
-            onClick={() => betriebe.length > 1 && betriebMenu.setOffen((o) => !o)}
+            onClick={() => betriebe.length > 1 && setBetriebOffen((o) => !o)}
             aria-haspopup={betriebe.length > 1}
-            aria-expanded={betriebMenu.offen}
+            aria-expanded={betriebOffen}
             className={`flex h-10 items-center gap-2.5 rounded border border-line bg-white px-2.5 text-sm font-medium ${betriebe.length > 1 ? "hover:bg-surface2" : "cursor-default"}`}
           >
             <BetriebLogo b={aktiv} />
             <span className="max-w-48 truncate">{aktiv.name}</span>
             {betriebe.length > 1 && <span className="text-[10px] text-muted">▼</span>}
           </button>
-          {betriebMenu.offen && (
+          {betriebOffen && (
             <form action={wechseln} className={`${menuKarte} left-0`}>
               <div className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Betrieb wechseln</div>
               {betriebe.map((b) => (
@@ -147,12 +147,12 @@ export default function Topbar({
             <Icon name="einstellungen" />
           </Link>
         )}
-        <div ref={benutzerMenu.ref} className="relative ml-1">
+        <div ref={benutzerRef} className="relative ml-1">
           <button
             type="button"
-            onClick={() => benutzerMenu.setOffen((o) => !o)}
+            onClick={() => setBenutzerOffen((o) => !o)}
             aria-haspopup="true"
-            aria-expanded={benutzerMenu.offen}
+            aria-expanded={benutzerOffen}
             className="flex h-10 items-center gap-2 rounded-full pl-1 pr-3 text-sm hover:bg-surface2"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface2 text-xs font-bold text-forest">
@@ -161,19 +161,19 @@ export default function Topbar({
             <span className="hidden max-w-36 truncate md:inline">{benutzer.name}</span>
             <span className="text-[10px] text-muted">▼</span>
           </button>
-          {benutzerMenu.offen && (
+          {benutzerOffen && (
             <div className={`${menuKarte} right-0`}>
               <div className="border-b border-line px-4 py-2">
                 <div className="text-sm font-semibold">{benutzer.name}</div>
                 <div className="text-xs text-muted">{benutzer.email}</div>
               </div>
-              <Link href="/profil" onClick={() => benutzerMenu.setOffen(false)} className={menuPunkt}>
+              <Link href="/profil" onClick={() => setBenutzerOffen(false)} className={menuPunkt}>
                 <Icon name="profil" /> Mein Profil bearbeiten
               </Link>
-              <Link href="/profil#passwort" onClick={() => benutzerMenu.setOffen(false)} className={menuPunkt}>
+              <Link href="/profil#passwort" onClick={() => setBenutzerOffen(false)} className={menuPunkt}>
                 <Icon name="einstellungen" /> Passwort ändern
               </Link>
-              <Link href="/hilfe" onClick={() => benutzerMenu.setOffen(false)} className={menuPunkt}>
+              <Link href="/hilfe" onClick={() => setBenutzerOffen(false)} className={menuPunkt}>
                 <Icon name="hilfe" /> Hilfe & Kurzanleitung
               </Link>
               <form action={abmelden} className="border-t border-line">

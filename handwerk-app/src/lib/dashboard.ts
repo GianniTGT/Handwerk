@@ -56,7 +56,17 @@ export function parseLayout(json: string): DashboardLayout {
   const einmalig = (liste: WidgetId[]) => liste.filter((id) => id !== "kennzahlen" && !gesehen.has(id) && gesehen.add(id));
   left = einmalig(left);
   right = einmalig(right);
-  for (const id of STANDARD_LAYOUT.left) if (!gesehen.has(id)) left.push(id), gesehen.add(id);
-  for (const id of STANDARD_LAYOUT.right) if (!gesehen.has(id)) right.push(id), gesehen.add(id);
+  for (const id of STANDARD_LAYOUT.left) {
+    if (!gesehen.has(id)) {
+      left.push(id);
+      gesehen.add(id);
+    }
+  }
+  for (const id of STANDARD_LAYOUT.right) {
+    if (!gesehen.has(id)) {
+      right.push(id);
+      gesehen.add(id);
+    }
+  }
   return { left, right, hidden: [...new Set(hidden)] };
 }
