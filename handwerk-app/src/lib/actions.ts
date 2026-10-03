@@ -142,11 +142,14 @@ export async function createAuftrag(formData: FormData) {
 
   const objektId = String(formData.get("objektId") ?? "");
   if (objektId) {
-    const objekt = await db.objekt.findFirst({
-      where: { id: objektId, kunde: { betriebId: betrieb.id } },
-    });
+    // Objekt muss zu diesem Kontakt gehören (nicht nur zum Betrieb)
+    const objekt = await db.objekt.findFirst({ where: { id: objektId, kundeId } });
     if (!objekt) throw new Error("Objekt nicht gefunden");
   }
+  const projektRoh = String(formData.get("projektId") ?? "");
+  const projekt = projektRoh
+    ? await db.projekt.findFirst({ where: { id: projektRoh, betriebId: betrieb.id } })
+    : null;
 
   const letzter = await db.auftrag.findFirst({
     where: { betriebId: betrieb.id },
@@ -157,6 +160,7 @@ export async function createAuftrag(formData: FormData) {
       betriebId: betrieb.id,
       kundeId,
       objektId: objektId || null,
+      projektId: projekt?.id ?? null,
       nummer: (letzter?.nummer ?? 1000) + 1,
       titel: String(formData.get("titel") ?? "").trim(),
       beschreibung: String(formData.get("beschreibung") ?? ""),
@@ -408,9 +412,7 @@ export async function createOfferte(formData: FormData) {
 
   const objektId = String(formData.get("objektId") ?? "");
   if (objektId) {
-    const objekt = await db.objekt.findFirst({
-      where: { id: objektId, kunde: { betriebId: betrieb.id } },
-    });
+    const objekt = await db.objekt.findFirst({ where: { id: objektId, kundeId } });
     if (!objekt) throw new Error("Objekt nicht gefunden");
   }
 
@@ -754,7 +756,8 @@ export async function sendeRechnungEmail(formData: FormData) {
     betreff: String(formData.get("betreff") ?? "").trim(),
     text: String(formData.get("text") ?? "").replace(/\r/g, ""),
     betrieb,
-    zurueck: "/rechnungen",
+    // Rücksprung nur auf die eigene Rechnung (kein offener Redirect)
+    zurueck: String(formData.get("rueck") ?? "") === `/rechnungen/${rechnungId}` ? `/rechnungen/${rechnungId}` : "/rechnungen",
   });
 }
 
@@ -870,7 +873,7 @@ export async function createRechnung(formData: FormData) {
   if (totalNetto < 0) redirect(`/auftraege/${auftragId}?fehler=akonto-zu-hoch`);
 
   const nr = await vergibNummer(betrieb.id, "RECHNUNG");
-  await db.rechnung.create({
+  const neu = await db.rechnung.create({
     data: {
       betriebId: betrieb.id,
       auftragId,
@@ -884,7 +887,7 @@ export async function createRechnung(formData: FormData) {
     },
   });
   await db.auftrag.update({ where: { id: auftragId }, data: { status: "VERRECHNET" } });
-  redirect(`/rechnungen`);
+  redirect(`/rechnungen/${neu.id}`);
 }
 
 // Teilrechnung / Akonto: shumë fikse ose % e vlerës së Auftrag-ut (oferta, ndryshe rapportet)
@@ -921,7 +924,7 @@ export async function createTeilrechnung(formData: FormData) {
   }
 
   const nr = await vergibNummer(betrieb.id, "RECHNUNG");
-  await db.rechnung.create({
+  const teil = await db.rechnung.create({
     data: {
       betriebId: betrieb.id,
       auftragId,
@@ -937,7 +940,7 @@ export async function createTeilrechnung(formData: FormData) {
     },
   });
   revalidatePath(`/auftraege/${auftragId}`);
-  redirect(`/rechnungen`);
+  redirect(`/rechnungen/${teil.id}`);
 }
 
 export async function setRechnungStatus(formData: FormData) {
@@ -947,6 +950,7 @@ export async function setRechnungStatus(formData: FormData) {
     data: { status: ["ENTWURF", "VERSENDET", "BEZAHLT"].includes(String(formData.get("status"))) ? String(formData.get("status")) : undefined },
   });
   revalidatePath("/rechnungen");
+  revalidatePath("/rechnungen/[id]", "page");
 }
 
 export async function saveArtikel(formData: FormData) {

@@ -10,7 +10,7 @@ import { chf } from "@/lib/format";
 import { offenerBetrag } from "@/lib/mahnwesen";
 import { faelligDatum, istUeberfaellig } from "@/lib/faellig";
 import { WIDGETS, WIDGET_BEREICH, parseLayout, type WidgetId } from "@/lib/dashboard";
-import { dashboardAktion } from "@/lib/actions-dashboard";
+import DashboardEditor from "@/components/DashboardEditor";
 
 const MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
@@ -244,81 +244,66 @@ export default async function Dashboard({
 
   const layout = parseLayout(mitarbeiter.dashboard);
   const darfWidget = (id: WidgetId) => !WIDGET_BEREICH[id] || sieht(WIDGET_BEREICH[id]!);
-  const sichtbarListe = layout.order.filter((id) => darfWidget(id) && (bearbeiten || !layout.hidden.includes(id)));
+  const kennzahlenNode = inhalt.kennzahlen.node;
+
+  const Karte = ({ id }: { id: WidgetId }) => (
+    <section className="rounded-tiff border border-line bg-white p-5 shadow-sm">
+      <h2 className="mb-3 font-semibold">{inhalt[id].titel}</h2>
+      {inhalt[id].node}
+    </section>
+  );
+  const sichtbarIn = (ids: WidgetId[]) => ids.filter((id) => darfWidget(id) && !layout.hidden.includes(id));
+  const spaltenInhalt = [sichtbarIn(layout.left), sichtbarIn(layout.right)];
+  const nichtsDa = spaltenInhalt[0].length + spaltenInhalt[1].length === 0 && layout.hidden.includes("kennzahlen");
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="mt-1 text-sm text-muted">{betrieb.name}</p>
         </div>
         {bearbeiten ? (
-          <div className="flex gap-2 text-sm">
-            <form action={dashboardAktion}>
-              <input type="hidden" name="aktion" value="zuruecksetzen" />
-              <button className="rounded border border-line bg-white px-3 py-1.5 hover:bg-surface2">Zurücksetzen</button>
-            </form>
-            <Link href="/" className="rounded bg-forest px-3 py-1.5 font-medium text-white hover:bg-forest-lift">Fertig</Link>
-          </div>
+          <Link href="/" className="rounded bg-green-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-green-700">
+            Fertig
+          </Link>
         ) : (
           <Link href="/?bearbeiten=1" className="rounded border border-line bg-white px-3 py-1.5 text-sm hover:bg-surface2">
             ✎ Dashboard bearbeiten
           </Link>
         )}
       </div>
-      {bearbeiten && (
-        <p className="mt-3 rounded bg-amber-50 p-2 text-sm text-amber-900">
-          Bearbeiten: Mit ▲ ▼ verschieben, mit «Ausblenden» entfernen Sie Widgets von Ihrem Dashboard. Gilt nur für Sie.
-        </p>
-      )}
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        {sichtbarListe.map((id) => {
-          const w = inhalt[id];
-          const versteckt = layout.hidden.includes(id);
-          const steuerung = bearbeiten && (
-            <div className="flex items-center gap-1 text-xs">
-              {(["hoch", "runter"] as const).map((r) => (
-                <form key={r} action={dashboardAktion}>
-                  <input type="hidden" name="id" value={id} />
-                  <input type="hidden" name="aktion" value={r} />
-                  <button className="rounded border border-line bg-white px-2 py-1 hover:bg-surface2" aria-label={r === "hoch" ? "Nach oben" : "Nach unten"}>
-                    {r === "hoch" ? "▲" : "▼"}
-                  </button>
-                </form>
-              ))}
-              <form action={dashboardAktion}>
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="aktion" value={versteckt ? "einblenden" : "ausblenden"} />
-                <button className="rounded border border-line bg-white px-2 py-1 hover:bg-surface2">
-                  {versteckt ? "Einblenden" : "Ausblenden"}
-                </button>
-              </form>
-            </div>
-          );
-          return (
-            <section
-              key={id}
-              className={`${w.breit ? "lg:col-span-2" : ""} ${versteckt ? "opacity-50" : ""} ${
-                w.ohneRahmen && !bearbeiten ? "" : "rounded-tiff border border-line bg-white p-5 shadow-sm"
-              }`}
-            >
-              {(!w.ohneRahmen || bearbeiten) && (
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h2 className="font-semibold">{w.titel}</h2>
-                  {steuerung}
-                </div>
-              )}
-              {w.node}
-            </section>
-          );
-        })}
-      </div>
-      {sichtbarListe.length === 0 && (
-        <p className="mt-6 text-center text-sm text-muted">
-          Alle Widgets sind ausgeblendet. <Link href="/?bearbeiten=1" className="text-forest underline">Dashboard bearbeiten</Link>
-        </p>
+      {bearbeiten ? (
+        <div className="mt-5">
+          <DashboardEditor
+            start={layout}
+            kennzahlen={kennzahlenNode}
+            items={WIDGETS.filter((w) => w.id !== "kennzahlen" && darfWidget(w.id)).map((w) => ({
+              id: w.id,
+              titel: inhalt[w.id].titel,
+              node: inhalt[w.id].node,
+            }))}
+          />
+        </div>
+      ) : (
+        <>
+          {!layout.hidden.includes("kennzahlen") && <div className="mt-5">{kennzahlenNode}</div>}
+          <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
+            {spaltenInhalt.map((ids, n) => (
+              <div key={n} className="grid content-start gap-4">
+                {ids.map((id) => (
+                  <Karte key={id} id={id} />
+                ))}
+              </div>
+            ))}
+          </div>
+          {nichtsDa && (
+            <p className="mt-6 text-center text-sm text-muted">
+              Alle Widgets sind ausgeblendet. <Link href="/?bearbeiten=1" className="text-forest underline">Dashboard bearbeiten</Link>
+            </p>
+          )}
+        </>
       )}
     </div>
   );

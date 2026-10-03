@@ -6,6 +6,7 @@ export default function EmailForm({
   an,
   betreff,
   text,
+  extra,
 }: {
   action: (formData: FormData) => Promise<void>;
   hiddenName: string;
@@ -13,6 +14,7 @@ export default function EmailForm({
   an: string;
   betreff: string;
   text: string;
+  extra?: Record<string, string>; // zusätzliche versteckte Felder (z.B. Rücksprungseite)
 }) {
   return (
     <details className="rounded-tiff border border-line bg-white">
@@ -21,6 +23,9 @@ export default function EmailForm({
       </summary>
       <form action={action} className="grid gap-2 border-t border-line p-3">
         <input type="hidden" name={hiddenName} value={hiddenValue} />
+        {Object.entries(extra ?? {}).map(([k, v]) => (
+          <input key={k} type="hidden" name={k} value={v} />
+        ))}
         <label className="grid gap-1 text-xs text-muted">
           An
           <input

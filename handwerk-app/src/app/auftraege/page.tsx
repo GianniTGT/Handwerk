@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { sitzungErforderlich } from "@/lib/auth";
-import { createAuftrag } from "@/lib/actions";
 
 const statusFarben: Record<string, string> = {
   OFFEN: "bg-amber-100 text-amber-800",
@@ -11,79 +10,109 @@ const statusFarben: Record<string, string> = {
   ERLEDIGT: "bg-green-100 text-green-800",
   VERRECHNET: "bg-surface2 text-muted",
 };
+const statusText: Record<string, string> = {
+  OFFEN: "Offen",
+  IN_ARBEIT: "In Arbeit",
+  ERLEDIGT: "Erledigt",
+  VERRECHNET: "Verrechnet",
+};
+const TABS: [string, string, string[] | null][] = [
+  ["alle", "Alle", null],
+  ["offen", "Offen", ["OFFEN", "IN_ARBEIT"]],
+  ["erledigt", "Zu verrechnen", ["ERLEDIGT"]],
+  ["verrechnet", "Verrechnet", ["VERRECHNET"]],
+];
 
-export default async function AuftraegePage() {
+export default async function AuftraegePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string; q?: string }>;
+}) {
   const { betrieb } = await sitzungErforderlich();
-  const [auftraege, kunden] = await Promise.all([
-    db.auftrag.findMany({
-      where: { betriebId: betrieb.id },
-      include: { kunde: true, objekt: true },
-      orderBy: { nummer: "desc" },
-    }),
-    db.kunde.findMany({
-      where: { betriebId: betrieb.id },
-      include: { objekte: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  const { filter = "alle", q: qRoh = "" } = await searchParams;
+  const q = qRoh.trim().toLowerCase();
+
+  const alle = await db.auftrag.findMany({
+    where: { betriebId: betrieb.id },
+    include: { kunde: true, objekt: true },
+    orderBy: { nummer: "desc" },
+    take: 500,
+  });
+  const zaehler = (st: string[] | null) => alle.filter((a) => !st || st.includes(a.status)).length;
+  const aktiv = TABS.find((t) => t[0] === filter) ?? TABS[0];
+  const sichtbar = alle.filter(
+    (a) =>
+      (!aktiv[2] || aktiv[2].includes(a.status)) &&
+      (!q || `${a.nummer} ${a.titel} ${a.kunde.name} ${a.objekt?.bezeichnung ?? ""}`.toLowerCase().includes(q))
+  );
 
   return (
-    <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-      <div>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Aufträge</h1>
-        <ul className="mt-4 divide-y divide-line rounded-tiff border border-line bg-white">
-          {auftraege.map((a) => (
-            <li key={a.id}>
-              <Link href={`/auftraege/${a.id}`} className="flex items-center justify-between p-3 hover:bg-surface2">
-                <div>
-                  <div className="font-medium">
-                    #{a.nummer} — {a.titel}
-                  </div>
-                  <div className="text-sm text-muted">
-                    {a.kunde.name}
-                    {a.objekt && ` · ${a.objekt.bezeichnung}`}
-                  </div>
-                </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusFarben[a.status] ?? ""}`}>
-                  {a.status}
-                </span>
-              </Link>
-            </li>
-          ))}
-          {auftraege.length === 0 && (
-            <li className="p-3 text-sm text-muted">Noch keine Aufträge.</li>
-          )}
-        </ul>
+        <Link href="/auftraege/neu" className="rounded bg-forest px-4 py-1.5 text-sm font-semibold text-white hover:bg-forest-lift">
+          ＋ Neuer Auftrag
+        </Link>
       </div>
 
-      <form action={createAuftrag} className="h-fit rounded-tiff border border-line bg-white p-4 shadow-sm">
-        <h2 className="font-semibold">Neuer Auftrag</h2>
-        <div className="mt-3 grid gap-2">
-          <select name="kundeId" required className="rounded border border-line p-2 text-sm">
-            <option value="">Kunde wählen *</option>
-            {kunden.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.name}
-              </option>
-            ))}
-          </select>
-          <select name="objektId" className="rounded border border-line p-2 text-sm">
-            <option value="">Objekt (optional)</option>
-            {kunden.flatMap((k) =>
-              k.objekte.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {k.name} — {o.bezeichnung}
-                </option>
-              ))
-            )}
-          </select>
-          <input name="titel" required placeholder="Titel (z.B. Boiler entkalken) *" className="rounded border border-line p-2 text-sm" />
-          <textarea name="beschreibung" placeholder="Beschreibung" rows={3} className="rounded border border-line p-2 text-sm" />
-          <button className="rounded bg-forest p-2 text-sm font-medium text-white hover:bg-forest-lift">
-            Auftrag erstellen
-          </button>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1 text-sm">
+          {TABS.map(([key, label, st]) => (
+            <Link
+              key={key}
+              href={`/auftraege?filter=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`rounded-full border px-3 py-1 ${filter === key ? "border-forest bg-forest text-white" : "border-line bg-white hover:bg-surface2"}`}
+            >
+              {label} ({zaehler(st)})
+            </Link>
+          ))}
         </div>
-      </form>
+        <form className="flex gap-2">
+          <input type="hidden" name="filter" value={filter} />
+          <input name="q" defaultValue={qRoh} placeholder="Suche: Nummer, Titel, Kontakt, Objekt …" className="w-60 rounded border border-line p-1.5 text-sm" />
+          <button className="rounded bg-forest px-3 text-sm font-medium text-white">Suchen</button>
+        </form>
+      </div>
+
+      <div className="mt-3 overflow-hidden rounded-tiff border border-line bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-surface2 text-left text-xs uppercase text-muted">
+            <tr>
+              <th className="p-2">Nr.</th>
+              <th className="hidden p-2 sm:table-cell">Datum</th>
+              <th className="p-2">Kontakt</th>
+              <th className="p-2">Titel</th>
+              <th className="hidden p-2 lg:table-cell">Objekt</th>
+              <th className="p-2">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {sichtbar.map((a) => (
+              <tr key={a.id} className="hover:bg-surface2">
+                <td className="whitespace-nowrap p-2 font-medium">
+                  <Link href={`/auftraege/${a.id}`} className="block hover:underline">#{a.nummer}</Link>
+                </td>
+                <td className="hidden p-2 text-muted sm:table-cell">{a.datum.toLocaleDateString("de-CH")}</td>
+                <td className="p-2">{a.kunde.name}</td>
+                <td className="max-w-xs truncate p-2 text-muted">{a.titel}</td>
+                <td className="hidden max-w-[14rem] truncate p-2 text-muted lg:table-cell">{a.objekt?.bezeichnung ?? ""}</td>
+                <td className="p-2">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusFarben[a.status] ?? ""}`}>
+                    {statusText[a.status] ?? a.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {sichtbar.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-4 text-center text-muted">
+                  Keine Aufträge. <Link href="/auftraege/neu" className="text-forest underline">Neuen Auftrag erstellen</Link>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

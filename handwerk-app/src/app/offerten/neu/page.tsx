@@ -1,0 +1,42 @@
+export const dynamic = "force-dynamic";
+
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { sitzungErforderlich } from "@/lib/auth";
+import { createOfferte } from "@/lib/actions";
+import { lokalIso } from "@/lib/datum";
+import KundeObjektWahl from "@/components/KundeObjektWahl";
+
+export default async function NeueOfferte({ searchParams }: { searchParams: Promise<{ kunde?: string }> }) {
+  const { betrieb } = await sitzungErforderlich();
+  const { kunde } = await searchParams;
+  const kunden = await db.kunde.findMany({
+    where: { betriebId: betrieb.id, archiviert: false },
+    select: { id: true, name: true, objekte: { select: { id: true, bezeichnung: true } } },
+    orderBy: { name: "asc" },
+  });
+  const feld = "w-full rounded border border-line bg-white p-2 text-sm";
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <Link href="/offerten" className="text-sm text-forest underline">← Offerten</Link>
+      <h1 className="mt-1 text-xl font-bold">Neue Offerte</h1>
+      <form action={createOfferte} className="mt-4 grid gap-3 rounded-tiff border border-line bg-white p-4 shadow-sm sm:grid-cols-2">
+        <KundeObjektWahl kunden={kunden} startKundeId={kunden.some((k) => k.id === kunde) ? kunde : ""} />
+        <label className="grid gap-0.5 text-xs text-muted sm:col-span-2">
+          Titel *
+          <input name="titel" required placeholder="z.B. Anschlüsse neue Pumpen" className={feld} />
+        </label>
+        <label className="grid gap-0.5 text-xs text-muted">
+          Gültig bis
+          <input name="gueltigBis" type="date" defaultValue={lokalIso(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))} className={feld} />
+        </label>
+        <div className="flex items-end gap-2 sm:col-span-2">
+          <button className="rounded bg-forest px-5 py-2 text-sm font-semibold text-white hover:bg-forest-lift">Offerte erstellen</button>
+          <Link href="/offerten" className="rounded border border-line bg-white px-5 py-2 text-sm hover:bg-surface2">Abbrechen</Link>
+          <Link href="/kunden/neu" className="ml-auto text-xs text-forest underline">Kontakt fehlt? Neu anlegen</Link>
+        </div>
+      </form>
+    </div>
+  );
+}
