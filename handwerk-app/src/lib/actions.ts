@@ -792,6 +792,7 @@ export async function createWartungsvertrag(formData: FormData) {
     },
   });
   revalidatePath("/wartung");
+  redirect("/wartung?gespeichert=1");
 }
 
 export async function setWartungsvertragStatus(formData: FormData) {

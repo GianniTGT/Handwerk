@@ -35,10 +35,10 @@ function parseDauer(text: string): number {
 export async function createProjekt(formData: FormData) {
   const { betrieb } = await sitzungErforderlich("PROJEKTE");
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) redirect("/projekte?fehler=name");
+  if (!name) redirect("/projekte/neu?fehler=name");
   const kundeId = emptyToNull(formData.get("kundeId"));
   if (kundeId && !(await db.kunde.findFirst({ where: { id: kundeId, betriebId: betrieb.id } }))) {
-    redirect("/projekte?fehler=kunde");
+    redirect("/projekte/neu?fehler=kunde");
   }
   const nr = await vergibNummer(betrieb.id, "PROJEKT");
   const p = await db.projekt.create({
@@ -127,23 +127,23 @@ export async function auftragVonProjekt(formData: FormData) {
 export async function createZeit(formData: FormData) {
   const { betrieb, mitarbeiter } = await sitzungErforderlich("PROJEKTE");
   const minuten = parseDauer(String(formData.get("dauer") ?? ""));
-  if (minuten <= 0 || minuten > 24 * 60) redirect("/zeiten?fehler=dauer");
+  if (minuten <= 0 || minuten > 24 * 60) redirect("/zeiten/neu?fehler=dauer");
 
   const mitarbeiterId = String(formData.get("mitarbeiterId") || mitarbeiter.id);
   const ma = await db.mitarbeiter.findFirst({ where: { id: mitarbeiterId, betriebId: betrieb.id } });
-  if (!ma) redirect("/zeiten?fehler=mitarbeiter");
+  if (!ma) redirect("/zeiten/neu?fehler=mitarbeiter");
 
   const projektId = emptyToNull(formData.get("projektId"));
   const auftragId = emptyToNull(formData.get("auftragId"));
   let kundeId = emptyToNull(formData.get("kundeId"));
   if (projektId) {
     const p = await db.projekt.findFirst({ where: { id: projektId, betriebId: betrieb.id } });
-    if (!p) redirect("/zeiten?fehler=projekt");
+    if (!p) redirect("/zeiten/neu?fehler=projekt");
     kundeId = kundeId ?? p.kundeId;
   }
   if (auftragId) {
     const a = await db.auftrag.findFirst({ where: { id: auftragId, betriebId: betrieb.id } });
-    if (!a) redirect("/zeiten?fehler=auftrag");
+    if (!a) redirect("/zeiten/neu?fehler=auftrag");
     kundeId = kundeId ?? a.kundeId;
   }
   await db.zeiteintrag.create({
