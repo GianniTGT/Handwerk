@@ -66,12 +66,14 @@ export default function Sidebar({
   wechseln,
   support,
   erlaubt,
+  tiffAdmin,
 }: {
   betriebe: BetriebInfo[];
   aktivId: string;
   wechseln: (formData: FormData) => void | Promise<void>;
   support: { email: string; telefon: string };
   erlaubt: Bereich[];
+  tiffAdmin: boolean;
 }) {
   const pfad = usePathname();
   const hauptF = filtro(haupt, erlaubt);
@@ -138,6 +140,11 @@ export default function Sidebar({
           <a href={`tel:${support.telefon.replace(/\s/g, "")}`} className="block text-forest underline">
             {support.telefon}
           </a>
+          {tiffAdmin && (
+            <Link href="/admin/betriebe" className="mt-2 block font-medium text-forest underline">
+              ⚙ Kunden-Betriebe verwalten
+            </Link>
+          )}
         </div>
       </nav>
     </aside>

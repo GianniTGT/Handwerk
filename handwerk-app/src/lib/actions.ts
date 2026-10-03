@@ -9,6 +9,8 @@ import { offertePdf, rechnungPdf } from "./pdf";
 import { sendeDokument } from "./email";
 import { offerteNummer } from "./format";
 import { vergibNummer } from "./nummern";
+import { registrierungOffen } from "./registrierung";
+import { clientIp, loescheFehlversuche, registriereFehlversuch, schluessel, sperreMinuten } from "./loginsperre";
 import { plusMonate } from "./datum";
 import {
   beendeSitzung,
@@ -35,10 +37,20 @@ const nichtNegativ = (v: FormDataEntryValue | null, fallback: number) => {
 export async function login(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const passwort = String(formData.get("passwort") ?? "");
+
+  // Anmeldesperre: pas shumë gabimeve (email ose IP) hyrja bllokohet përkohësisht
+  const ip = await clientIp();
+  const keys = schluessel(email, ip);
+  const gesperrt = await sperreMinuten([keys.mail, keys.ip]);
+  if (gesperrt > 0) redirect(`/login?fehler=gesperrt&min=${gesperrt}`);
+
   const mitarbeiter = await db.mitarbeiter.findUnique({ where: { email } });
-  if (!mitarbeiter || !mitarbeiter.aktiv || !(await pruefePasswort(passwort, mitarbeiter.passwortHash))) {
+  const passwortOk = await pruefePasswort(passwort, mitarbeiter?.passwortHash ?? "");
+  if (!mitarbeiter || !mitarbeiter.aktiv || !passwortOk) {
+    await registriereFehlversuch(email, ip);
     redirect("/login?fehler=1");
   }
+  await loescheFehlversuche(email);
   await erstelleSitzung(mitarbeiter.id);
   redirect("/");
 }
@@ -59,6 +71,7 @@ export async function wechselBetrieb(formData: FormData) {
 }
 
 export async function registriereBetrieb(formData: FormData) {
+  if (!registrierungOffen()) redirect("/registrieren");
   const firmenname = String(formData.get("firmenname") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();

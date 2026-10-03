@@ -12,9 +12,12 @@ export async function hashPasswort(passwort: string) {
   return bcrypt.hash(passwort, 10);
 }
 
+// Hash fiktiv: edhe për email të panjohur kryhet një bcrypt-compare, që koha e përgjigjes të mos tregojë nëse llogaria ekziston
+const DUMMY_HASH = bcrypt.hashSync("dummy-passwort-fuer-timing", 10);
+
 export async function pruefePasswort(passwort: string, hash: string) {
-  if (!hash) return false;
-  return bcrypt.compare(passwort, hash);
+  const ok = await bcrypt.compare(passwort, hash || DUMMY_HASH);
+  return Boolean(hash) && ok;
 }
 
 export async function erstelleSitzung(mitarbeiterId: string) {

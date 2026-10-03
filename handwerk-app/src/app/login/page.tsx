@@ -2,16 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { login } from "@/lib/actions";
 import { leseSitzung } from "@/lib/auth";
+import { registrierungOffen } from "@/lib/registrierung";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fehler?: string }>;
+  searchParams: Promise<{ fehler?: string; min?: string }>;
 }) {
   if (await leseSitzung()) redirect("/");
-  const { fehler } = await searchParams;
+  const { fehler, min } = await searchParams;
 
   return (
     <div className="mx-auto mt-16 max-w-sm">
@@ -22,7 +23,9 @@ export default async function LoginPage({
       <p className="mt-1 text-center text-sm text-muted">Anmelden</p>
       {fehler && (
         <p className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-700">
-          E-Mail oder Passwort falsch.
+          {fehler === "gesperrt"
+            ? `Zu viele Fehlversuche. Aus Sicherheitsgründen ist die Anmeldung für ca. ${Math.max(1, Number(min) || 15)} Minute(n) gesperrt.`
+            : "E-Mail oder Passwort falsch."}
         </p>
       )}
       <form action={login} className="mt-6 grid gap-3 rounded-tiff border border-line bg-white p-6 shadow-sm">
@@ -44,12 +47,14 @@ export default async function LoginPage({
           Anmelden
         </button>
       </form>
+      {registrierungOffen() && (
       <p className="mt-4 text-center text-sm text-muted">
         Noch kein Konto?{" "}
         <Link href="/registrieren" className="underline">
           Betrieb registrieren
         </Link>
       </p>
+      )}
     </div>
   );
 }

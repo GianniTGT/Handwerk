@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { registriereBetrieb } from "@/lib/actions";
 import { leseSitzung } from "@/lib/auth";
+import { registrierungOffen } from "@/lib/registrierung";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +26,23 @@ export default async function RegistrierenPage({
       <h1 className="mt-3 text-center text-2xl font-bold">Handwerk</h1>
       <p className="text-center text-[10px] uppercase tracking-widest text-gold">by Tiff Software Solutions</p>
       <p className="mt-1 text-center text-sm text-muted">Betrieb registrieren</p>
-      {fehler && (
+      {!registrierungOffen() && (
+        <div className="mt-6 rounded-tiff border border-line bg-white p-6 text-center text-sm shadow-sm">
+          <p className="font-medium">Die Registrierung ist geschlossen.</p>
+          <p className="mt-2 text-muted">
+            Neue Betriebe werden von TIFF Software Solutions eingerichtet. Bitte wenden Sie sich an Ihren Ansprechpartner.
+          </p>
+          <Link href="/login" className="mt-4 inline-block rounded bg-forest px-4 py-2 font-medium text-white hover:bg-forest-lift">
+            Zur Anmeldung
+          </Link>
+        </div>
+      )}
+      {registrierungOffen() && fehler && (
         <p className="mt-4 rounded bg-red-100 p-2 text-center text-sm text-red-700">
           {fehlerTexte[fehler] ?? "Registrierung fehlgeschlagen."}
         </p>
       )}
+      {registrierungOffen() && (
       <form
         action={registriereBetrieb}
         className="mt-6 grid gap-3 rounded-tiff border border-line bg-white p-6 shadow-sm"
@@ -42,12 +55,15 @@ export default async function RegistrierenPage({
           Registrieren
         </button>
       </form>
+      )}
+      {registrierungOffen() && (
       <p className="mt-4 text-center text-sm text-muted">
         Bereits registriert?{" "}
         <Link href="/login" className="underline">
           Anmelden
         </Link>
       </p>
+      )}
     </div>
   );
 }

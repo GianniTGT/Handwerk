@@ -554,3 +554,12 @@ model Rechnungslauf {
   summeBrutto Float
   details     String   @default("") // lista e fatura të krijuara
 }
+
+// Mbrojtje nga brute-force: gabime të hyrjes sipas email-it dhe IP-së; pas pragut → bllokim i përkohshëm
+model LoginVersuch {
+  id          String    @id @default(cuid())
+  schluessel  String    @unique // "mail:<email>" ose "ip:<adresa>"
+  fehler      Int       @default(0)
+  fensterStart DateTime @default(now())
+  gesperrtBis DateTime?
+}
